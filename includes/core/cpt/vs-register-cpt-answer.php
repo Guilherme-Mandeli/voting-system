@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * @return void
  */
-function vs_register_votacao_resposta_cpt() {
+function vs_register_cpt_answer() {
     register_post_type(
         'votacao_resposta',
         array(
@@ -25,28 +25,28 @@ function vs_register_votacao_resposta_cpt() {
                 'name'          => __( 'Respostas de Votação', 'voting-system' ),
                 'singular_name' => __( 'Resposta de Votação', 'voting-system' ),
             ),
-            'public'       => true,
+            'public'       => false,
             'show_ui'      => true,
             'supports'     => array( 'title', 'custom-fields' ),
             'capability_type' => 'post',
-            // Ajuste outras flags (menu_position, menu_icon etc.) conforme necessidade.
+            // Adjust other flags (menu_position, menu_icon etc.) as needed.
         )
     );
 }
-add_action( 'init', 'vs_register_votacao_resposta_cpt' );
+add_action( 'init', 'vs_register_cpt_answer' );
 
 /**
- * Redirect non-logged users when viewing single votacoes or votacao_resposta.
+ * Restrict access to 'votacao_resposta' posts to logged-in users.
  *
  * @return void
  */
-function vs_redirect_non_logged_votacao() {
-    if ( ( is_singular( 'votacoes' ) || is_singular( 'votacao_resposta' ) ) && ! is_user_logged_in() ) {
+function vs_restrict_answer_to_logged_in() {
+    if ( is_singular( 'votacao_resposta' ) && ! is_user_logged_in() ) {
         wp_safe_redirect( wp_login_url( get_permalink() ) );
         exit;
     }
 }
-add_action( 'template_redirect', 'vs_redirect_non_logged_votacao' );
+add_action( 'template_redirect', 'vs_restrict_answer_to_logged_in' );
 
 /* ------------------------------------------------------------------------- *
  * Admin List Table Columns
@@ -58,7 +58,7 @@ add_action( 'template_redirect', 'vs_redirect_non_logged_votacao' );
  * @param array $columns Existing columns.
  * @return array Modified columns.
  */
-function vs_manage_votacao_resposta_columns( $columns ) {
+function vs_manage_answer_columns( $columns ) {
     return array(
         'cb'        => isset( $columns['cb'] ) ? $columns['cb'] : '<input type="checkbox" />',
         'title'     => __( 'Título', 'voting-system' ),
@@ -67,7 +67,7 @@ function vs_manage_votacao_resposta_columns( $columns ) {
         'data_envio'=> __( 'Data de Envio', 'voting-system' ),
     );
 }
-add_filter( 'manage_votacao_resposta_posts_columns', 'vs_manage_votacao_resposta_columns' );
+add_filter( 'manage_votacao_resposta_posts_columns', 'vs_manage_answer_columns' );
 
 /**
  * Render custom column data in admin list table.
@@ -76,14 +76,13 @@ add_filter( 'manage_votacao_resposta_posts_columns', 'vs_manage_votacao_resposta
  * @param int    $post_id Current post ID.
  * @return void
  */
-function vs_manage_votacao_resposta_columns_cb( $column, $post_id ) {
+function vs_manage_answer_columns_cb( $column, $post_id ) {
 
     if ( 'usuario' === $column ) {
         $user_id = get_post_meta( $post_id, 'vs_usuario_id', true );
         if ( $user_id ) {
             $user_info = get_userdata( $user_id );
             if ( $user_info ) {
-                // Show "#ID email" (matches other admin views in your workflow).
                 printf(
                     '#%d %s',
                     absint( $user_info->ID ),
@@ -93,7 +92,7 @@ function vs_manage_votacao_resposta_columns_cb( $column, $post_id ) {
                 printf( 'ID %d', absint( $user_id ) );
             }
         } else {
-            echo '&#8212;'; // dash
+            echo '&#8212;';
         }
         return;
     }
@@ -121,7 +120,6 @@ function vs_manage_votacao_resposta_columns_cb( $column, $post_id ) {
     if ( 'data_envio' === $column ) {
         $data_envio = get_post_meta( $post_id, 'vs_data_envio', true );
         if ( $data_envio ) {
-            // Expecting a date string parseable by strtotime().
             echo esc_html(
                 date_i18n(
                     get_option( 'date_format' ) . ' ' . get_option( 'time_format' ),
@@ -129,13 +127,12 @@ function vs_manage_votacao_resposta_columns_cb( $column, $post_id ) {
                 )
             );
         } else {
-            // Fallback: use post publish date.
             echo esc_html( get_the_date( '', $post_id ) );
         }
         return;
     }
 }
-add_action( 'manage_votacao_resposta_posts_custom_column', 'vs_manage_votacao_resposta_columns_cb', 10, 2 );
+add_action( 'manage_votacao_resposta_posts_custom_column', 'vs_manage_answer_columns_cb', 10, 2 );
 
 /* ------------------------------------------------------------------------- *
  * Meta Box: Detailed Responses (per post)
@@ -146,50 +143,42 @@ add_action( 'manage_votacao_resposta_posts_custom_column', 'vs_manage_votacao_re
  *
  * @return void
  */
-function vs_add_votacao_resposta_metabox() {
+function vs_add_answer_metabox() {
     add_meta_box(
         'votacao_resposta_detalhes',
         __( 'Detalhes da Resposta', 'voting-system' ),
-        'vs_render_votacao_resposta_metabox',
+        'vs_render_answer_metabox',
         'votacao_resposta',
         'normal',
         'default'
     );
 }
-add_action( 'add_meta_boxes', 'vs_add_votacao_resposta_metabox' );
+add_action( 'add_meta_boxes', 'vs_add_answer_metabox' );
 
 /**
  * Render the per-response details meta box.
  *
- * Displays:
- * - Question label (from parent voting config).
- * - User's answer.
- * - Unified value *for this specific response*, taken from meta 'vs_resposta_unificada' array.
- *
  * @param WP_Post $post Current response post object.
  * @return void
  */
-function vs_render_votacao_resposta_metabox( $post ) {
+function vs_render_answer_metabox( $post ) {
 
-    // Load detailed answers (index => answer string|array).
     $respostas = get_post_meta( $post->ID, 'vs_respostas_detalhadas', true );
 
     echo '<div style="max-height: 400px; overflow-y: auto;">';
 
     if ( empty( $respostas ) || ! is_array( $respostas ) ) {
-        echo '<p><em>Não há respostas registradas.</em></p>';
+        echo '<p><em>' . esc_html__( 'Não há respostas registradas.', 'voting-system' ) . '</em></p>';
         echo '</div>';
         return;
     }
 
-    // Load parent voting to get question labels.
     $votacao_id = get_post_meta( $post->ID, 'vs_votacao_id', true );
     $perguntas  = get_post_meta( $votacao_id, 'vs_perguntas', true );
     if ( ! is_array( $perguntas ) ) {
         $perguntas = array();
     }
 
-    // Load per-response unified values array.
     $unifications = get_post_meta( $post->ID, 'vs_resposta_unificada', true );
     if ( ! is_array( $unifications ) ) {
         $unifications = array();
@@ -204,19 +193,16 @@ function vs_render_votacao_resposta_metabox( $post ) {
 
     foreach ( $respostas as $index => $resposta_value ) {
 
-        // Question label fallback.
         $label = isset( $perguntas[ $index ]['label'] )
             ? $perguntas[ $index ]['label']
             : sprintf( 'Pergunta #%d', ( $index + 1 ) );
 
-        // Normalize answer text (answers may be array for checkbox/select multiple).
         if ( is_array( $resposta_value ) ) {
             $resp = implode( ', ', array_map( 'sanitize_text_field', $resposta_value ) );
         } else {
             $resp = sanitize_text_field( $resposta_value );
         }
 
-        // Per-response unified value.
         $resp_unificada = '';
         if ( isset( $unifications[ $index ] ) && '' !== trim( $unifications[ $index ] ) ) {
             $resp_unificada = $unifications[ $index ];
