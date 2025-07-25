@@ -91,3 +91,58 @@ function vs_format_user_answers( $respostas, $perguntas ) {
     }
     return $respostas_formatadas;
 }
+
+function vs_get_existing_response( $user_id, $votacao_id ) {
+    $args = [
+        'post_type' => 'votacao_resposta',
+        'author' => $user_id,
+        'meta_query' => [
+            [
+                'key' => 'vs_votacao_id',
+                'value' => $votacao_id,
+                'compare' => '=',
+            ]
+        ],
+        'posts_per_page' => 1,
+        'post_status' => ['publish', 'private'],
+        'fields' => 'ids',
+    ];
+    return get_posts($args);
+}
+
+function vs_update_response_metadata($post_id, $votacao_id, $user_id, $respostas) {
+    update_post_meta($post_id, 'vs_votacao_id', $votacao_id);
+    update_post_meta($post_id, 'vs_usuario_id', $user_id);
+    update_post_meta($post_id, 'vs_resposta_unificada', '');
+    update_post_meta($post_id, 'vs_respostas_detalhadas', $respostas);
+    update_post_meta($post_id, 'vs_data_envio', current_time('mysql'));
+}
+
+function vs_update_votantes($votacao_id, $user_id) {
+    $votantes = get_post_meta($votacao_id, '_vs_votantes', true);
+    if (!is_array($votantes)) {
+        $votantes = [];
+    }
+    if (!in_array($user_id, $votantes)) {
+        $votantes[] = $user_id;
+        update_post_meta($votacao_id, '_vs_votantes', $votantes);
+
+        // Atualiza a quantidade de votos com o total de votantes atuais
+        $qtd_votos = count($votantes);
+        update_post_meta($votacao_id, '_vs_qtd_votos', $qtd_votos);
+    }
+    return $votantes;
+}
+
+function vs_generate_thank_you_token($user_id, $votacao_id) {
+    $token = wp_create_nonce('vs_obrigado_' . $user_id . '_' . $votacao_id);
+    set_transient('vs_obrigado_token_' . $user_id . '_' . $votacao_id, $token, 5 * MINUTE_IN_SECONDS);
+    return $token;
+}
+
+function vs_check_votacao_status($data_fim) {
+    if (!$data_fim) return false;
+    
+    $timestamp_fim = strtotime($data_fim . ' 00:00:00');
+    return $timestamp_fim <= time();
+}
