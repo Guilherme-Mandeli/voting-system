@@ -89,17 +89,20 @@ class VS_Bootstrap {
     }
     
     public function enqueue_admin_assets() {
-        // CSS administrativo
+        // CSS administrativo - SEMPRE carregado nas páginas admin
         wp_enqueue_style( 'vs-admin-style', VS_PLUGIN_URL . 'assets/css/admin.css', array(), VS_PLUGIN_VERSION );
         
-        // JavaScript administrativo
+        // JavaScript administrativo básico
         wp_enqueue_script( 'vs-admin-script', VS_PLUGIN_URL . 'assets/js/admin.js', array( 'jquery' ), VS_PLUGIN_VERSION, true );
         
-        // JavaScript AJAX específicos para páginas administrativas
+        // Obtém informações da tela atual
         $current_screen = get_current_screen();
+        $page = isset( $_GET['page'] ) ? $_GET['page'] : '';
         
-        // Script para página de resultados (modal de respostas)
-        if ( $current_screen && strpos( $current_screen->id, 'votacoes_page_vs-results' ) !== false ) {
+        // Script para páginas de resultados (modal "Ver Respostas")
+        if ( $page === 'votacoes_resultados_visualizar' ||
+             ( $current_screen && strpos( $current_screen->id, 'votacoes_page_votacoes_resultados' ) !== false ) ) {
+            
             wp_enqueue_script( 
                 'vs-votacao-ajax', 
                 VS_PLUGIN_URL . 'assets/js/ajax/votacao-ajax.js', 
@@ -116,7 +119,9 @@ class VS_Bootstrap {
         }
         
         // Script para página de unificação
-        if ( $current_screen && strpos( $current_screen->id, 'votacoes_page_vs-results-unificacao' ) !== false ) {
+        if ( ( $page === 'votacoes_resultados_visualizar' && isset( $_GET['subpage'] ) && $_GET['subpage'] === 'unificacao' ) ||
+             ( $current_screen && strpos( $current_screen->id, 'votacoes_page_vs-results-unificacao' ) !== false ) ) {
+            
             wp_enqueue_script( 
                 'vs-unificacao-modal', 
                 VS_PLUGIN_URL . 'assets/js/ajax/vs-handle-get-unificacao-group.js', 

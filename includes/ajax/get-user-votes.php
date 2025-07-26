@@ -55,8 +55,15 @@ defined( 'ABSPATH' ) || exit;
 
 // Função de tratamento do Ajax
 function vs_ajax_get_user_votes() {
-    // Verifica o nonce de segurança
-    check_ajax_referer('vs_get_user_votes_nonce', 'vs_nonce');
+    // Verifica o nonce correto que vem do JavaScript
+    if ( ! wp_verify_nonce( $_POST['vs_nonce'], 'vs_ajax_nonce' ) ) {
+        wp_send_json_error( 'Nonce inválido.' );
+    }
+
+    // Verifica permissões do usuário
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( 'Permissão insuficiente.' );
+    }
 
     // Pega os parâmetros enviados via POST
     $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
@@ -126,7 +133,7 @@ function vs_ajax_get_user_votes() {
     // Retorna as respostas formatadas em formato JSON
     wp_send_json_success([
         'user_name' => $user->display_name,
-        'data_resposta' => $data_resposta,
+        'data_envio' => $data_resposta, // Nome da chave para coincidir com o JavaScript
         'respostas' => $respostas_formatadas,
     ]);
 }

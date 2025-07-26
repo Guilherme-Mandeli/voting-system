@@ -3,7 +3,7 @@
  * Plugin Name: Voting System
  * Plugin URI: https://github.com/guilhermemandeli/voting-system
  * Description: Sistema completo de votações personalizado para WordPress com interface administrativa, shortcodes e sistema de unificação de respostas.
- * Version: 2.250726.1
+ * Version: 2.250726.2
  * Author: Guilherme Mandeli
  * Author URI: https://github.com/guilhermemandeli
  * Text Domain: voting-system

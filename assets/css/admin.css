@@ -1,0 +1,429 @@
+/* ==========================================================================
+   ESTILOS ADMINISTRATIVOS - VOTING SYSTEM
+   ========================================================================== */
+
+/* Modal de Respostas do Usuário */
+.resposta-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    z-index: 9999;
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+    padding: 20px;
+    min-width: 600px;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+}
+
+.modal-title {
+    margin: 0 0 15px 0;
+    padding: 0;
+    font-size: 1.3em;
+    color: #23282d;
+}
+
+.meta-data {
+    margin: 0 0 20px 0;
+    color: #666;
+    font-style: italic;
+}
+
+.respostas-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+.respostas-table th,
+.respostas-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    vertical-align: top;
+}
+
+.respostas-table th {
+    background-color: #f9f9f9;
+    font-weight: 600;
+    color: #23282d;
+}
+
+.respostas-table .question {
+    font-weight: 500;
+    color: #0073aa;
+    width: 40%;
+}
+
+.respostas-table .answer {
+    color: #23282d;
+    width: 60%;
+}
+
+.close-modal {
+    background: #0073aa;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 20px;
+}
+
+.close-modal:hover {
+    background: #005a87;
+}
+
+/* Modal de Unificação */
+#modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+    display: none;
+}
+
+#modal-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    z-index: 9999;
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+    padding: 20px;
+    min-width: 700px;
+}
+
+/* ==========================================================================
+   PÁGINA DE UNIFICAÇÃO
+   ========================================================================== */
+
+/* Container principal da unificação */
+.unificacao-container {
+    display: flex;
+    gap: 30px;
+    width: 100%;
+    margin-top: 20px;
+}
+
+.unificacao-coluna {
+    min-width: 0; /* Permite que as colunas encolham */
+}
+
+.unificacao-title {
+    font-size: 1.2em;
+    margin: 0 0 15px 0;
+    color: #23282d;
+    border-bottom: 2px solid #0073aa;
+    padding-bottom: 8px;
+}
+
+/* Botões de unificação */
+.button-unificacao {
+    background: #0073aa !important;
+    border-color: #0073aa !important;
+    color: #fff !important;
+    padding: 8px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 13px;
+    line-height: 1.4;
+    border: 1px solid;
+}
+
+.button-unificacao:hover {
+    background: #005a87 !important;
+    border-color: #005a87 !important;
+    color: #fff !important;
+}
+
+/* Tabela principal de unificação */
+.unificacao-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.unificacao-table th {
+    background: #f6f7f7;
+    border-bottom: 1px solid #c3c4c7;
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+    color: #23282d;
+    font-size: 14px;
+}
+
+.unificacao-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #c3c4c7;
+    vertical-align: top;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.unificacao-table tr:hover {
+    background-color: #f6f7f7;
+}
+
+.unificacao-table tr.selected {
+    background-color: #e5f3ff;
+}
+
+/* Colunas específicas */
+.unificacao-checkbox-column {
+    width: 40px;
+    text-align: center;
+}
+
+.unificacao-usuario-column {
+    width: 200px;
+}
+
+.unificacao-pergunta-column {
+    width: 250px;
+}
+
+.unificacao-resposta-column {
+    min-width: 200px;
+}
+
+.unificacao-resposta-unificada-column {
+    width: 150px;
+}
+
+/* Tabela secundária (unificações) */
+.unificacao-second-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    margin-top: 61px;
+    border: 1px solid #c3c4c7;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.unificacao-second-table th {
+    background: #f6f7f7;
+    border-bottom: 1px solid #c3c4c7;
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+    color: #23282d;
+    font-size: 14px;
+}
+
+.unificacao-second-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #c3c4c7;
+    vertical-align: top;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.unificacao-second-table tr:hover {
+    background-color: #f6f7f7;
+}
+
+/* Links "Ver todos" */
+.unificacao-ver-todos {
+    color: #0073aa;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.unificacao-ver-todos:hover {
+    color: #005a87;
+    text-decoration: underline;
+}
+
+/* Tooltips */
+.tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tooltip .tooltip-text {
+    visibility: hidden;
+    width: 300px;
+    background-color: #333;
+    color: #fff;
+    text-align: left;
+    border-radius: 4px;
+    padding: 8px;
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -150px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+.tooltip .tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
+
+.tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Botões de ação */
+.vs-view-user-votes {
+    background: #0073aa !important;
+    border-color: #0073aa !important;
+    color: #fff !important;
+}
+
+.vs-view-user-votes:hover {
+    background: #005a87 !important;
+    border-color: #005a87 !important;
+}
+
+/* Tabelas administrativas */
+.wp-list-table .manage-column a {
+    text-decoration: none;
+    color: #23282d;
+}
+
+.wp-list-table .manage-column a:hover {
+    color: #0073aa;
+}
+
+/* Navegação de subpáginas */
+.nav-tab-wrapper {
+    margin: 20px 0;
+}
+
+.nav-tab {
+    background: #f1f1f1;
+    border: 1px solid #ccc;
+    color: #555;
+    text-decoration: none;
+    padding: 8px 12px;
+    margin-right: 5px;
+    border-radius: 3px 3px 0 0;
+}
+
+.nav-tab-active {
+    background: #fff;
+    border-bottom: 1px solid #fff;
+    color: #000;
+}
+
+/* Formulário de unificação */
+.unificacao-form {
+    margin: 10px 0;
+}
+
+/* Responsividade */
+@media (max-width: 1200px) {
+    .unificacao-container {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .unificacao-coluna {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .resposta-modal,
+    #modal-container {
+        min-width: 95%;
+        max-width: 95%;
+        padding: 15px;
+    }
+    
+    .respostas-table th,
+    .respostas-table td,
+    .unificacao-table th,
+    .unificacao-table td {
+        padding: 6px;
+        font-size: 12px;
+    }
+    
+    .unificacao-usuario-column,
+    .unificacao-pergunta-column {
+        width: auto;
+        min-width: 120px;
+    }
+    
+    .tooltip .tooltip-text {
+        width: 250px;
+        margin-left: -125px;
+    }
+}
+
+/* Estados especiais */
+.unificacao-tr.highlighted {
+    background-color: #fff3cd !important;
+    border-left: 3px solid #ffc107;
+}
+
+.unificacao-tr input[type="checkbox"]:checked {
+    accent-color: #0073aa;
+}
+
+/* Melhorias visuais */
+.unificacao-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.unificacao-table tbody tr:nth-child(even):hover {
+    background-color: #f0f0f1;
+}
+
+/* Indicadores visuais */
+.unificacao-resposta-unificada-column {
+    font-weight: 500;
+}
+
+.unificacao-resposta-unificada-column:not(:contains("—")) {
+    color: #0073aa;
+}

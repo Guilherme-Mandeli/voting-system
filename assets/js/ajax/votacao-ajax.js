@@ -69,7 +69,19 @@ jQuery(document).ready(function($) {
         });
     }
 
-    // Listener para botões com data-user-id e data-votacao-id
+    // CORRIGIDO: Listener para botões com classe vs-view-user-votes
+    $(document).on('click', '.vs-view-user-votes', function() {
+        var user_id = $(this).data('user-id');
+        var votacao_id = $(this).data('votacao-id');
+
+        if (user_id && votacao_id) {
+            carregarRespostas(user_id, votacao_id);
+        } else {
+            alert('Erro: IDs de usuário ou votação não encontrados.');
+        }
+    });
+
+    // MANTIDO: Listener original para compatibilidade
     $(document).on('click', '.button-primary[data-user-id][data-votacao-id]', function() {
         var user_id = $(this).data('user-id');
         var votacao_id = $(this).data('votacao-id');
