@@ -326,6 +326,20 @@ jQuery( document ).ready( function( $ ) {
     } );
 
     /* ---------------------------------------------------------------------
+     * Função para atualizar o estado dos botões de unificação
+     * ------------------------------------------------------------------ */
+    function updateUnificacaoButtonsState() {
+        var checkedBoxes = $( 'input[name="respostas_ids[]"]:checked' ).length;
+        var $buttons = $( '.button-unificacao' );
+        
+        if ( checkedBoxes > 0 ) {
+            $buttons.prop( 'disabled', false );
+        } else {
+            $buttons.prop( 'disabled', true );
+        }
+    }
+
+    /* ---------------------------------------------------------------------
      * Destacar linha ao selecionar checkbox
      * ------------------------------------------------------------------ */
     $( document ).on( 'change', 'input[name="respostas_ids[]"]', function() {
@@ -335,6 +349,9 @@ jQuery( document ).ready( function( $ ) {
         } else {
             $row.removeClass( 'selected' );
         }
+        
+        // Atualiza o estado dos botões
+        updateUnificacaoButtonsState();
     } );
 
     /* ---------------------------------------------------------------------
@@ -345,6 +362,16 @@ jQuery( document ).ready( function( $ ) {
         $( 'input[name="respostas_ids[]"]' )
             .prop( 'checked', checked )
             .trigger( 'change' );
+        
+        // Atualiza o estado dos botões
+        updateUnificacaoButtonsState();
+    } );
+
+    /* ---------------------------------------------------------------------
+     * Inicializa o estado dos botões ao carregar a página
+     * ------------------------------------------------------------------ */
+    $( document ).ready( function() {
+        updateUnificacaoButtonsState();
     } );
 
     /* ---------------------------------------------------------------------
@@ -368,16 +395,14 @@ jQuery( document ).ready( function( $ ) {
             },
             success: function( response ) {
                 if ( response && response.success ) {
-                    var data   = response.data.responses || response.data; // fallback se handler antigo
-                    var counts = response.data.counts    || {};
+                    var data = response.data.responses || [];
+                    var respostaUnificada = response.data.resposta_unificada || respostaKey;
 
                     var html = '<table class="unificacao-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">';
                     html    += '<thead><tr>' +
                                 '<th>Usuário</th>' +
                                 '<th>Pergunta</th>' +
                                 '<th>Resposta</th>' +
-                                '<th>Resposta Unificada</th>' +
-                                '<th>Contagem</th>' +
                                '</tr></thead><tbody>';
 
                     // Função escape
@@ -386,19 +411,17 @@ jQuery( document ).ready( function( $ ) {
                     }
 
                     $.each( data, function( i, item ) {
-                        var count = counts[ item.resposta ] || '';
                         html += '<tr>' +
                                     '<td>' + esc( item.usuario ) + '</td>' +
                                     '<td>' + esc( item.pergunta ) + '</td>' +
                                     '<td>' + esc( item.resposta ) + '</td>' +
-                                    '<td>' + esc( item.resposta_unificada ) + '</td>' +
-                                    '<td style="text-align:center;">' + esc( count ) + '</td>' +
                                 '</tr>';
                     } );
 
                     html += '</tbody></table>';
 
-                    openModal( 'Respostas para a Unificação Selecionada', html );
+                    var modalTitle = 'Respostas Unificadas para (' + esc( respostaUnificada ) + ')';
+                    openModal( modalTitle, html );
                 } else {
                     var msg = response && response.data ? response.data : 'Erro desconhecido.';
                     openModal( 'Erro', '<p>' + msg + '</p>' );

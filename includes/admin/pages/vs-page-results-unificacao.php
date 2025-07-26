@@ -119,8 +119,9 @@ function vs_render_unificacao_page($votacao_id) {
                 <?php if (!$query->have_posts()) : ?>
                     <p>Nenhuma resposta encontrada para esta votação.</p>
                 <?php else : ?>
-                    <button type="button" class="button-unificacao" id="btn-unificacao-top">Unificação</button>
-
+                    <button type="button" class="button-unificacao" id="btn-unificacao-top" disabled>Unificação</button>
+                    <span class="text-unificacao">Selecione uma ou mais respostas para unificar.</span> 
+                    
                     <form id="form-unificacao" class="unificacao-form" style="margin-top:10px;">
                         <table class="unificacao-table" id="unificacao-table" style="width:100%;">
                             <thead>
@@ -226,7 +227,8 @@ function vs_render_unificacao_page($votacao_id) {
                         </table>
                     </form>
 
-                    <button type="button" class="button-unificacao" id="btn-unificacao-bottom" style="margin-top: 10px;">Unificação</button>
+                    <button type="button" class="button-unificacao" id="btn-unificacao-bottom" style="margin-top: 10px;" disabled >Unificação</button>
+                    <span class="text-unificacao">Selecione uma ou mais respostas para unificar.</span>
                 <?php endif; ?>
             </div>
 

@@ -25,7 +25,7 @@ function vs_register_cpt_answer() {
                 'name'          => __( 'Respostas de Votação', 'voting-system' ),
                 'singular_name' => __( 'Resposta de Votação', 'voting-system' ),
             ),
-            'public'       => false,
+            'public'       => true,
             'show_ui'      => true,
             'supports'     => array( 'title', 'custom-fields' ),
             'capability_type' => 'post',

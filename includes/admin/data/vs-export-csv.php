@@ -58,6 +58,12 @@ function vs_export_csv() {
             wp_die('ID de votação inválido.');
         }
 
+        // Recupere as perguntas da votação
+        $perguntas = get_post_meta($votacao_id, 'vs_perguntas', true);
+        if (!is_array($perguntas)) {
+            $perguntas = array();
+        }
+
         // Recupere as respostas e informações relacionadas à votação
         $respostas = get_respostas_votacao($votacao_id);
 
@@ -67,9 +73,12 @@ function vs_export_csv() {
         }
 
         // Criação do arquivo CSV
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="resultados_votacao.csv"');
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="resultados_votacao_' . $votacao_id . '.csv"');
         $output = fopen('php://output', 'w');
+
+        // Adiciona BOM para UTF-8 (para melhor compatibilidade com Excel)
+        fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
 
         // Cabeçalho do CSV
         fputcsv($output, [
@@ -95,7 +104,15 @@ function vs_export_csv() {
 
             // Percorrer cada pergunta e resposta
             foreach ($user_respostas as $index => $resposta_usuario) {
-                $pergunta = 'p' . ($index + 1); // Supondo que a pergunta seja "p1", "p2", etc.
+                // Usa o label da pergunta se disponível, senão usa um padrão
+                $pergunta_label = isset($perguntas[$index]['label']) 
+                    ? $perguntas[$index]['label'] 
+                    : 'Pergunta #' . ($index + 1);
+                
+                // Formata a resposta (pode ser array ou string)
+                $resposta_formatada = is_array($resposta_usuario) 
+                    ? implode(', ', array_map('sanitize_text_field', $resposta_usuario))
+                    : sanitize_text_field($resposta_usuario);
                 
                 // Preencher os dados no CSV
                 fputcsv($output, [
@@ -104,11 +121,11 @@ function vs_export_csv() {
                     get_the_title($votacao_id),  // Título da votação
                     'VOT-' . date('Y', strtotime($data_envio)) . '-' . $votacao_id, // Código da votação
                     date('Y', strtotime($data_envio)),  // Ano
-                    '',  // Data de início (pode ser extraída de meta)
-                    '',  // Data de fim (pode ser extraída de meta)
+                    '',  // Data de início (pode ser extraída de meta se necessário)
+                    '',  // Data de fim (pode ser extraída de meta se necessário)
                     1,  // Quantidade de votos (contando 1 por resposta)
-                    $pergunta,
-                    $resposta_usuario,
+                    $pergunta_label,
+                    $resposta_formatada,
                     $data_envio,
                 ]);
             }
@@ -136,24 +153,49 @@ function get_respostas_votacao($votacao_id) {
         return $respostas; // Se não há perguntas, retorna um array vazio
     }
 
-    // Recupera todos os usuários que participaram da votação (ajustar se necessário)
-    $usuarios = get_users();  // Otimizar a consulta caso seja necessário filtrar mais usuários
+    // Busca todos os posts de resposta para esta votação
+    $args = array(
+        'post_type'      => 'votacao_resposta',
+        'posts_per_page' => -1,
+        'post_status'    => array('publish', 'private'),
+        'meta_query'     => array(
+            array(
+                'key'     => 'vs_votacao_id',
+                'value'   => $votacao_id,
+                'compare' => '=',
+            ),
+        ),
+        'orderby' => 'ID',
+        'order'   => 'ASC',
+    );
+
+    $posts_resposta = get_posts($args);
 
     // Loop para coletar as respostas dos usuários
-    foreach ($usuarios as $usuario) {
-        $user_id = $usuario->ID;
-
-        // Recupera as respostas do usuário para a votação
-        $user_respostas = get_user_meta($user_id, 'vs_ultima_votacao_' . $votacao_id, true);
-
-        // Se o usuário respondeu a votação
-        if (!empty($user_respostas)) {
-            $user_name = $usuario->display_name;
-            // Adiciona as respostas ao array
+    foreach ($posts_resposta as $post_resposta) {
+        $post_id = $post_resposta->ID;
+        
+        // Recupera o ID do usuário
+        $user_id = get_post_meta($post_id, 'vs_usuario_id', true);
+        
+        // Recupera as respostas detalhadas
+        $respostas_detalhadas = get_post_meta($post_id, 'vs_respostas_detalhadas', true);
+        
+        // Recupera a data de envio
+        $data_envio = get_post_meta($post_id, 'vs_data_envio', true);
+        
+        if (!empty($respostas_detalhadas) && $user_id) {
+            $user = get_userdata($user_id);
+            $user_name = $user ? $user->display_name : 'Usuário desconhecido';
+            
+            // Adiciona as respostas ao array no formato esperado pela função de exportação
             $respostas[] = [
                 'user_id' => $user_id,
                 'user_name' => $user_name,
-                'respostas' => $user_respostas, // Respostas em array
+                'respostas' => [
+                    'respostas' => $respostas_detalhadas,
+                    'data_envio' => $data_envio ?: current_time('mysql')
+                ],
             ];
         }
     }

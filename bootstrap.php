@@ -52,6 +52,7 @@ class VS_Bootstrap {
         require_once VS_PLUGIN_PATH . 'includes/frontend/shortcodes/vs-shortcode-thank-you.php';
         require_once VS_PLUGIN_PATH . 'includes/frontend/shortcodes/vs-shortcode-votacoes-feed.php';
         require_once VS_PLUGIN_PATH . 'includes/frontend/shortcodes/vs-shortcode-votacoes-home-feed.php';
+        require_once VS_PLUGIN_PATH . 'includes/frontend/shortcodes/vs-shortcode-user-votacoes.php';
     }
     
     private function load_admin() {
@@ -83,6 +84,9 @@ class VS_Bootstrap {
         // CSS específicos para feeds
         wp_enqueue_style( 'vs-votacoes-feed-style', VS_PLUGIN_URL . 'assets/css/vs-votacoes-feed.css', array(), VS_PLUGIN_VERSION );
         wp_enqueue_style( 'vs-votacoes-home-style', VS_PLUGIN_URL . 'assets/css/vs-votacoes-home.css', array(), VS_PLUGIN_VERSION );
+        
+        // CSS para área do usuário
+        wp_enqueue_style( 'vs-user-votacoes-style', VS_PLUGIN_URL . 'assets/css/vs-user-votacoes.css', array(), VS_PLUGIN_VERSION );
         
         // JavaScript principal
         wp_enqueue_script( 'vs-public-script', VS_PLUGIN_URL . 'assets/js/public.js', array( 'jquery' ), VS_PLUGIN_VERSION, true );

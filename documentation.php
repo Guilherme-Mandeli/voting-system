@@ -6,7 +6,7 @@
  * 
  * Plugin WordPress para criação e gerenciamento de votações personalizadas
  * Desenvolvido por: Guilherme Mandeli
- * Versão: 2.250726.2
+ * Versão: 2.260726.1
  * 
  * ===============================================================================
  * SEÇÃO 1: DOCUMENTAÇÃO PARA DESENVOLVEDORES
@@ -101,6 +101,8 @@
  * SHORTCODES DISPONÍVEIS
  * =====================
  * 
+ * SHORTCODES PRINCIPAIS:
+ * 
  * 1. [vs_voting_form id="123"]
  *    - Exibe formulário de votação
  *    - Parâmetros: id (obrigatório)
@@ -120,6 +122,40 @@
  *    - Feed principal com cards visuais
  *    - Agrupamento por ano e evento
  *    - Interface responsiva
+ * 
+ * SHORTCODES DA ÁREA DO USUÁRIO (NOVOS):
+ * 
+ * 5. [votacoes_usuario_ativas]
+ *    - Lista votações que o usuário respondeu e ainda podem ser editadas
+ *    - Restrição: apenas usuários logados
+ *    - Exibe: título, data, resumo das respostas, botão "Editar Voto"
+ *    - Filtro: apenas votações com status "aberta" ou não encerradas por data
+ *    - Template: template-votacoes-usuario-ativas.php
+ * 
+ * 6. [votacoes_usuario_encerradas]
+ *    - Lista votações que o usuário participou e já estão encerradas
+ *    - Restrição: apenas usuários logados
+ *    - Exibe: título, status "Encerrada", resumo das respostas, botão "Ver Respostas"
+ *    - Filtro: votações com status "encerrada" ou encerradas por data
+ *    - Template: template-votacoes-usuario-encerradas.php
+ * 
+ * 7. [votacoes_disponiveis]
+ *    - Lista votações em aberto que o usuário ainda não participou
+ *    - Restrição: apenas usuários logados
+ *    - Exibe: título, prazo, descrição, botão "Participar"
+ *    - Filtro: votações abertas onde o usuário ainda não votou
+ *    - Template: template-votacoes-disponiveis.php
+ * 
+ * FUNCIONALIDADES DOS SHORTCODES DA ÁREA DO USUÁRIO:
+ * 
+ * - Verificação automática de login (exibe mensagem se não logado)
+ * - Uso de get_current_user_id() para identificar usuário
+ * - Consultas otimizadas com WP_Query e meta_query
+ * - HTML puro compatível com Divi Builder
+ * - CSS responsivo integrado (vs-user-votacoes.css)
+ * - Função helper vs_generate_response_summary() para resumos
+ * - Verificação de status das votações (ativa/encerrada)
+ * - Templates separados para melhor organização
  * 
  * SISTEMA DE UNIFICAÇÃO
  * ====================
@@ -160,7 +196,14 @@
  *    - Sistema valida e salva resposta
  *    - Redirecionamento para página de agradecimento
  * 
- * 3. ANÁLISE DE RESULTADOS:
+ * 3. GERENCIAMENTO PELO USUÁRIO (NOVO):
+ *    - Usuário acessa página /votacoes (ou similar)
+ *    - Visualiza votações ativas, encerradas e disponíveis
+ *    - Pode editar votações ativas
+ *    - Pode participar de novas votações
+ *    - Visualiza histórico completo
+ * 
+ * 4. ANÁLISE DE RESULTADOS:
  *    - Admin acessa página de resultados
  *    - Visualiza respostas individuais
  *    - Realiza unificação de respostas
@@ -174,6 +217,7 @@
  * - Verificação de capabilities
  * - Validação de tokens temporários
  * - Escape de saída de dados
+ * - Verificação de login nos shortcodes da área do usuário
  * 
  * PERFORMANCE
  * ===========
@@ -182,6 +226,7 @@
  * - Cache de consultas pesadas
  * - Paginação em listagens
  * - Otimização de queries
+ * - CSS específico para área do usuário carregado apenas quando necessário
  * 
  * HOOKS E FILTROS
  * ==============
@@ -227,6 +272,9 @@
  *    - vs_thank_you: Página de agradecimento
  *    - vs_votacoes_feed: Feed filtrado de votações
  *    - vs_votacoes_home_feed: Feed principal com cards
+ *    - votacoes_usuario_ativas: Votações ativas do usuário (NOVO)
+ *    - votacoes_usuario_encerradas: Votações encerradas do usuário (NOVO)
+ *    - votacoes_disponiveis: Votações disponíveis para o usuário (NOVO)
  * 
  * 4. SISTEMA AJAX:
  *    - get-user-votes.php: Carrega respostas de usuário
@@ -278,6 +326,9 @@
  * - vs_format_unified_answer($value): Formata resposta unificada
  * - vs_update_resposta_unificada_indices($id, $indices, $value): Atualiza unificação
  * - vs_get_existing_response($user_id, $votacao_id): Verifica resposta existente
+ * - vs_generate_response_summary($respostas, $perguntas): Gera resumo de respostas (NOVA)
+ * - vs_user_already_voted($post_id, $user_id): Verifica se usuário já votou
+ * - vs_check_votacao_status($data_fim): Verifica se votação está encerrada
  * 
  * TEMPLATES PRINCIPAIS:
  * 
@@ -285,11 +336,15 @@
  * - template-voting-form-fields.php: Campos dinâmicos
  * - template-results-unificacao.php: Interface de unificação
  * - template-home-feed.php: Feed principal
+ * - template-votacoes-usuario-ativas.php: Votações ativas do usuário (NOVO)
+ * - template-votacoes-usuario-encerradas.php: Votações encerradas do usuário (NOVO)
+ * - template-votacoes-disponiveis.php: Votações disponíveis (NOVO)
  * 
  * ASSETS CSS/JS:
  * 
  * - vs-votacoes-feed.css: Estilos para feeds
  * - vs-votacoes-home.css: Estilos para home
+ * - vs-user-votacoes.css: Estilos para área do usuário (NOVO)
  * - votacao-ajax.js: Modal de respostas
  * - vs-handle-get-unificacao-group.js: Interface de unificação
  * 
@@ -310,6 +365,28 @@
  * - vs-voting-scheduler.php: Encerramento automático
  * - Executa diariamente às 00:00
  * - Atualiza status para 'encerrada' baseado em data_fim
+ * 
+ * ÁREA DO USUÁRIO - DETALHES TÉCNICOS (NOVO):
+ * 
+ * ARQUIVOS CRIADOS:
+ * - includes/frontend/shortcodes/vs-shortcode-user-votacoes.php
+ * - templates/public/template-votacoes-usuario-ativas.php
+ * - templates/public/template-votacoes-usuario-encerradas.php
+ * - templates/public/template-votacoes-disponiveis.php
+ * - assets/css/vs-user-votacoes.css
+ * 
+ * FUNCIONALIDADES:
+ * 1. Verificação automática de login
+ * 2. Consultas otimizadas por usuário
+ * 3. Filtros por status de votação
+ * 4. Interface responsiva com cards
+ * 5. Resumo inteligente de respostas
+ * 6. Botões contextuais (Editar/Ver/Participar)
+ * 
+ * LÓGICA DE FILTROS:
+ * - Ativas: status != 'encerrada' AND data_fim não passou
+ * - Encerradas: status == 'encerrada' OR data_fim passou
+ * - Disponíveis: status == 'aberta' AND usuário não votou AND não encerrada
  * 
  * FLUXO DE UNIFICAÇÃO DETALHADO:
  * 
@@ -332,6 +409,8 @@
  * - Usar transients para cache quando necessário
  * - Manter compatibilidade com versões anteriores
  * - Documentar mudanças significativas
+ * - Testar responsividade em dispositivos móveis
+ * - Verificar performance com muitos dados
  * 
  * PRÓXIMOS DESENVOLVIMENTOS SUGERIDOS:
  * 
@@ -342,6 +421,9 @@
  * - Backup automático de dados
  * - Logs de auditoria
  * - Integração com outros plugins
+ * - Dashboard personalizado para usuários
+ * - Sistema de favoritos/bookmarks
+ * - Filtros avançados na área do usuário
  * 
  * DEBUGGING E TROUBLESHOOTING:
  * 
@@ -350,6 +432,8 @@
  * - Usar browser dev tools para AJAX
  * - Verificar permissões de arquivo
  * - Confirmar estrutura de banco de dados
+ * - Testar com diferentes temas
+ * - Verificar compatibilidade com Divi
  * 
  * TESTES RECOMENDADOS:
  * 
@@ -358,8 +442,11 @@
  * - Processo de unificação
  * - Exportação de dados
  * - Funcionalidade de feeds
+ * - Área do usuário (novos shortcodes)
  * - Responsividade mobile
  * - Performance com muitos dados
+ * - Compatibilidade com diferentes temas
+ * - Funcionalidade com usuários não logados
  */
 
 // Fim da documentação

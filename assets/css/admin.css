@@ -194,14 +194,14 @@
     background-color: #f6f7f7;
 }
 
-.unificacao-table tr.selected {
-    background-color: #e5f3ff;
-}
-
 /* Colunas específicas */
 .unificacao-checkbox-column {
-    width: 40px;
-    text-align: center;
+    width: 16px;
+    max-width: 16px;
+}
+
+.unificacao-checkbox-column input[type="checkbox"] {
+    margin: 0;
 }
 
 .unificacao-usuario-column {
@@ -415,8 +415,13 @@
     background-color: #f9f9f9;
 }
 
-.unificacao-table tbody tr:nth-child(even):hover {
-    background-color: #f0f0f1;
+.unificacao-table tbody tr:hover {
+    box-shadow: 0 0 6px rgb(12 42 57 / 26%);
+    position: relative;
+}
+
+.unificacao-table tr.selected {
+    background-color: #e5f3ff !important;
 }
 
 /* Indicadores visuais */
@@ -426,4 +431,21 @@
 
 .unificacao-resposta-unificada-column:not(:contains("—")) {
     color: #0073aa;
+}
+
+.button-unificacao[disabled] {
+    color: #a7aaad !important;
+    border-color: #dcdcde !important;
+    background: #f6f7f7 !important;
+    box-shadow: none !important;
+    cursor: default;
+    transform: none !important;
+}
+.text-unificacao {
+    display: none;
+    opacity: 0;
+}
+.button-unificacao:disabled + .text-unificacao {
+    display: inline-block;
+    opacity: 1;
 }

@@ -13,7 +13,7 @@ defined( 'ABSPATH' ) || exit;
  */
 function vs_ajax_get_unificacao_group() {
     // Security check with nonce
-    if ( ! vs_verify_post_nonce( 'vs_get_respostas_unificadas_nonce' ) ) {
+    if ( ! vs_verify_post_nonce( 'vs_unificacao_nonce' ) ) {
         wp_send_json_error( 'Security check failed (nonce). Please reload the page.' );
     }
 
@@ -59,36 +59,8 @@ function vs_ajax_get_unificacao_group() {
         : array();
 
     $results = array();
-    $response_count_by_text = array();
 
     foreach ( $posts as $post_id ) {
-        $unificada_val = get_post_meta( $post_id, 'vs_resposta_unificada', true );
-
-        if ( is_array( $unificada_val ) ) {
-            $unificada_key = wp_json_encode( $unificada_val );
-        } else {
-            $unificada_key = (string) $unificada_val;
-        }
-
-        $match = false;
-
-        if ( $unificada_key === $resposta_unificada_key ) {
-            $match = true;
-        } elseif ( '[' === substr( $resposta_unificada_key, 0, 1 ) && is_array( $unificada_val ) ) {
-            // Already checked equality JSON; do nothing.
-        } else {
-            if ( is_array( $unificada_val ) && in_array( $resposta_unificada_key, $unificada_val, true ) ) {
-                $match = true;
-            }
-            if ( ! $match && ! is_array( $unificada_val ) && false !== stripos( $unificada_key, $resposta_unificada_key ) ) {
-                $match = true;
-            }
-        }
-
-        if ( ! $match ) {
-            continue;
-        }
-
         $user_id = get_post_meta( $post_id, 'vs_usuario_id', true );
         $user    = $user_id ? get_userdata( $user_id ) : null;
         $usuario_texto = $user
@@ -100,15 +72,32 @@ function vs_ajax_get_unificacao_group() {
             $respostas = array();
         }
 
-        // Usando helper para formatar resposta unificada
-        $resposta_unificada_text = function_exists( 'vs_format_unified_answer' )
-            ? vs_format_unified_answer( $unificada_val )
-            : ( is_array( $unificada_val )
-                ? implode( ', ', array_map( 'sanitize_text_field', $unificada_val ) )
-                : sanitize_text_field( $unificada_val )
-            );
+        // Array de valores unificados POR RESPOSTA
+        $unifications = get_post_meta( $post_id, 'vs_resposta_unificada', true );
+        if ( ! is_array( $unifications ) ) {
+            $unifications = array();
+        }
 
+        // Itera sobre cada resposta individual para verificar se foi unificada com o valor selecionado
         foreach ( $respostas as $index => $resposta ) {
+            // Verifica se esta resposta específica foi unificada com o valor selecionado
+            $unificada_val = isset( $unifications[ $index ] ) ? $unifications[ $index ] : '';
+            
+            // Pula se não há unificação para esta resposta
+            if ( empty( $unificada_val ) ) {
+                continue;
+            }
+
+            // Verifica se a unificação desta resposta corresponde ao valor selecionado
+            $match = false;
+            if ( $unificada_val === $resposta_unificada_key ) {
+                $match = true;
+            }
+
+            if ( ! $match ) {
+                continue;
+            }
+
             $pergunta_label = isset( $perguntas[ $index ]['label'] )
                 ? $perguntas[ $index ]['label']
                 : 'Pergunta #' . ( $index + 1 );
@@ -121,17 +110,10 @@ function vs_ajax_get_unificacao_group() {
                     : sanitize_text_field( $resposta )
                 );
 
-            // Count responses per text
-            if ( ! isset( $response_count_by_text[ $resposta_text ] ) ) {
-                $response_count_by_text[ $resposta_text ] = 0;
-            }
-            $response_count_by_text[ $resposta_text ]++;
-
             $results[] = array(
-                'usuario'            => $usuario_texto,
-                'pergunta'           => $pergunta_label,
-                'resposta'           => $resposta_text,
-                'resposta_unificada' => $resposta_unificada_text,
+                'usuario'  => $usuario_texto,
+                'pergunta' => $pergunta_label,
+                'resposta' => $resposta_text,
             );
         }
     }
@@ -142,7 +124,7 @@ function vs_ajax_get_unificacao_group() {
 
     wp_send_json_success( array(
         'responses' => $results,
-        'counts'    => $response_count_by_text,
+        'resposta_unificada' => $resposta_unificada_key,
     ) );
 }
 
