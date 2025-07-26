@@ -3,7 +3,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Register the 'votacoes' custom post type.
+ * Registra o Custom Post Type 'votacoes'
  */
 function vs_register_cpt_voting() {
     $labels = array(
@@ -25,19 +25,25 @@ function vs_register_cpt_voting() {
     $args = array(
         'labels'             => $labels,
         'public'             => true,
+        'publicly_queryable' => true,
+        'show_ui'            => true,
+        'show_in_menu'       => true,
+        'show_in_nav_menus'  => true,
+        'show_in_admin_bar'  => true,
         'has_archive'        => true,
         'rewrite'            => array( 'slug' => 'votacoes' ),
         'supports'           => array( 'title', 'editor', 'excerpt' ),
         'menu_icon'          => 'dashicons-megaphone',
         'show_in_rest'       => true,
+        'capability_type'    => 'post',
+        'map_meta_cap'       => true,
     );
 
     register_post_type( 'votacoes', $args );
 }
-add_action( 'init', 'vs_register_cpt_voting' );
 
 /**
- * Restrict access to 'votacoes' posts to logged-in users.
+ * Restringe acesso às votações para usuários logados
  */
 function vs_restrict_voting_to_logged_in() {
     if ( is_singular( 'votacoes' ) && ! is_user_logged_in() ) {
@@ -46,3 +52,4 @@ function vs_restrict_voting_to_logged_in() {
     }
 }
 add_action( 'template_redirect', 'vs_restrict_voting_to_logged_in' );
+add_action( 'init', 'vs_register_cpt_voting', 0 );

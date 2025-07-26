@@ -7,7 +7,7 @@ defined( 'ABSPATH' ) || exit;
 class VS_Bootstrap {
     
     public function __construct() {
-        add_action( 'init', array( $this, 'init' ) );
+        add_action( 'init', array( $this, 'init' ), 5 );
         add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_public_assets' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
     }
@@ -21,9 +21,14 @@ class VS_Bootstrap {
     }
     
     private function load_core() {
-        // CPTs
+        // CPTs - Carrega e registra imediatamente
         require_once VS_PLUGIN_PATH . 'includes/core/cpt/vs-register-cpt-voting.php';
+        vs_register_cpt_voting(); // Chama a função diretamente
+        
         require_once VS_PLUGIN_PATH . 'includes/core/cpt/vs-register-cpt-answer.php';
+        if ( function_exists( 'vs_register_cpt_answer' ) ) {
+            vs_register_cpt_answer(); // Chama se existir
+        }
         
         // Taxonomias
         require_once VS_PLUGIN_PATH . 'includes/core/tax/vs-register-tax-event.php';
