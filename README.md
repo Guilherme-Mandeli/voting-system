@@ -392,3 +392,213 @@ O sistema de unificação permite agrupar respostas similares para análise esta
 - **Relatórios mais limpos**
 
 ## 📁 Estrutura do Projeto
+```
+voting-system/
+├── 📁 assets/              # Recursos estáticos
+│   ├── 📁 css/             # Estilos CSS
+│   │   ├── admin.css       # Estilos administrativos
+│   │   ├── public.css      # Estilos públicos
+│   │   ├── vs-user-votacoes.css  # 🆕 Estilos área do usuário
+│   │   ├── vs-votacoes-feed.css  # Estilos feeds
+│   │   └── vs-votacoes-home.css  # Estilos home
+│   └── 📁 js/              # Scripts JavaScript
+├── 📁 includes/            # Funcionalidades principais
+│   ├── 📁 admin/           # Área administrativa
+│   ├── 📁 ajax/            # Handlers AJAX
+│   ├── 📁 core/            # Funcionalidades centrais
+│   └── 📁 frontend/        # Frontend público
+│       └── 📁 shortcodes/  # Shortcodes
+│           ├── vs-shortcode-voting-form.php
+│           ├── vs-shortcode-thank-you.php
+│           ├── vs-shortcode-votacoes-feed.php
+│           ├── vs-shortcode-votacoes-home-feed.php
+│           └── vs-shortcode-user-votacoes.php  # 🆕 Área do usuário
+├── 📁 templates/           # Templates de exibição
+│   └── 📁 public/          # Templates públicos
+│       ├── template-votacoes-usuario-ativas.php      # 🆕
+│       ├── template-votacoes-usuario-encerradas.php  # 🆕
+│       ├── template-votacoes-disponiveis.php         # 🆕
+│       └── ...             # Outros templates
+├── 📁 metaboxes/           # Metaboxes do WordPress
+├── 📁 helpers/             # Funções utilitárias
+├── 📁 languages/           # Arquivos de tradução
+├── 📄 voting-system.php    # Arquivo principal
+├── 📄 bootstrap.php        # Inicializador
+└── 📄 README.md            # Este arquivo
+```
+
+## 👨‍💻 Desenvolvimento
+
+### Configuração do Ambiente
+
+1. **Clone o repositório**:
+   ```bash
+   git clone https://github.com/guilhermemandeli/voting-system.git
+   cd voting-system
+   ```
+
+2. **Configure WordPress local**
+3. **Ative o modo debug**:
+   ```php
+   define('WP_DEBUG', true);
+   define('WP_DEBUG_LOG', true);
+   ```
+
+### Hooks Disponíveis
+
+#### Actions
+```php
+// Após submissão de voto
+do_action('vs_after_vote_submission', $vote_id, $user_id);
+
+// Antes de atualizar voto
+do_action('vs_before_vote_update', $vote_id, $user_id);
+
+// Quando votação é encerrada
+do_action('vs_voting_closed', $voting_id);
+```
+
+#### Filters
+```php
+// Modificar campos do formulário
+$fields = apply_filters('vs_voting_form_fields', $fields, $voting_id);
+
+// Modificar dados de exportação
+$data = apply_filters('vs_export_data', $data, $voting_id);
+
+// Modificar grupos de unificação
+$groups = apply_filters('vs_unification_groups', $groups, $voting_id);
+```
+
+### Contribuindo
+
+1. **Fork** o projeto
+2. **Crie uma branch** para sua feature (`git checkout -b feature/AmazingFeature`)
+3. **Commit** suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. **Push** para a branch (`git push origin feature/AmazingFeature`)
+5. **Abra um Pull Request**
+
+## ❓ FAQ
+
+### Como posso personalizar os estilos?
+
+Adicione CSS customizado no seu tema:
+
+```css
+/* Personalizar formulário de votação */
+.vs-voting-form {
+    /* Seus estilos aqui */
+}
+
+/* Personalizar cards do feed */
+.vs-voting-card {
+    /* Seus estilos aqui */
+}
+
+/* 🆕 Personalizar área do usuário */
+.vs-votacao-card {
+    /* Seus estilos aqui */
+}
+```
+
+### Como criar uma página de usuário completa?
+
+1. **Crie uma página** chamada "Minhas Votações" ou "/votacoes"
+2. **Configure restrição** para usuários logados (usando plugin ou código)
+3. **Adicione os shortcodes**:
+   ```php
+   <h2>Votações Ativas</h2>
+   [votacoes_usuario_ativas]
+   
+   <h2>Votações Encerradas</h2>
+   [votacoes_usuario_encerradas]
+   
+   <h2>Votações Disponíveis</h2>
+   [votacoes_disponiveis]
+   ```
+
+### Como limitar quem pode votar?
+
+Use o hook `vs_can_user_vote`:
+
+```php
+add_filter('vs_can_user_vote', function($can_vote, $user_id, $voting_id) {
+    // Sua lógica de permissão aqui
+    return $can_vote;
+}, 10, 3);
+```
+
+### Como personalizar emails de notificação?
+
+```php
+add_filter('vs_notification_email', function($email_data, $voting_id) {
+    // Personalizar dados do email
+    return $email_data;
+}, 10, 2);
+```
+
+### Como fazer backup dos dados?
+
+1. **Exporte via CSV** na interface administrativa
+2. **Backup do banco de dados** WordPress
+3. **Backup dos arquivos** do plugin
+
+## 🆘 Suporte
+
+### Reportar Problemas
+
+- **GitHub Issues**: [Criar nova issue](https://github.com/guilhermemandeli/voting-system/issues)
+- **Documentação**: Consulte a documentação completa no arquivo `documentation.php`
+
+### Logs de Debug
+
+Para ativar logs detalhados:
+
+```php
+// No wp-config.php
+define('WP_DEBUG', true);
+define('WP_DEBUG_LOG', true);
+
+// Acessar debug do plugin
+/wp-admin/admin.php?debug_vs=1
+```
+
+### Problemas Comuns
+
+#### Votação não aparece
+- Verifique se o plugin está ativo
+- Confirme se a votação está publicada
+- Verifique permalinks
+
+#### Erro 403 em AJAX
+- Verifique nonces
+- Confirme permissões de usuário
+- Verifique logs de erro
+
+#### Shortcodes da área do usuário não funcionam
+- Confirme que o usuário está logado
+- Verifique se há votações disponíveis
+- Confirme que o CSS está carregando
+
+## 📄 Licença
+
+Este projeto está licenciado sob a **GPL v2 ou posterior** - veja o arquivo [LICENSE](LICENSE) para detalhes.
+
+Copyright (C) 2025 Guilherme Mandeli
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+## 👨‍💻 Autor
+
+**Guilherme Mandeli**
+- GitHub: [@guilhermemandeli](https://github.com/guilhermemandeli)
+- Website: [https://github.com/guilhermemandeli](https://github.com/guilhermemandeli)
+
+---
+
+⭐ **Se este projeto foi útil para você, considere dar uma estrela no GitHub!**
+
+📧 **Dúvidas?** Abra uma [issue](https://github.com/guilhermemandeli/voting-system/issues) ou entre em contato!
