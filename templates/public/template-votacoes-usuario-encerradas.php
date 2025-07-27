@@ -47,6 +47,7 @@ defined('ABSPATH') || exit;
                         <a href="<?php echo esc_url($votacao['link']); ?>" class="button vs-btn-ver-respostas">
                             Ver Respostas
                         </a>
+                        <!-- Votações encerradas não podem ser editadas -->
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -97,7 +98,6 @@ defined('ABSPATH') || exit;
     border-radius: 4px;
     font-size: 0.8em;
     font-weight: bold;
-    text-transform: uppercase;
 }
 
 .vs-status-encerrada {
@@ -145,11 +145,25 @@ defined('ABSPATH') || exit;
     text-decoration: none;
     display: inline-block;
     transition: background 0.3s ease;
+    margin-bottom: 10px;
 }
 
 .vs-btn-ver-respostas:hover {
     background: #545b62;
     color: white;
+}
+
+.vs-btn-editar-link {
+    display: block;
+    color: #0073aa;
+    text-decoration: none;
+    font-size: 0.9em;
+    transition: color 0.3s ease;
+}
+
+.vs-btn-editar-link:hover {
+    color: #005a87;
+    text-decoration: underline;
 }
 
 .vs-empty-state {

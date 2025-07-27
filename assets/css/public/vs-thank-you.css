@@ -1,0 +1,252 @@
+/**
+ * CSS para Shortcode [votacao_obrigado]
+ * Material UI Light Theme
+ * Base border-radius: 10px
+ */
+
+/* ===== VARIÁVEIS CSS - MATERIAL UI LIGHT THEME ===== */
+:root {
+    /* Cores primárias */
+    --vs-primary: #1976d2;
+    --vs-primary-light: #42a5f5;
+    --vs-primary-dark: #1565c0;
+    --vs-primary-contrast: #ffffff;
+    
+    /* Cores secundárias */
+    --vs-secondary: #dc004e;
+    --vs-secondary-light: #ff5983;
+    --vs-secondary-dark: #9a0036;
+    --vs-secondary-contrast: #ffffff;
+    
+    /* Cores de superfície */
+    --vs-surface: #ffffff;
+    --vs-surface-variant: #f5f5f5;
+    --vs-surface-container: #fafafa;
+    --vs-surface-container-high: #f0f0f0;
+    
+    /* Cores de texto */
+    --vs-on-surface: #1c1b1f;
+    --vs-on-surface-variant: #49454f;
+    --vs-on-surface-disabled: rgba(28, 27, 31, 0.38);
+    
+    /* Cores de outline */
+    --vs-outline: #79747e;
+    --vs-outline-variant: #cac4d0;
+    
+    /* Cores de estado */
+    --vs-success: #4caf50;
+    --vs-success-light: #81c784;
+    --vs-success-dark: #388e3c;
+    --vs-warning: #ff9800;
+    --vs-warning-light: #ffb74d;
+    --vs-warning-dark: #f57c00;
+    --vs-error: #f44336;
+    --vs-error-light: #e57373;
+    --vs-error-dark: #d32f2f;
+    
+    /* Sombras */
+    --vs-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    --vs-shadow-2: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+    --vs-shadow-3: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+    
+    /* Espaçamentos */
+    --vs-spacing-xs: 4px;
+    --vs-spacing-sm: 8px;
+    --vs-spacing-md: 16px;
+    --vs-spacing-lg: 24px;
+    --vs-spacing-xl: 32px;
+    
+    /* Border radius base */
+    --vs-radius-base: 10px;
+    --vs-radius-sm: 6px;
+    --vs-radius-lg: 14px;
+    --vs-radius-xl: 20px;
+    
+    /* Tipografia */
+    --vs-font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --vs-font-size-xs: 0.75rem;
+    --vs-font-size-sm: 0.875rem;
+    --vs-font-size-base: 1rem;
+    --vs-font-size-lg: 1.125rem;
+    --vs-font-size-xl: 1.25rem;
+    --vs-font-size-2xl: 1.5rem;
+    --vs-font-size-3xl: 1.875rem;
+    
+    /* Transições */
+    --vs-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --vs-transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --vs-transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== CONTAINER PRINCIPAL ===== */
+.vs-thank-you-container {
+    max-width: 600px;
+    margin: var(--vs-spacing-xl) auto;
+    padding: var(--vs-spacing-xl);
+    text-align: center;
+    background: var(--vs-surface);
+    border: 1px solid var(--vs-outline-variant);
+    border-radius: var(--vs-radius-lg);
+    box-shadow: var(--vs-shadow-2);
+    font-family: var(--vs-font-family);
+    color: var(--vs-on-surface);
+    transition: box-shadow var(--vs-transition-normal);
+}
+
+.vs-thank-you-container:hover {
+    box-shadow: var(--vs-shadow-3);
+}
+
+/* ===== ÍCONE ===== */
+.vs-thank-you-icon {
+    font-size: 4rem;
+    color: var(--vs-success);
+    margin-bottom: var(--vs-spacing-lg);
+    display: block;
+    line-height: 1;
+}
+
+/* ===== TÍTULO ===== */
+.vs-thank-you-title {
+    color: var(--vs-on-surface);
+    font-size: var(--vs-font-size-3xl);
+    margin-bottom: var(--vs-spacing-md);
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+/* ===== MENSAGEM ===== */
+.vs-thank-you-message {
+    color: var(--vs-on-surface-variant);
+    font-size: var(--vs-font-size-lg);
+    line-height: 1.6;
+    margin-bottom: var(--vs-spacing-xl);
+}
+
+/* ===== AÇÕES ===== */
+.vs-thank-you-actions {
+    margin-top: var(--vs-spacing-xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--vs-spacing-md);
+    align-items: center;
+}
+
+/* ===== BOTÃO ===== */
+.vs-thank-you-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--vs-primary);
+    color: var(--vs-primary-contrast);
+    padding: var(--vs-spacing-md) var(--vs-spacing-lg);
+    text-decoration: none;
+    border-radius: var(--vs-radius-base);
+    font-weight: 600;
+    font-size: var(--vs-font-size-base);
+    font-family: var(--vs-font-family);
+    transition: all var(--vs-transition-fast);
+    border: none;
+    cursor: pointer;
+    min-width: 120px;
+    position: relative;
+    overflow: hidden;
+}
+
+.vs-thank-you-button:hover {
+    background: var(--vs-primary-dark);
+    color: var(--vs-primary-contrast);
+    box-shadow: var(--vs-shadow-1);
+    transform: translateY(-1px);
+}
+
+.vs-thank-you-button:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.vs-thank-you-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+/* Efeito ripple */
+.vs-thank-you-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width var(--vs-transition-normal), height var(--vs-transition-normal);
+}
+
+.vs-thank-you-button:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* ===== RESPONSIVO ===== */
+@media (max-width: 768px) {
+    .vs-thank-you-container {
+        margin: var(--vs-spacing-lg);
+        padding: var(--vs-spacing-lg) var(--vs-spacing-md);
+    }
+    
+    .vs-thank-you-title {
+        font-size: var(--vs-font-size-2xl);
+    }
+    
+    .vs-thank-you-message {
+        font-size: var(--vs-font-size-base);
+    }
+    
+    .vs-thank-you-icon {
+        font-size: 3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .vs-thank-you-container {
+        margin: var(--vs-spacing-md);
+        padding: var(--vs-spacing-md);
+    }
+    
+    .vs-thank-you-title {
+        font-size: var(--vs-font-size-xl);
+    }
+    
+    .vs-thank-you-button {
+        width: 100%;
+    }
+}
+
+/* ===== ACESSIBILIDADE ===== */
+@media (prefers-reduced-motion: reduce) {
+    .vs-thank-you-container,
+    .vs-thank-you-button,
+    .vs-thank-you-button::before {
+        transition: none;
+    }
+    
+    .vs-thank-you-button:hover {
+        transform: none;
+    }
+}
+
+/* ===== MODO ESCURO (OPCIONAL) ===== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --vs-surface: #121212;
+        --vs-surface-variant: #1e1e1e;
+        --vs-surface-container: #1a1a1a;
+        --vs-surface-container-high: #2a2a2a;
+        --vs-on-surface: #e0e0e0;
+        --vs-on-surface-variant: #b0b0b0;
+        --vs-outline: #8a8a8a;
+        --vs-outline-variant: #4a4a4a;
+    }
+}

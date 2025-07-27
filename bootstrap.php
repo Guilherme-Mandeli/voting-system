@@ -45,14 +45,29 @@ class VS_Bootstrap {
         require_once VS_PLUGIN_PATH . 'helpers/vs-utils-votacoes.php';
         require_once VS_PLUGIN_PATH . 'helpers/vs-utils-templates.php';
         require_once VS_PLUGIN_PATH . 'helpers/vs-utils-permissions.php';
+        require_once VS_PLUGIN_PATH . 'helpers/vs-utils-css-loader.php';
     }
     
     private function load_frontend() {
+        // A classe CSS já é carregada via helpers
         require_once VS_PLUGIN_PATH . 'includes/frontend/shortcodes/vs-shortcode-voting-form.php';
         require_once VS_PLUGIN_PATH . 'includes/frontend/shortcodes/vs-shortcode-thank-you.php';
         require_once VS_PLUGIN_PATH . 'includes/frontend/shortcodes/vs-shortcode-votacoes-feed.php';
         require_once VS_PLUGIN_PATH . 'includes/frontend/shortcodes/vs-shortcode-votacoes-home-feed.php';
         require_once VS_PLUGIN_PATH . 'includes/frontend/shortcodes/vs-shortcode-user-votacoes.php';
+        require_once VS_PLUGIN_PATH . 'includes/frontend/shortcodes/vs-shortcode-votacoes-generic.php';
+    }
+    
+    public function enqueue_public_assets() {
+        // Carrega apenas o CSS base
+        wp_enqueue_style( 'vs-public-style', VS_PLUGIN_URL . 'assets/css/public.css', array(), VS_PLUGIN_VERSION );
+        
+        // Carrega CSS condicionalmente baseado nos shortcodes presentes
+        VS_CSS_Conditional_Loader::enqueue_conditional_css();
+        
+        // JavaScript principal
+        wp_enqueue_script( 'vs-public-script', VS_PLUGIN_URL . 'assets/js/public.js', array( 'jquery' ), VS_PLUGIN_VERSION, true );
+        
     }
     
     private function load_admin() {
@@ -75,21 +90,6 @@ class VS_Bootstrap {
         require_once VS_PLUGIN_PATH . 'includes/ajax/get-user-votes.php';
         require_once VS_PLUGIN_PATH . 'includes/ajax/vs-handle-get-unificacao-group.php';
         require_once VS_PLUGIN_PATH . 'includes/ajax/vs-handle-update-unificacao.php';
-    }
-    
-    public function enqueue_public_assets() {
-        // CSS principal
-        wp_enqueue_style( 'vs-public-style', VS_PLUGIN_URL . 'assets/css/public.css', array(), VS_PLUGIN_VERSION );
-        
-        // CSS específicos para feeds
-        wp_enqueue_style( 'vs-votacoes-feed-style', VS_PLUGIN_URL . 'assets/css/vs-votacoes-feed.css', array(), VS_PLUGIN_VERSION );
-        wp_enqueue_style( 'vs-votacoes-home-style', VS_PLUGIN_URL . 'assets/css/vs-votacoes-home.css', array(), VS_PLUGIN_VERSION );
-        
-        // CSS para área do usuário
-        wp_enqueue_style( 'vs-user-votacoes-style', VS_PLUGIN_URL . 'assets/css/vs-user-votacoes.css', array(), VS_PLUGIN_VERSION );
-        
-        // JavaScript principal
-        wp_enqueue_script( 'vs-public-script', VS_PLUGIN_URL . 'assets/js/public.js', array( 'jquery' ), VS_PLUGIN_VERSION, true );
     }
     
     public function enqueue_admin_assets() {

@@ -189,6 +189,7 @@ function vs_render_metabox_questions_styles() {
             border: 1px solid #ddd;
             border-radius: 3px;
             padding: 6px 8px;
+            min-width: 125px;
         }
         
         .vs-pergunta input[type="text"]:focus,

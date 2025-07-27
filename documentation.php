@@ -1,7 +1,7 @@
 <?php
 /**
  * ===============================================================================
- * DOCUMENTAÇÃO DO SISTEMA DE VOTAÇÕES - VOTING SYSTEM v2.250726.2
+ * DOCUMENTAÇÃO DO SISTEMA DE VOTAÇÕES - VOTING SYSTEM v2.260726.1
  * ===============================================================================
  * 
  * Plugin WordPress para criação e gerenciamento de votações personalizadas
@@ -12,6 +12,8 @@
  * SEÇÃO 1: DOCUMENTAÇÃO PARA DESENVOLVEDORES
  * ===============================================================================
  */
+
+defined('ABSPATH') || exit;
 
 /**
  * VISÃO GERAL DO PROJETO

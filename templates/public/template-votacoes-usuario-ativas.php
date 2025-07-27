@@ -46,9 +46,15 @@ defined('ABSPATH') || exit;
                     </div>
                     
                     <div class="vs-votacao-actions">
-                        <a href="<?php echo esc_url($votacao['link']); ?>" class="button vs-btn-editar">
-                            Editar Voto
+                        <a href="<?php echo esc_url($votacao['link']); ?>" class="button vs-btn-ver-respostas">
+                            Ver Respostas
                         </a>
+                        
+                        <?php if ($votacao['permitir_edicao']): ?>
+                            <a href="<?php echo esc_url($votacao['link']); ?>" class="vs-btn-editar-link">
+                                Editar voto
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -107,7 +113,6 @@ defined('ABSPATH') || exit;
     border-radius: 4px;
     font-size: 0.8em;
     font-weight: bold;
-    text-transform: uppercase;
 }
 
 .vs-status-ativa {
@@ -147,19 +152,33 @@ defined('ABSPATH') || exit;
     text-align: center;
 }
 
-.vs-btn-editar {
-    background: #0073aa;
+.vs-btn-ver-respostas {
+    background: #6c757d;
     color: white;
     padding: 10px 20px;
     border-radius: 4px;
     text-decoration: none;
     display: inline-block;
     transition: background 0.3s ease;
+    margin-bottom: 10px;
 }
 
-.vs-btn-editar:hover {
-    background: #005a87;
+.vs-btn-ver-respostas:hover {
+    background: #545b62;
     color: white;
+}
+
+.vs-btn-editar-link {
+    display: block;
+    color: #0073aa;
+    text-decoration: none;
+    font-size: 0.9em;
+    transition: color 0.3s ease;
+}
+
+.vs-btn-editar-link:hover {
+    color: #005a87;
+    text-decoration: underline;
 }
 
 .vs-empty-state {

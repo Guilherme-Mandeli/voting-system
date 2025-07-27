@@ -19,7 +19,7 @@
  *    - O administrador pode acessar a página de resultados da votação e clicar em um link para exportar os dados.
  *    - A exportação gerará um arquivo CSV que contém informações sobre os usuários, suas respostas, e detalhes da votação.
  * 2. O CSV gerado incluirá as colunas:
- *    - ID do Usuário, Nome do Usuário, Nome da Votação, Código da Votação, Ano, Data Início, Data Fim, Quantidade de Votos, Pergunta, Resposta, Data de Preenchimento.
+ *    - ID do Usuário, Nome do Usuário, Nome da Votação, Código da Votação, Ano, Data Início, Data Fim, Pergunta, Resposta, Resposta Unificada, Data de Preenchimento.
  * 
  * Certifique-se de que o código da votação e o título da votação estejam corretamente configurados para garantir a exportação dos dados.
  */
@@ -89,9 +89,9 @@ function vs_export_csv() {
             'Ano', 
             'Data Início', 
             'Data Fim', 
-            'Quantidade de Votos', 
             'Pergunta', 
             'Resposta',
+            'Resposta Unificada',
             'Data Preenchimento',
         ]);
 
@@ -101,6 +101,7 @@ function vs_export_csv() {
             $user_name = $resposta['user_name'];
             $user_respostas = $resposta['respostas']['respostas'];
             $data_envio = $resposta['respostas']['data_envio'];
+            $respostas_unificadas = $resposta['respostas']['unificadas'];
 
             // Percorrer cada pergunta e resposta
             foreach ($user_respostas as $index => $resposta_usuario) {
@@ -114,6 +115,11 @@ function vs_export_csv() {
                     ? implode(', ', array_map('sanitize_text_field', $resposta_usuario))
                     : sanitize_text_field($resposta_usuario);
                 
+                // Obtém a resposta unificada para esta pergunta
+                $resposta_unificada = isset($respostas_unificadas[$index]) && '' !== trim($respostas_unificadas[$index])
+                    ? sanitize_text_field($respostas_unificadas[$index])
+                    : '';
+                
                 // Preencher os dados no CSV
                 fputcsv($output, [
                     $user_id,
@@ -123,9 +129,9 @@ function vs_export_csv() {
                     date('Y', strtotime($data_envio)),  // Ano
                     '',  // Data de início (pode ser extraída de meta se necessário)
                     '',  // Data de fim (pode ser extraída de meta se necessário)
-                    1,  // Quantidade de votos (contando 1 por resposta)
                     $pergunta_label,
                     $resposta_formatada,
+                    $resposta_unificada,
                     $data_envio,
                 ]);
             }
@@ -181,6 +187,12 @@ function get_respostas_votacao($votacao_id) {
         // Recupera as respostas detalhadas
         $respostas_detalhadas = get_post_meta($post_id, 'vs_respostas_detalhadas', true);
         
+        // Recupera as respostas unificadas
+        $respostas_unificadas = get_post_meta($post_id, 'vs_resposta_unificada', true);
+        if (!is_array($respostas_unificadas)) {
+            $respostas_unificadas = array();
+        }
+        
         // Recupera a data de envio
         $data_envio = get_post_meta($post_id, 'vs_data_envio', true);
         
@@ -194,6 +206,7 @@ function get_respostas_votacao($votacao_id) {
                 'user_name' => $user_name,
                 'respostas' => [
                     'respostas' => $respostas_detalhadas,
+                    'unificadas' => $respostas_unificadas,
                     'data_envio' => $data_envio ?: current_time('mysql')
                 ],
             ];

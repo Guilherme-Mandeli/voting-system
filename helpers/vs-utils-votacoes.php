@@ -242,3 +242,50 @@ function vs_group_votacoes_by_year_and_event($query) {
     
     return $agrupado;
 }
+
+/**
+ * Calcula tempo restante para uma votação.
+ *
+ * @param string $data_fim Data de fim da votação (formato Y-m-d).
+ * @return string Tempo restante formatado ou 'Encerrada'.
+ */
+function vs_calculate_time_remaining($data_fim) {
+    if (!$data_fim) return '';
+    
+    $timestamp_fim = strtotime($data_fim . ' 23:59:59');
+    $timestamp_agora = time();
+    
+    if ($timestamp_fim <= $timestamp_agora) {
+        return 'Encerrada';
+    }
+    
+    $diferenca = $timestamp_fim - $timestamp_agora;
+    $dias = floor($diferenca / (60 * 60 * 24));
+    
+    if ($dias > 0) {
+        return $dias . ' dia' . ($dias > 1 ? 's' : '') . ' restante' . ($dias > 1 ? 's' : '');
+    } else {
+        $horas = floor($diferenca / (60 * 60));
+        if ($horas > 0) {
+            return $horas . ' hora' . ($horas > 1 ? 's' : '') . ' restante' . ($horas > 1 ? 's' : '');
+        } else {
+            return 'Menos de 1 hora';
+        }
+    }
+}
+
+/**
+ * Formata status para exibição.
+ *
+ * @param string $status Status da votação.
+ * @return string Status formatado.
+ */
+function vs_format_status_display($status) {
+    $status_map = [
+        'aberta' => 'Aberta',
+        'em-pausa' => 'Em pausa',
+        'encerrada' => 'Encerrada'
+    ];
+    
+    return $status_map[$status] ?? ucfirst($status);
+}

@@ -1,22 +1,14 @@
 <?php
 /**
- * Shortcode: [votacoes_home_feed]
+ * Shortcode Genérico: [votacoes_display]
  *
- * Exibe um feed de votações agrupado por Ano e Evento com funcionalidades avançadas.
- *
- * ➤ Novos recursos:
- * - Considera categorias (taxonomia 'eventos')
- * - Controle avançado de exibição e filtros
- * - Detecta se usuário já participou
- * - Botão "Editar voto" quando aplicável
- * - Tempo restante para votações
- * - Badges de participação
- * - Estilos Fluent Design + Material UI
+ * Shortcode flexível para exibir votações com múltiplas opções de configuração.
+ * Este shortcode substitui e unifica as funcionalidades dos outros shortcodes de votação.
  *
  * ➤ Atributos disponíveis:
  * 
  * FILTROS E LIMITAÇÃO:
- * - limit: Número máximo de votações a exibir (padrão: 20)
+ * - limit: Número máximo de votações a exibir (padrão: 10)
  * - per_page: Número de itens por página para paginação (padrão: 6)
  * - show_status: Filtro por status - 'all', 'aberta', 'encerrada', 'em-pausa' (padrão: 'all')
  * - hide_encerradas: Ocultar votações encerradas - true/false (padrão: false)
@@ -31,39 +23,36 @@
  * - show_participation_badge: Badge "Já votou" - true/false (padrão: true)
  * - show_time_remaining: Mostrar tempo restante - true/false (padrão: true)
  * - show_actions: Mostrar botões de ação - 'visible', 'hidden' (padrão: 'visible')
+ * 
+ * LAYOUT E AGRUPAMENTO:
+ * - layout: Tipo de layout - 'cards', 'list', 'grouped' (padrão: 'cards')
+ * - group_by: Agrupar por - 'none', 'year', 'category', 'status' (padrão: 'none')
+ * - show_filters: Mostrar filtros - true/false (padrão: false)
+ * 
+ * ORDENAÇÃO:
+ * - orderby: Campo de ordenação - 'date', 'title', 'meta_value' (padrão: 'date')
+ * - order: Direção da ordenação - 'ASC', 'DESC' (padrão: 'DESC')
+ * - meta_key: Chave do meta field para ordenação (quando orderby='meta_value')
  *
- * ➤ Filtros disponíveis:
- * - Você pode usar parâmetros na URL para filtrar por Evento e/ou Ano:
- *     ?evento=slug-do-evento&ano=2024
- *
- * ➤ Como usar:
- * [votacoes_home_feed]
- * [votacoes_home_feed show_uncategorized="false"]
- * [votacoes_home_feed limit="10" hide_encerradas="true"]
- * [votacoes_home_feed only_active="true" show_participation_badge="false"]
- * [votacoes_home_feed exclude_ids="1,2,3" show_time_remaining="false"]
- *
- * ➤ Estrutura esperada:
- * - Post Type: votacoes
- * - Taxonomia: eventos
- * - Campos personalizados:
- *   - _vs_ano (Ano da votação)
- *   - _vs_status (aberta, em-pausa, encerrada)
- *   - _vs_data_fim (Data de encerramento)
- *   - vs_permitir_edicao (1/0)
+ * ➤ Exemplos de uso:
+ * [votacoes_display]
+ * [votacoes_display limit="5" show_status="aberta" layout="list"]
+ * [votacoes_display group_by="year" show_filters="true" hide_encerradas="true"]
+ * [votacoes_display include_ids="1,2,3" show_actions="hidden"]
+ * [votacoes_display only_active="true" show_participation_badge="false"]
  *
  */
 
 defined('ABSPATH') || exit;
 
-function vs_shortcode_home_feed($atts) {
+function vs_shortcode_votacoes_generic($atts) {
     // Garante que o CSS seja carregado
-    vs_ensure_home_feed_css();
+    vs_ensure_votacoes_generic_css();
     
     // Parse dos atributos com valores padrão
     $atts = shortcode_atts([
         // Filtros e limitação
-        'limit' => '20',
+        'limit' => '10',
         'per_page' => '6',
         'show_status' => 'all',
         'hide_encerradas' => 'false',
@@ -78,7 +67,20 @@ function vs_shortcode_home_feed($atts) {
         'show_participation_badge' => 'true',
         'show_time_remaining' => 'true',
         'show_actions' => 'visible',
-    ], $atts, 'votacoes_home_feed');
+        
+        // Layout e agrupamento
+        'layout' => 'cards',
+        'group_by' => 'none',
+        'show_filters' => 'false',
+        
+        // Ordenação
+        'orderby' => 'date',
+        'order' => 'DESC',
+        'meta_key' => '',
+        
+        // Compatibilidade com filtros URL (para home feed)
+        'enable_url_filters' => 'false',
+    ], $atts, 'votacoes_display');
     
     // Converte strings para booleanos
     $show_uncategorized = filter_var($atts['show_uncategorized'], FILTER_VALIDATE_BOOLEAN);
@@ -87,6 +89,8 @@ function vs_shortcode_home_feed($atts) {
     $show_excerpts = filter_var($atts['show_excerpts'], FILTER_VALIDATE_BOOLEAN);
     $show_participation_badge = filter_var($atts['show_participation_badge'], FILTER_VALIDATE_BOOLEAN);
     $show_time_remaining = filter_var($atts['show_time_remaining'], FILTER_VALIDATE_BOOLEAN);
+    $show_filters = filter_var($atts['show_filters'], FILTER_VALIDATE_BOOLEAN);
+    $enable_url_filters = filter_var($atts['enable_url_filters'], FILTER_VALIDATE_BOOLEAN);
     
     // Converte strings para inteiros
     $limit = intval($atts['limit']);
@@ -97,30 +101,43 @@ function vs_shortcode_home_feed($atts) {
     $exclude_ids = !empty($atts['exclude_ids']) ? array_map('intval', explode(',', $atts['exclude_ids'])) : [];
     $include_ids = !empty($atts['include_ids']) ? array_map('intval', explode(',', $atts['include_ids'])) : [];
     
-    // Obtém dados para filtros
-    $eventos = get_terms(['taxonomy' => 'eventos', 'hide_empty' => false]);
-    $anos_disponiveis = vs_get_available_years();
-
-    // Captura filtros da URL
-    $filtro_evento = sanitize_text_field($_GET['evento'] ?? '');
-    $filtro_ano = sanitize_text_field($_GET['ano'] ?? '');
-
+    // Obtém dados para filtros (se necessário)
+    $eventos = [];
+    $anos_disponiveis = [];
+    
+    if ($show_filters || $enable_url_filters) {
+        $eventos = get_terms(['taxonomy' => 'eventos', 'hide_empty' => false]);
+        $anos_disponiveis = vs_get_available_years();
+    }
+    
+    // Captura filtros da URL (se habilitado)
+    $filtro_evento = '';
+    $filtro_ano = '';
+    
+    if ($enable_url_filters) {
+        $filtro_evento = sanitize_text_field($_GET['evento'] ?? '');
+        $filtro_ano = sanitize_text_field($_GET['ano'] ?? '');
+    }
+    
     // Constrói argumentos da query
-    $query_args = vs_build_home_feed_query_args([
+    $query_args = vs_build_generic_query_args([
         'limit' => $limit,
         'show_status' => $atts['show_status'],
         'hide_encerradas' => $hide_encerradas,
         'only_active' => $only_active,
         'exclude_ids' => $exclude_ids,
         'include_ids' => $include_ids,
+        'orderby' => $atts['orderby'],
+        'order' => $atts['order'],
+        'meta_key' => $atts['meta_key'],
         'evento' => $filtro_evento,
         'ano' => $filtro_ano,
     ]);
-
+    
     $query = new WP_Query($query_args);
-
+    
     // Processa votações com informações do usuário
-    $votacoes_processadas = vs_process_votacoes_with_user_data($query, [
+    $votacoes_processadas = vs_process_generic_votacoes($query, [
         'show_uncategorized' => $show_uncategorized,
         'show_excerpts' => $show_excerpts,
         'excerpt_length' => $excerpt_length,
@@ -128,27 +145,46 @@ function vs_shortcode_home_feed($atts) {
         'show_time_remaining' => $show_time_remaining,
         'show_actions' => $atts['show_actions'],
     ]);
-
-    // Agrupa votações por ano e evento
-    $agrupado = vs_group_processed_votacoes($votacoes_processadas);
-
-    // Carrega o template com os dados
+    
+    // Agrupa votações se necessário
+    $dados_finais = vs_group_generic_votacoes($votacoes_processadas, $atts['group_by']);
+    
+    // Prepara dados para o template
+    $template_data = [
+        'votacoes' => $dados_finais,
+        'atts' => $atts,
+        'eventos' => $eventos,
+        'anos_disponiveis' => $anos_disponiveis,
+        'filtro_evento' => $filtro_evento,
+        'filtro_ano' => $filtro_ano,
+        'show_filters' => $show_filters,
+        'layout' => $atts['layout'],
+        'group_by' => $atts['group_by'],
+    ];
+    
+    // Carrega o template apropriado
     ob_start();
-    include(plugin_dir_path(dirname(dirname(dirname(__FILE__)))) . 'templates/public/template-home-feed.php');
+    vs_load_generic_template($template_data);
     return ob_get_clean();
 }
 
 /**
- * Constrói argumentos da query para o home feed
+ * Garante que o CSS do shortcode genérico seja carregado
+ * Compatível com page builders (DIVI, Elementor, etc.) e requisições AJAX
  */
-function vs_build_home_feed_query_args($params) {
+function vs_ensure_votacoes_generic_css() {
+    // Usa a classe centralizada para carregar CSS
+    VS_CSS_Conditional_Loader::ensure_css_for_shortcode('votacoes_display');
+}
+
+/**
+ * Constrói argumentos da query para o shortcode genérico
+ */
+function vs_build_generic_query_args($params) {
     $args = [
         'post_type' => 'votacoes',
         'post_status' => 'publish',
         'posts_per_page' => $params['limit'],
-        'meta_key' => '_vs_ano',
-        'orderby' => 'meta_value_num',
-        'order' => 'DESC',
     ];
     
     // Meta query
@@ -191,6 +227,16 @@ function vs_build_home_feed_query_args($params) {
         $args['post__not_in'] = $params['exclude_ids'];
     }
     
+    // Ordenação
+    if ($params['orderby'] === 'meta_value' && !empty($params['meta_key'])) {
+        $args['meta_key'] = $params['meta_key'];
+        $args['orderby'] = 'meta_value_num';
+    } else {
+        $args['orderby'] = $params['orderby'];
+    }
+    
+    $args['order'] = $params['order'];
+    
     // Adiciona queries se existirem
     if (!empty($meta_query)) {
         $args['meta_query'] = $meta_query;
@@ -204,9 +250,9 @@ function vs_build_home_feed_query_args($params) {
 }
 
 /**
- * Processa votações adicionando informações do usuário
+ * Processa votações com informações do usuário para o shortcode genérico
  */
-function vs_process_votacoes_with_user_data($query, $options) {
+function vs_process_generic_votacoes($query, $options) {
     $votacoes = [];
     $user_id = get_current_user_id();
     
@@ -298,32 +344,46 @@ function vs_process_votacoes_with_user_data($query, $options) {
 }
 
 /**
- * Agrupa votações processadas por ano e categoria
+ * Agrupa votações processadas conforme especificado
  */
-function vs_group_processed_votacoes($votacoes) {
+function vs_group_generic_votacoes($votacoes, $group_by) {
+    if ($group_by === 'none') {
+        return $votacoes;
+    }
+    
     $agrupado = [];
     
     foreach ($votacoes as $votacao) {
-        $ano = $votacao['ano'];
-        $categoria = $votacao['categoria'];
+        $chave_grupo = '';
         
-        if (!isset($agrupado[$ano])) {
-            $agrupado[$ano] = [];
+        switch ($group_by) {
+            case 'year':
+                $chave_grupo = $votacao['ano'];
+                break;
+            case 'category':
+                $chave_grupo = $votacao['categoria'];
+                break;
+            case 'status':
+                $chave_grupo = $votacao['status_display'];
+                break;
+            default:
+                $chave_grupo = 'Todas';
+                break;
         }
         
-        if (!isset($agrupado[$ano][$categoria])) {
-            $agrupado[$ano][$categoria] = [];
+        if (!isset($agrupado[$chave_grupo])) {
+            $agrupado[$chave_grupo] = [];
         }
         
-        $agrupado[$ano][$categoria][] = $votacao;
+        $agrupado[$chave_grupo][] = $votacao;
     }
     
-    // Ordena anos decrescente
-    krsort($agrupado);
-    
-    // Ordena categorias dentro de cada ano (Sem Categoria por último)
-    foreach ($agrupado as $ano => &$categorias) {
-        uksort($categorias, function($a, $b) {
+    // Ordenação especial para agrupamentos
+    if ($group_by === 'year') {
+        krsort($agrupado); // Anos decrescente
+    } elseif ($group_by === 'category') {
+        // Sem Categoria por último
+        uksort($agrupado, function($a, $b) {
             if ($a === 'Sem Categoria') return 1;
             if ($b === 'Sem Categoria') return -1;
             return strcmp($a, $b);
@@ -333,59 +393,38 @@ function vs_group_processed_votacoes($votacoes) {
     return $agrupado;
 }
 
-add_shortcode('votacoes_home_feed', 'vs_shortcode_home_feed');
-
-// Verifica se as funções já existem antes de declará-las (proteção contra redeclaração)
-if (!function_exists('vs_calculate_time_remaining')) {
-    /**
-     * Calcula tempo restante para uma votação
-     */
-    function vs_calculate_time_remaining($data_fim) {
-        if (!$data_fim) return '';
-        
-        $timestamp_fim = strtotime($data_fim . ' 23:59:59');
-        $timestamp_agora = time();
-        
-        if ($timestamp_fim <= $timestamp_agora) {
-            return 'Encerrada';
-        }
-        
-        $diferenca = $timestamp_fim - $timestamp_agora;
-        $dias = floor($diferenca / (60 * 60 * 24));
-        
-        if ($dias > 0) {
-            return $dias . ' dia' . ($dias > 1 ? 's' : '') . ' restante' . ($dias > 1 ? 's' : '');
-        } else {
-            $horas = floor($diferenca / (60 * 60));
-            if ($horas > 0) {
-                return $horas . ' hora' . ($horas > 1 ? 's' : '') . ' restante' . ($horas > 1 ? 's' : '');
-            } else {
-                return 'Menos de 1 hora';
-            }
-        }
-    }
-}
-
-if (!function_exists('vs_format_status_display')) {
-    /**
-     * Formata status para exibição
-     */
-    function vs_format_status_display($status) {
-        $status_map = [
-            'aberta' => 'Aberta',
-            'em-pausa' => 'Em pausa',
-            'encerrada' => 'Encerrada'
-        ];
-        
-        return $status_map[$status] ?? ucfirst($status);
-    }
-}
-
 /**
- * Garante que o CSS do home feed seja carregado
- * Compatível com page builders (DIVI, Elementor, etc.) e requisições AJAX
+ * Carrega o template apropriado para o shortcode genérico
  */
-function vs_ensure_home_feed_css() {
-    // Usa a classe centralizada para carregar CSS
-    VS_CSS_Conditional_Loader::ensure_css_for_shortcode('votacoes_home_feed');
+function vs_load_generic_template($data) {
+    $template_path = plugin_dir_path(dirname(dirname(dirname(__FILE__)))) . 'templates/public/';
+    
+    // Define qual template usar baseado no layout
+    switch ($data['layout']) {
+        case 'list':
+            $template_file = 'template-votacoes-generic-list.php';
+            break;
+        case 'grouped':
+            $template_file = 'template-votacoes-generic-grouped.php';
+            break;
+        case 'cards':
+        default:
+            $template_file = 'template-votacoes-generic-cards.php';
+            break;
+    }
+    
+    // Extrai dados para o template
+    extract($data);
+    
+    // Inclui o template
+    $full_path = $template_path . $template_file;
+    if (file_exists($full_path)) {
+        include $full_path;
+    } else {
+        // Fallback para template básico
+        include $template_path . 'template-votacoes-generic-fallback.php';
+    }
 }
+
+// Registra o shortcode
+add_shortcode('votacoes_display', 'vs_shortcode_votacoes_generic');

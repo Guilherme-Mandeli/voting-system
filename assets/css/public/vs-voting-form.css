@@ -1,0 +1,538 @@
+/**
+ * CSS para Shortcode [votacao_formulario]
+ * Material UI Light Theme
+ * Base border-radius: 10px
+ */
+
+/* ===== VARIÁVEIS CSS - MATERIAL UI LIGHT THEME ===== */
+:root {
+    /* Cores primárias */
+    --vs-primary: #1976d2;
+    --vs-primary-light: #42a5f5;
+    --vs-primary-dark: #1565c0;
+    --vs-primary-contrast: #ffffff;
+    
+    /* Cores secundárias */
+    --vs-secondary: #dc004e;
+    --vs-secondary-light: #ff5983;
+    --vs-secondary-dark: #9a0036;
+    --vs-secondary-contrast: #ffffff;
+    
+    /* Cores de superfície */
+    --vs-surface: #ffffff;
+    --vs-surface-variant: #f5f5f5;
+    --vs-surface-container: #fafafa;
+    --vs-surface-container-high: #f0f0f0;
+    
+    /* Cores de texto */
+    --vs-on-surface: #1c1b1f;
+    --vs-on-surface-variant: #49454f;
+    --vs-on-surface-disabled: rgba(28, 27, 31, 0.38);
+    
+    /* Cores de outline */
+    --vs-outline: #79747e;
+    --vs-outline-variant: #cac4d0;
+    
+    /* Cores de estado */
+    --vs-success: #4caf50;
+    --vs-success-light: #81c784;
+    --vs-success-dark: #388e3c;
+    --vs-warning: #ff9800;
+    --vs-warning-light: #ffb74d;
+    --vs-warning-dark: #f57c00;
+    --vs-error: #f44336;
+    --vs-error-light: #e57373;
+    --vs-error-dark: #d32f2f;
+    
+    /* Sombras */
+    --vs-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    --vs-shadow-2: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+    --vs-shadow-3: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+    
+    /* Espaçamentos */
+    --vs-spacing-xs: 4px;
+    --vs-spacing-sm: 8px;
+    --vs-spacing-md: 16px;
+    --vs-spacing-lg: 24px;
+    --vs-spacing-xl: 32px;
+    
+    /* Border radius base */
+    --vs-radius-base: 10px;
+    --vs-radius-sm: 6px;
+    --vs-radius-lg: 14px;
+    --vs-radius-xl: 20px;
+    
+    /* Tipografia */
+    --vs-font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --vs-font-size-xs: 0.75rem;
+    --vs-font-size-sm: 0.875rem;
+    --vs-font-size-base: 1rem;
+    --vs-font-size-lg: 1.125rem;
+    --vs-font-size-xl: 1.25rem;
+    --vs-font-size-2xl: 1.5rem;
+    
+    /* Transições */
+    --vs-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --vs-transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --vs-transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== CONTAINER PRINCIPAL ===== */
+.vs-votacao-container {
+    background: var(--vs-surface);
+    border: 1px solid var(--vs-outline-variant);
+    border-radius: var(--vs-radius-lg);
+    padding: var(--vs-spacing-lg);
+    box-shadow: var(--vs-shadow-1);
+    font-family: var(--vs-font-family);
+    color: var(--vs-on-surface);
+    max-width: 800px;
+    margin: 0 auto;
+    transition: box-shadow var(--vs-transition-normal);
+}
+
+.vs-votacao-container:hover {
+    box-shadow: var(--vs-shadow-2);
+}
+
+/* ===== FORMULÁRIO ===== */
+.vs-form {
+    background: var(--vs-surface);
+    border: 1px solid var(--vs-outline-variant);
+    border-radius: var(--vs-radius-base);
+    padding: var(--vs-spacing-lg);
+    box-shadow: var(--vs-shadow-1);
+    margin: 0;
+}
+
+/* ===== GRUPOS DE CAMPOS ===== */
+.vs-form .mb-4 {
+    margin-bottom: var(--vs-spacing-lg);
+}
+
+.vs-form .mb-4:last-of-type {
+    margin-bottom: var(--vs-spacing-md);
+}
+
+/* ===== LABELS ===== */
+.vs-form label.block {
+    display: block;
+    font-weight: 500;
+    font-size: var(--vs-font-size-sm);
+    color: var(--vs-on-surface);
+    margin-bottom: var(--vs-spacing-sm);
+    line-height: 1.5;
+}
+
+.vs-form label.font-semibold {
+    font-weight: 600;
+    font-size: var(--vs-font-size-base);
+    color: var(--vs-on-surface);
+    margin-bottom: var(--vs-spacing-sm);
+}
+
+/* ===== INPUTS DE TEXTO ===== */
+.vs-form input[type="text"],
+.vs-form input[type="email"],
+.vs-form input[type="number"],
+.vs-form input[type="tel"],
+.vs-form input[type="url"],
+.vs-form textarea {
+    width: 100%;
+    padding: var(--vs-spacing-md) var(--vs-spacing-md);
+    border: 1px solid var(--vs-outline-variant);
+    border-radius: var(--vs-radius-base);
+    background: var(--vs-surface);
+    color: var(--vs-on-surface);
+    font-family: var(--vs-font-family);
+    font-size: var(--vs-font-size-base);
+    line-height: 1.5;
+    transition: all var(--vs-transition-fast);
+    box-sizing: border-box;
+}
+
+.vs-form input[type="text"]:focus,
+.vs-form input[type="email"]:focus,
+.vs-form input[type="number"]:focus,
+.vs-form input[type="tel"]:focus,
+.vs-form input[type="url"]:focus,
+.vs-form textarea:focus {
+    outline: none;
+    border-color: var(--vs-primary);
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+.vs-form input[type="text"]:hover,
+.vs-form input[type="email"]:hover,
+.vs-form input[type="number"]:hover,
+.vs-form input[type="tel"]:hover,
+.vs-form input[type="url"]:hover,
+.vs-form textarea:hover {
+    border-color: var(--vs-outline);
+}
+
+.vs-form input[type="text"]:disabled,
+.vs-form input[type="email"]:disabled,
+.vs-form input[type="number"]:disabled,
+.vs-form input[type="tel"]:disabled,
+.vs-form input[type="url"]:disabled,
+.vs-form textarea:disabled {
+    background: var(--vs-surface-variant);
+    color: var(--vs-on-surface-disabled);
+    cursor: not-allowed;
+}
+
+/* ===== SELECT ===== */
+.vs-form select {
+    width: 100%;
+    padding: var(--vs-spacing-md);
+    border: 1px solid var(--vs-outline-variant);
+    border-radius: var(--vs-radius-base);
+    background: var(--vs-surface);
+    color: var(--vs-on-surface);
+    font-family: var(--vs-font-family);
+    font-size: var(--vs-font-size-base);
+    line-height: 1.5;
+    transition: all var(--vs-transition-fast);
+    cursor: pointer;
+    box-sizing: border-box;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%2349454f' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--vs-spacing-md) center;
+    background-size: 20px;
+    padding-right: calc(var(--vs-spacing-md) + 24px);
+}
+
+.vs-form select:focus {
+    outline: none;
+    border-color: var(--vs-primary);
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+.vs-form select:hover {
+    border-color: var(--vs-outline);
+}
+
+.vs-form select:disabled {
+    background-color: var(--vs-surface-variant);
+    color: var(--vs-on-surface-disabled);
+    cursor: not-allowed;
+}
+
+/* ===== RADIO BUTTONS ===== */
+.vs-form input[type="radio"] {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--vs-outline);
+    border-radius: 50%;
+    margin-right: var(--vs-spacing-sm);
+    position: relative;
+    cursor: pointer;
+    transition: all var(--vs-transition-fast);
+    vertical-align: middle;
+}
+
+.vs-form input[type="radio"]:checked {
+    border-color: var(--vs-primary);
+    background: var(--vs-primary);
+}
+
+.vs-form input[type="radio"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--vs-primary-contrast);
+}
+
+.vs-form input[type="radio"]:hover {
+    border-color: var(--vs-primary-light);
+}
+
+.vs-form input[type="radio"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+.vs-form input[type="radio"]:disabled {
+    border-color: var(--vs-outline-variant);
+    background: var(--vs-surface-variant);
+    cursor: not-allowed;
+}
+
+/* ===== CHECKBOXES ===== */
+.vs-form input[type="checkbox"] {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--vs-outline);
+    border-radius: var(--vs-radius-sm);
+    margin-right: var(--vs-spacing-sm);
+    position: relative;
+    cursor: pointer;
+    transition: all var(--vs-transition-fast);
+    vertical-align: middle;
+}
+
+.vs-form input[type="checkbox"]:checked {
+    border-color: var(--vs-primary);
+    background: var(--vs-primary);
+}
+
+.vs-form input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 6px;
+    width: 6px;
+    height: 10px;
+    border: solid var(--vs-primary-contrast);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.vs-form input[type="checkbox"]:hover {
+    border-color: var(--vs-primary-light);
+}
+
+.vs-form input[type="checkbox"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+.vs-form input[type="checkbox"]:disabled {
+    border-color: var(--vs-outline-variant);
+    background: var(--vs-surface-variant);
+    cursor: not-allowed;
+}
+
+/* ===== LABELS PARA RADIO E CHECKBOX ===== */
+.vs-form label:has(input[type="radio"]),
+.vs-form label:has(input[type="checkbox"]) {
+    display: flex;
+    align-items: center;
+    font-weight: 400;
+    font-size: var(--vs-font-size-base);
+    color: var(--vs-on-surface);
+    margin-bottom: var(--vs-spacing-sm);
+    cursor: pointer;
+    padding: var(--vs-spacing-xs) 0;
+    transition: color var(--vs-transition-fast);
+}
+
+.vs-form label:has(input[type="radio"]):hover,
+.vs-form label:has(input[type="checkbox"]):hover {
+    color: var(--vs-primary);
+}
+
+/* ===== BOTÕES ===== */
+.vs-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--vs-spacing-md) var(--vs-spacing-lg);
+    border: none;
+    border-radius: var(--vs-radius-base);
+    font-family: var(--vs-font-family);
+    font-size: var(--vs-font-size-base);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--vs-transition-fast);
+    min-height: 44px;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Botão primário (Salvar Voto) */
+.vs-button.bg-blue-600,
+.vs-button.bg-blue-500 {
+    background: var(--vs-primary);
+    color: var(--vs-primary-contrast);
+    box-shadow: var(--vs-shadow-1);
+}
+
+.vs-button.bg-blue-600:hover,
+.vs-button.bg-blue-500:hover,
+.vs-button.bg-blue-700:hover {
+    background: var(--vs-primary-dark);
+    box-shadow: var(--vs-shadow-2);
+    transform: translateY(-1px);
+}
+
+.vs-button.bg-blue-600:active,
+.vs-button.bg-blue-500:active {
+    background: var(--vs-primary-dark);
+    transform: translateY(0);
+    box-shadow: var(--vs-shadow-1);
+}
+
+/* Botão secundário (Editar, Cancelar) */
+.vs-button.bg-white {
+    background: var(--vs-surface);
+    color: var(--vs-primary);
+    border: 1px solid var(--vs-outline-variant);
+    box-shadow: var(--vs-shadow-1);
+}
+
+.vs-button.bg-white:hover {
+    background: var(--vs-surface-variant);
+    border-color: var(--vs-primary);
+    box-shadow: var(--vs-shadow-2);
+    transform: translateY(-1px);
+}
+
+.vs-button.bg-white:active {
+    background: var(--vs-surface-container);
+    transform: translateY(0);
+    box-shadow: var(--vs-shadow-1);
+}
+
+/* Botão desabilitado */
+.vs-button:disabled {
+    background: var(--vs-surface-variant);
+    color: var(--vs-on-surface-disabled);
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* ===== ESTADOS ESPECIAIS ===== */
+
+/* Já votou - modo leitura */
+.vs-votacao-ja-respondida {
+    background: var(--vs-surface-container);
+    border: 1px solid var(--vs-success);
+    border-radius: var(--vs-radius-lg);
+    padding: var(--vs-spacing-lg);
+    box-shadow: var(--vs-shadow-1);
+}
+
+.vs-votacao-ja-respondida p {
+    color: var(--vs-success-dark);
+    font-weight: 500;
+    margin-bottom: var(--vs-spacing-md);
+}
+
+/* Modos de edição */
+#vs-modo-leitura,
+#vs-modo-edicao {
+    transition: opacity var(--vs-transition-normal);
+}
+
+/* ===== TEXTOS AUXILIARES ===== */
+.vs-form .text-sm {
+    font-size: var(--vs-font-size-sm);
+    color: var(--vs-on-surface-variant);
+    margin-top: var(--vs-spacing-xs);
+    font-style: italic;
+}
+
+.vs-form .text-gray-500 {
+    color: var(--vs-on-surface-variant);
+}
+
+/* ===== RESPONSIVIDADE ===== */
+@media (max-width: 768px) {
+    .vs-votacao-container {
+        padding: var(--vs-spacing-md);
+        margin: var(--vs-spacing-sm);
+        border-radius: var(--vs-radius-base);
+    }
+    
+    .vs-form {
+        padding: var(--vs-spacing-md);
+    }
+    
+    .vs-button {
+        width: 100%;
+        margin-bottom: var(--vs-spacing-sm);
+    }
+    
+    .vs-form input[type="text"],
+    .vs-form input[type="email"],
+    .vs-form input[type="number"],
+    .vs-form input[type="tel"],
+    .vs-form input[type="url"],
+    .vs-form textarea,
+    .vs-form select {
+        font-size: 16px; /* Previne zoom no iOS */
+    }
+}
+
+@media (max-width: 480px) {
+    .vs-votacao-container {
+        padding: var(--vs-spacing-sm);
+        margin: var(--vs-spacing-xs);
+    }
+    
+    .vs-form {
+        padding: var(--vs-spacing-sm);
+    }
+    
+    .vs-form .mb-4 {
+        margin-bottom: var(--vs-spacing-md);
+    }
+}
+
+/* ===== ACESSIBILIDADE ===== */
+@media (prefers-reduced-motion: reduce) {
+    .vs-votacao-container,
+    .vs-form input,
+    .vs-form select,
+    .vs-button,
+    #vs-modo-leitura,
+    #vs-modo-edicao {
+        transition: none;
+    }
+}
+
+/* Focus visível para navegação por teclado */
+.vs-form input:focus-visible,
+.vs-form select:focus-visible,
+.vs-button:focus-visible {
+    outline: 2px solid var(--vs-primary);
+    outline-offset: 2px;
+}
+
+/* ===== ANIMAÇÕES SUTIS ===== */
+@keyframes vs-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.vs-votacao-container {
+    animation: vs-fade-in var(--vs-transition-normal) ease-out;
+}
+
+/* Ripple effect para botões */
+.vs-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width var(--vs-transition-fast), height var(--vs-transition-fast);
+}
+
+.vs-button:active::before {
+    width: 300px;
+    height: 300px;
+}

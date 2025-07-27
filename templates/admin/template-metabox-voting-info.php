@@ -61,7 +61,7 @@ defined( 'ABSPATH' ) || exit;
             name="vs_codigo" 
             value="<?php echo esc_attr($codigo); ?>" 
             style="width: 100%;"
-            placeholder="Se generará automáticamente si se deja vacío"
+            placeholder="VOT-<?php echo esc_attr($ano); ?>-1"
         >
         <p class="description">Código único para identificar la votación</p>
     </div>

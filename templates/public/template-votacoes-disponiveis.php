@@ -89,7 +89,6 @@ defined('ABSPATH') || exit;
     border-radius: 4px;
     font-size: 0.8em;
     font-weight: bold;
-    text-transform: uppercase;
 }
 
 .vs-status-disponivel {

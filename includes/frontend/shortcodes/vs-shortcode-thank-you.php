@@ -10,6 +10,9 @@ if (!defined('ABSPATH')) {
 }
 
 function vs_shortcode_votacao_obrigado() {
+    // Garante que o CSS seja carregado usando a classe centralizada
+    VS_CSS_Conditional_Loader::ensure_css_for_shortcode('votacao_obrigado');
+    
     if (!is_user_logged_in()) {
         return vs_gera_404();
     }

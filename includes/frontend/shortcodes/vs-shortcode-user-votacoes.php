@@ -1,16 +1,15 @@
 <?php
 /**
  * Shortcodes para página /votacoes - Área do usuário
- *
- * Shortcodes disponíveis:
- * - [votacoes_usuario_ativas] - Votações que o usuário respondeu e ainda podem ser editadas
- * - [votacoes_usuario_encerradas] - Votações que o usuário participou e já estão encerradas
- * - [votacoes_disponiveis] - Votações em aberto que o usuário ainda não participou
- *
- * @package VotingSystem\Frontend\Shortcodes
+ * 
+ * [votacoes_usuario_ativas] - Lista votações que o usuário respondeu e ainda podem ser editadas
+ * [votacoes_usuario_encerradas] - Lista votações que o usuário respondeu e já estão encerradas
+ * [votacoes_disponiveis] - Lista votações em aberto que o usuário ainda não participou
  */
 
-defined('ABSPATH') || exit;
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 /**
  * Shortcode: [votacoes_usuario_ativas]
@@ -20,9 +19,15 @@ defined('ABSPATH') || exit;
  * - Título da votação
  * - Data
  * - Resumo das respostas
- * - Botão "Editar Voto"
+ * - Botão "Ver Respostas" (padrão) ou "Editar Voto" (se vs_permitir_edicao = 1)
+ * 
+ * Restrição: apenas usuários logados
+ * Filtro: apenas votações com status "aberta" ou não encerradas por data
  */
 function vs_shortcode_votacoes_usuario_ativas($atts) {
+    // Garante que o CSS seja carregado
+    vs_ensure_user_votacoes_css();
+    
     // Verifica se o usuário está logado
     if (!is_user_logged_in()) {
         return '<div class="vs-login-required"><p>Faça login para visualizar suas votações.</p></div>';
@@ -52,11 +57,12 @@ function vs_shortcode_votacoes_usuario_ativas($atts) {
         
         $status = get_post_meta($votacao_id, '_vs_status', true);
         $data_fim = get_post_meta($votacao_id, '_vs_data_fim', true);
+        $permitir_edicao = get_post_meta($votacao_id, 'vs_permitir_edicao', true);
         
         // Verifica se a votação ainda está ativa (não encerrada)
         $is_encerrada = ($status === 'encerrada') || vs_check_votacao_status($data_fim);
         
-        if (!$is_encerrada) {
+        if (!$is_encerrada && $status === 'aberta') {
             // Obtém as respostas detalhadas
             $respostas_detalhadas = get_post_meta($resposta_post->ID, 'vs_respostas_detalhadas', true);
             $perguntas = get_post_meta($votacao_id, 'vs_perguntas', true);
@@ -70,6 +76,7 @@ function vs_shortcode_votacoes_usuario_ativas($atts) {
                 'link' => get_permalink($votacao_id),
                 'resumo_respostas' => $resumo_respostas,
                 'data_resposta' => get_post_meta($resposta_post->ID, 'vs_data_envio', true),
+                'permitir_edicao' => ($permitir_edicao === '1'),
             ];
         }
     }
@@ -88,9 +95,12 @@ function vs_shortcode_votacoes_usuario_ativas($atts) {
  * - Título da votação
  * - Status: Encerrada
  * - Resumo das respostas
- * - (Opcional) Botão "Ver Respostas"
+ * - Botão "Ver Respostas" (sempre) - votações encerradas não podem ser editadas
  */
 function vs_shortcode_votacoes_usuario_encerradas($atts) {
+    // Garante que o CSS seja carregado
+    vs_ensure_user_votacoes_css();
+    
     // Verifica se o usuário está logado
     if (!is_user_logged_in()) {
         return '<div class="vs-login-required"><p>Faça login para visualizar suas votações.</p></div>';
@@ -139,6 +149,8 @@ function vs_shortcode_votacoes_usuario_encerradas($atts) {
                 'resumo_respostas' => $resumo_respostas,
                 'data_resposta' => get_post_meta($resposta_post->ID, 'vs_data_envio', true),
                 'status' => 'Encerrada',
+                // Votações encerradas nunca podem ser editadas
+                'permitir_edicao' => false,
             ];
         }
     }
@@ -160,6 +172,9 @@ function vs_shortcode_votacoes_usuario_encerradas($atts) {
  * - Botão "Participar"
  */
 function vs_shortcode_votacoes_disponiveis($atts) {
+    // Garante que o CSS seja carregado
+    vs_ensure_user_votacoes_css();
+    
     // Verifica se o usuário está logado
     if (!is_user_logged_in()) {
         return '<div class="vs-login-required"><p>Faça login para visualizar suas votações.</p></div>';
@@ -258,6 +273,14 @@ function vs_generate_response_summary($respostas_detalhadas, $perguntas) {
     }
     
     return implode('<br>', $resumo);
+}
+
+/**
+ * Garante que o CSS dos shortcodes de usuário seja carregado
+ */
+function vs_ensure_user_votacoes_css() {
+    // Usa a classe centralizada para carregar CSS
+    VS_CSS_Conditional_Loader::ensure_css_for_shortcode('votacoes_usuario_ativas');
 }
 
 // Registra os shortcodes

@@ -3,7 +3,7 @@
 [![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-blue.svg)](https://wordpress.org/)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net/)
 [![License](https://img.shields.io/badge/License-GPL%20v2-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
-[![Version](https://img.shields.io/badge/Version-2.250726.2-orange.svg)](https://github.com/guilhermemandeli/voting-system/releases)
+[![Version](https://img.shields.io/badge/Version-2.260726.1-orange.svg)](https://github.com/Guilherme-Mandeli/voting-system/releases)
 
 Sistema completo de votações personalizado para WordPress com interface administrativa avançada, shortcodes flexíveis e sistema inteligente de unificação de respostas.
 
@@ -15,9 +15,9 @@ Sistema completo de votações personalizado para WordPress com interface admini
 - [Configuração](#-configuração)
 - [Como Usar](#-como-usar)
 - [Shortcodes](#-shortcodes)
+- [Estrutura do Projeto](#-estrutura-do-projeto)
 - [Funcionalidades Administrativas](#-funcionalidades-administrativas)
 - [Sistema de Unificação](#-sistema-de-unificação)
-- [Estrutura do Projeto](#-estrutura-do-projeto)
 - [Desenvolvimento](#-desenvolvimento)
 - [FAQ](#-faq)
 - [Suporte](#-suporte)
@@ -37,17 +37,18 @@ Sistema completo de votações personalizado para WordPress com interface admini
 - **Responsivo**: Interface adaptada para desktop e mobile
 
 ### 🔧 Tipos de Campo Suportados
-- ✅ Texto livre
-- ✅ Seleção única (radio)
-- ✅ Seleção múltipla (checkbox)
-- ✅ Lista suspensa (select)
+- ✅ Texto livre (input text)
 - ✅ Área de texto (textarea)
+- ✅ Seleção única (radio buttons)
+- ✅ Seleção múltipla (checkboxes)
+- ✅ Lista suspensa (select dropdown)
 
 ### 🛡️ Segurança
 - Validação rigorosa de dados
 - Proteção contra CSRF com nonces
 - Sanitização de entrada e escape de saída
 - Verificação de permissões de usuário
+- Prevenção de acesso direto aos arquivos
 
 ## 📋 Requisitos
 
@@ -67,7 +68,7 @@ Sistema completo de votações personalizado para WordPress com interface admini
 
 1. **Baixe o plugin**
    ```bash
-   git clone https://github.com/guilhermemandeli/voting-system.git
+   git clone https://github.com/Guilherme-Mandeli/voting-system.git
    ```
 
 2. **Faça upload para WordPress**
@@ -95,7 +96,7 @@ Sistema completo de votações personalizado para WordPress com interface admini
 
 ```bash
 # Clone o repositório
-git clone https://github.com/guilhermemandeli/voting-system.git /path/to/wordpress/wp-content/plugins/voting-system
+git clone https://github.com/Guilherme-Mandeli/voting-system.git /path/to/wordpress/wp-content/plugins/voting-system
 
 # Ative o plugin
 wp plugin activate voting-system
@@ -151,22 +152,27 @@ wp plugin activate voting-system
 
 #### Formulário de Votação
 ```php
-[vs_voting_form id="123"]
+[votacao_formulario id="123"]
 ```
 
-#### Feed de Votações
+#### Feed de Votações (Simples)
 ```php
-[vs_votacoes_feed]
+[votacoes_feed]
 ```
 
-#### Feed da Página Inicial
+#### Feed da Página Inicial (Avançado)
 ```php
-[vs_votacoes_home_feed]
+[votacoes_home_feed]
+```
+
+#### Shortcode Genérico (Flexível)
+```php
+[votacoes_display layout="cards" group_by="year" show_filters="true"]
 ```
 
 #### Página de Agradecimento
 ```php
-[vs_thank_you]
+[votacao_obrigado]
 ```
 
 ### Criando Página do Usuário
@@ -187,7 +193,7 @@ Para criar uma página onde usuários podem gerenciar suas votações (recomenda
 
 ### Shortcodes Principais
 
-#### `[vs_voting_form]`
+#### `[votacao_formulario]`
 Exibe o formulário de uma votação específica.
 
 **Parâmetros:**
@@ -195,17 +201,52 @@ Exibe o formulário de uma votação específica.
 
 **Exemplo:**
 ```php
-[vs_voting_form id="123"]
+[votacao_formulario id="123"]
 ```
 
-**Funcionalidades:**
-- Validação automática de campos
-- Prevenção de votos duplicados
-- Edição de votos (se habilitada)
-- Redirecionamento automático
+#### `[votacoes_display]` (Shortcode Genérico)
+Shortcode flexível para exibir votações com múltiplas configurações.
 
-#### `[vs_votacoes_feed]`
-Exibe uma lista filtrada de votações.
+**Parâmetros principais:**
+- `limit`: Número máximo de votações (padrão: 10)
+- `layout`: Tipo de layout - 'cards', 'list', 'grouped' (padrão: 'cards')
+- `group_by`: Agrupar por - 'none', 'year', 'category', 'status' (padrão: 'none')
+- `show_filters`: Mostrar filtros - true/false (padrão: false)
+- `show_status`: Filtro por status - 'all', 'aberta', 'encerrada', 'em-pausa'
+- `hide_encerradas`: Ocultar encerradas - true/false (padrão: false)
+- `only_active`: Apenas ativas - true/false (padrão: false)
+
+**Exemplos:**
+```php
+# Básico - exibe 10 votações em cards
+[votacoes_display]
+
+# Lista apenas votações ativas
+[votacoes_display only_active="true" layout="list"]
+
+# Cards agrupados por ano com filtros
+[votacoes_display group_by="year" show_filters="true" limit="20"]
+
+# Feed completo com todas as funcionalidades
+[votacoes_display limit="50" group_by="year" show_filters="true" show_time_remaining="true"]
+```
+
+#### `[votacoes_home_feed]`
+Feed principal com cards visuais agrupados.
+
+**Parâmetros:**
+- `limit`: Número de votações (padrão: 20)
+- `show_status`: Filtrar por status
+- `hide_encerradas`: Ocultar encerradas
+- `show_filters`: Exibir filtros (padrão: true)
+
+**Exemplo:**
+```php
+[votacoes_home_feed limit="30" hide_encerradas="true"]
+```
+
+#### `[votacoes_feed]`
+Feed simples de votações.
 
 **Parâmetros:**
 - `ano`: Filtrar por ano
@@ -215,71 +256,30 @@ Exibe uma lista filtrada de votações.
 
 **Exemplo:**
 ```php
-[vs_votacoes_feed ano="2024" status="aberta" posts_per_page="10"]
+[votacoes_feed ano="2024" status="aberta" posts_per_page="10"]
 ```
 
-#### `[vs_votacoes_home_feed]`
-Feed principal com cards visuais agrupados.
-
-**Exemplo:**
-```php
-[vs_votacoes_home_feed]
-```
-
-#### `[vs_thank_you]`
-Página de agradecimento pós-votação.
-
-**Exemplo:**
-```php
-[vs_thank_you]
-```
-
-### 🆕 Shortcodes da Área do Usuário
+### Shortcodes da Área do Usuário
 
 #### `[votacoes_usuario_ativas]`
 Lista votações que o usuário respondeu e ainda podem ser editadas.
 
 **Características:**
 - ✅ Restrição para usuários logados
-- ✅ Exibe título, data e resumo das respostas
-- ✅ Botão "Editar Voto" para cada votação
-- ✅ Filtra apenas votações ativas
-- ✅ Design responsivo com cards
-
-**Exemplo:**
-```php
-[votacoes_usuario_ativas]
-```
-
-**Exibe para cada votação:**
-- Título da votação
-- Data da votação
-- Data da resposta
-- Resumo das respostas do usuário
-- Botão "Editar Voto"
+- ✅ Filtra votações não encerradas
+- ✅ Exibe resumo das respostas
+- ✅ Botão "Editar Voto" quando permitido
+- ✅ Botão "Ver Respostas" padrão
 
 #### `[votacoes_usuario_encerradas]`
 Lista votações que o usuário participou e já estão encerradas.
 
 **Características:**
 - ✅ Restrição para usuários logados
-- ✅ Exibe votações finalizadas
-- ✅ Status "Encerrada" visível
-- ✅ Botão "Ver Respostas" opcional
-- ✅ Histórico completo do usuário
-
-**Exemplo:**
-```php
-[votacoes_usuario_encerradas]
-```
-
-**Exibe para cada votação:**
-- Título da votação
-- Status: "Encerrada"
-- Data da votação
-- Data da resposta
-- Resumo das respostas do usuário
-- Botão "Ver Respostas"
+- ✅ Filtra votações encerradas
+- ✅ Exibe status "Encerrada"
+- ✅ Resumo das respostas do usuário
+- ✅ Botão "Ver Respostas"
 
 #### `[votacoes_disponiveis]`
 Lista votações em aberto que o usuário ainda não participou.
@@ -291,314 +291,248 @@ Lista votações em aberto que o usuário ainda não participou.
 - ✅ Botão "Participar" destacado
 - ✅ Descrição da votação
 
-**Exemplo:**
-```php
-[votacoes_disponiveis]
+#### `[votacao_obrigado]`
+Página de agradecimento pós-votação.
+
+**Características:**
+- ✅ Validação por token temporário
+- ✅ Exibe resumo das respostas
+- ✅ Informações da votação
+- ✅ Links para outras ações
+
+## 🏗️ Estrutura do Projeto
 ```
-
-**Exibe para cada votação:**
-- Título da votação
-- Prazo de encerramento
-- Breve descrição
-- Botão "Participar"
-
-### 🎨 Personalização dos Shortcodes da Área do Usuário
-
-Os novos shortcodes incluem CSS integrado e responsivo. Para personalizar:
-
-```css
-/* Personalizar cards das votações */
-.vs-votacao-card {
-    /* Seus estilos personalizados */
-}
-
-/* Personalizar botões */
-.vs-btn-editar,
-.vs-btn-participar,
-.vs-btn-ver-respostas {
-    /* Seus estilos personalizados */
-}
-
-/* Personalizar status */
-.vs-status-ativa,
-.vs-status-encerrada,
-.vs-status-disponivel {
-    /* Seus estilos personalizados */
-}
+voting-system/
+├── voting-system.php          # Arquivo principal do plugin
+├── bootstrap.php              # Carregamento e inicialização
+├── documentation.php          # Documentação técnica
+├── documentation-shortcodes.php # Documentação de shortcodes
+├── README.md                  # Este arquivo
+├── LICENSE                    # Licença GPL v2
+│
+├── assets/                    # Recursos estáticos
+│   ├── css/                   # Arquivos de estilo
+│   │   ├── admin.css         # Estilos administrativos
+│   │   ├── public.css        # Estilos públicos
+│   │   └── public/           # Estilos específicos
+│   └── js/                   # Scripts JavaScript
+│       ├── admin.js          # Scripts administrativos
+│       ├── public.js         # Scripts públicos
+│       └── ajax/             # Handlers AJAX
+│
+├── includes/                  # Funcionalidades principais
+│   ├── core/                 # Núcleo do sistema
+│   │   ├── cpt/              # Custom Post Types
+│   │   ├── tax/              # Taxonomias
+│   │   ├── submission/       # Processamento de formulários
+│   │   └── cron/             # Agendamento automático
+│   │
+│   ├── admin/                # Interface administrativa
+│   │   ├── pages/            # Páginas administrativas
+│   │   ├── menus/            # Menus e submenus
+│   │   └── data/             # Exportação/Importação
+│   │
+│   ├── frontend/             # Interface pública
+│   │   └── shortcodes/       # Shortcodes
+│   │
+│   └── ajax/                 # Handlers AJAX
+│       ├── get-user-votes.php
+│       ├── vs-handle-get-unificacao-group.php
+│       └── vs-handle-update-unificacao.php
+│
+├── helpers/                   # Funções utilitárias
+│   ├── vs-utils-data.php     # Manipulação de dados
+│   ├── vs-utils-css-loader.php # Carregamento de CSS
+│   ├── vs-utils-permissions.php # Controle de permissões
+│   ├── vs-utils-templates.php # Helpers de templates
+│   └── vs-utils-votacoes.php # Funções de votações
+│
+├── metaboxes/                # Interface de edição
+│   ├── vs-metabox-voting-info.php # Informações da votação
+│   ├── vs-metabox-questions.php # Gerenciamento de perguntas
+│   ├── vs-metabox-answer-details.php # Detalhes de resposta
+│   └── view-metabox-questions.php # Visualização de perguntas
+│
+├── templates/                # Templates
+│   ├── admin/                # Templates administrativos
+│   │   ├── template-metabox-voting-info.php
+│   │   ├── template-results-list.php
+│   │   └── template-results-unificacao.php
+│   │
+│   └── public/               # Templates públicos
+│       ├── template-voting-form.php
+│       ├── template-thank-you.php
+│       ├── template-votacoes-feed.php
+│       ├── template-home-feed.php
+│       ├── template-votacoes-usuario-ativas.php
+│       ├── template-votacoes-usuario-encerradas.php
+│       ├── template-votacoes-disponiveis.php
+│       └── template-votacoes-generic-*.php
+│
+└── languages/                # Internacionalização
+└── voting-system.pot     # Arquivo de tradução
 ```
-
-### 🔐 Segurança dos Shortcodes
-
-Todos os shortcodes da área do usuário incluem:
-
-- **Verificação de login**: Exibe mensagem para usuários não logados
-- **Sanitização de dados**: Todos os dados são sanitizados
-- **Escape de saída**: Prevenção contra XSS
-- **Validação de permissões**: Verificação de acesso
 
 ## 🔧 Funcionalidades Administrativas
 
-### Painel de Resultados
+### Painel de Controle
+- **Dashboard**: Visão geral das votações
+- **Gerenciamento**: Criar, editar e excluir votações
+- **Resultados**: Visualizar respostas e estatísticas
+- **Unificação**: Agrupar respostas similares
+- **Exportação**: Download de dados em CSV
 
-Acesse `Votações > Resultados das Votações` para:
+### Metaboxes de Edição
+- **Informações da Votação**: Status, datas, código
+- **Perguntas**: Adicionar e configurar perguntas
+- **Detalhes de Resposta**: Visualizar respostas individuais
 
-- **Visualizar estatísticas** de participação
-- **Analisar respostas** individuais
-- **Exportar dados** em formato CSV
-- **Gerenciar unificações** de respostas
-
-### Exportação de Dados
-
-1. Acesse a página de resultados
-2. Clique em "Exportar CSV"
-3. Escolha o formato de exportação:
-   - Respostas individuais
-   - Dados unificados
-   - Estatísticas gerais
-
-### Sistema de Busca
-
-- **Busca por usuário**: Encontre respostas específicas
-- **Filtros avançados**: Por data, status, evento
-- **Ordenação**: Por data, usuário, status
+### Páginas Administrativas
+- **Lista de Votações**: Visão geral com filtros
+- **Detalhes de Resultados**: Análise aprofundada
+- **Unificação de Respostas**: Interface para agrupamento
 
 ## 🔄 Sistema de Unificação
 
-O sistema de unificação permite agrupar respostas similares para análise estatística.
-
 ### Como Funciona
-
-1. **Respostas individuais** são armazenadas separadamente
-2. **Administrador identifica** respostas similares
-3. **Agrupa respostas** em categorias unificadas
-4. **Gera estatísticas** baseadas nos grupos
-
-### Processo de Unificação
-
-1. **Acesse a página de unificação**:
-   ```
-   Votações > Resultados > [Votação] > Unificação
-   ```
-
-2. **Selecione respostas similares**
-3. **Crie ou escolha um valor unificado**
-4. **Confirme a unificação**
+1. **Coleta**: Respostas são armazenadas individualmente
+2. **Análise**: Administrador identifica respostas similares
+3. **Agrupamento**: Seleção de respostas para unificar
+4. **Unificação**: Criação de resposta unificada
+5. **Aplicação**: Atualização automática via AJAX
 
 ### Benefícios
+- **Análise Estatística**: Dados mais precisos
+- **Relatórios Limpos**: Menos variações desnecessárias
+- **Insights Melhores**: Padrões mais claros
+- **Exportação Organizada**: CSV com dados unificados
 
-- **Análise mais precisa** de dados qualitativos
-- **Redução de ruído** em respostas abertas
-- **Geração de insights** estatísticos
-- **Relatórios mais limpos**
+### Interface
+- **Seleção Visual**: Checkboxes para escolher respostas
+- **Modal de Unificação**: Interface intuitiva
+- **Contadores**: Visualização de agrupamentos
+- **Histórico**: Rastreamento de alterações
 
-## 📁 Estrutura do Projeto
-```
-voting-system/
-├── 📁 assets/              # Recursos estáticos
-│   ├── 📁 css/             # Estilos CSS
-│   │   ├── admin.css       # Estilos administrativos
-│   │   ├── public.css      # Estilos públicos
-│   │   ├── vs-user-votacoes.css  # 🆕 Estilos área do usuário
-│   │   ├── vs-votacoes-feed.css  # Estilos feeds
-│   │   └── vs-votacoes-home.css  # Estilos home
-│   └── 📁 js/              # Scripts JavaScript
-├── 📁 includes/            # Funcionalidades principais
-│   ├── 📁 admin/           # Área administrativa
-│   ├── 📁 ajax/            # Handlers AJAX
-│   ├── 📁 core/            # Funcionalidades centrais
-│   └── 📁 frontend/        # Frontend público
-│       └── 📁 shortcodes/  # Shortcodes
-│           ├── vs-shortcode-voting-form.php
-│           ├── vs-shortcode-thank-you.php
-│           ├── vs-shortcode-votacoes-feed.php
-│           ├── vs-shortcode-votacoes-home-feed.php
-│           └── vs-shortcode-user-votacoes.php  # 🆕 Área do usuário
-├── 📁 templates/           # Templates de exibição
-│   └── 📁 public/          # Templates públicos
-│       ├── template-votacoes-usuario-ativas.php      # 🆕
-│       ├── template-votacoes-usuario-encerradas.php  # 🆕
-│       ├── template-votacoes-disponiveis.php         # 🆕
-│       └── ...             # Outros templates
-├── 📁 metaboxes/           # Metaboxes do WordPress
-├── 📁 helpers/             # Funções utilitárias
-├── 📁 languages/           # Arquivos de tradução
-├── 📄 voting-system.php    # Arquivo principal
-├── 📄 bootstrap.php        # Inicializador
-└── 📄 README.md            # Este arquivo
-```
+## 🛠️ Desenvolvimento
 
-## 👨‍💻 Desenvolvimento
+### Estrutura de Hooks
 
-### Configuração do Ambiente
-
-1. **Clone o repositório**:
-   ```bash
-   git clone https://github.com/guilhermemandeli/voting-system.git
-   cd voting-system
-   ```
-
-2. **Configure WordPress local**
-3. **Ative o modo debug**:
-   ```php
-   define('WP_DEBUG', true);
-   define('WP_DEBUG_LOG', true);
-   ```
-
-### Hooks Disponíveis
-
-#### Actions
+#### Actions Disponíveis
 ```php
-// Após submissão de voto
-do_action('vs_after_vote_submission', $vote_id, $user_id);
+// Antes de submeter voto
+do_action('vs_before_vote_submit', $vote_data, $user_id);
+
+// Após submeter voto
+do_action('vs_after_vote_submit', $vote_id, $user_id);
 
 // Antes de atualizar voto
 do_action('vs_before_vote_update', $vote_id, $user_id);
 
-// Quando votação é encerrada
-do_action('vs_voting_closed', $voting_id);
+// Após atualizar voto
+do_action('vs_after_vote_update', $vote_id, $user_id);
 ```
 
-#### Filters
+#### Filters Disponíveis
 ```php
-// Modificar campos do formulário
-$fields = apply_filters('vs_voting_form_fields', $fields, $voting_id);
+// Modificar argumentos da query
+$args = apply_filters('vs_generic_query_args', $args, $params);
+
+// Modificar dados das votações
+$votacoes = apply_filters('vs_generic_votacoes_data', $votacoes, $options);
+
+// Modificar dados do template
+$data = apply_filters('vs_generic_template_data', $data, $context);
 
 // Modificar dados de exportação
-$data = apply_filters('vs_export_data', $data, $voting_id);
-
-// Modificar grupos de unificação
-$groups = apply_filters('vs_unification_groups', $groups, $voting_id);
+$export_data = apply_filters('vs_export_csv_data', $data, $votacao_id);
 ```
 
-### Contribuindo
+### Funções Utilitárias
 
-1. **Fork** o projeto
-2. **Crie uma branch** para sua feature (`git checkout -b feature/AmazingFeature`)
-3. **Commit** suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. **Push** para a branch (`git push origin feature/AmazingFeature`)
-5. **Abra um Pull Request**
+#### Principais Helpers
+```php
+// Recuperar perguntas da votação
+$perguntas = vs_get_voting_questions($votacao_id);
+
+// Formatar resposta para exibição
+$resposta_formatada = vs_format_answer($resposta);
+
+// Verificar se usuário já votou
+$existing = vs_get_existing_response($user_id, $votacao_id);
+
+// Atualizar metadados de resposta
+vs_update_response_metadata($post_id, $votacao_id, $user_id, $respostas);
+
+// Verificar status da votação
+$is_encerrada = vs_check_votacao_status($data_fim);
+```
+
+### Customização de Templates
+
+#### Sobrescrever Templates
+1. Copie o template de `templates/public/` para seu tema
+2. Mantenha a estrutura de pastas: `seu-tema/voting-system/`
+3. Modifique conforme necessário
+
+#### Exemplo de Customização
+```php
+// No seu tema: voting-system/template-voting-form.php
+<?php
+// Sua customização do formulário de votação
+?>
+```
 
 ## ❓ FAQ
 
-### Como posso personalizar os estilos?
+### Como criar uma votação?
+1. Vá para `Votações > Adicionar Nova`
+2. Preencha título e descrição
+3. Adicione perguntas no metabox
+4. Configure status e datas
+5. Publique
 
-Adicione CSS customizado no seu tema:
+### Como exibir votações na página inicial?
+Use o shortcode `[votacoes_home_feed]` ou `[votacoes_display]` com os parâmetros desejados.
 
-```css
-/* Personalizar formulário de votação */
-.vs-voting-form {
-    /* Seus estilos aqui */
-}
+### Como permitir edição de votos?
+Marque a opção "Permitir edição" no metabox da votação.
 
-/* Personalizar cards do feed */
-.vs-voting-card {
-    /* Seus estilos aqui */
-}
+### Como exportar dados?
+Na página de resultados, clique no link "Exportar CSV".
 
-/* 🆕 Personalizar área do usuário */
-.vs-votacao-card {
-    /* Seus estilos aqui */
-}
-```
+### Como unificar respostas?
+1. Vá para a página de unificação da votação
+2. Selecione respostas similares
+3. Crie ou escolha uma resposta unificada
+4. Aplique a unificação
 
-### Como criar uma página de usuário completa?
+### Como criar área do usuário?
+1. Crie uma página (ex: `/votacoes`)
+2. Adicione os shortcodes de usuário
+3. Configure restrição para usuários logados
 
-1. **Crie uma página** chamada "Minhas Votações" ou "/votacoes"
-2. **Configure restrição** para usuários logados (usando plugin ou código)
-3. **Adicione os shortcodes**:
-   ```php
-   <h2>Votações Ativas</h2>
-   [votacoes_usuario_ativas]
-   
-   <h2>Votações Encerradas</h2>
-   [votacoes_usuario_encerradas]
-   
-   <h2>Votações Disponíveis</h2>
-   [votacoes_disponiveis]
-   ```
+## 📞 Suporte
 
-### Como limitar quem pode votar?
+### Documentação
+- **Técnica**: `documentation.php`
+- **Shortcodes**: `documentation-shortcodes.php`
+- **Usuário**: Este README
 
-Use o hook `vs_can_user_vote`:
+### Contato
+- **GitHub**: [Issues](https://github.com/Guilherme-Mandeli/voting-system/issues)
+- **Email**: [Suporte](mailto:guilherme.mandeli@example.com)
 
-```php
-add_filter('vs_can_user_vote', function($can_vote, $user_id, $voting_id) {
-    // Sua lógica de permissão aqui
-    return $can_vote;
-}, 10, 3);
-```
-
-### Como personalizar emails de notificação?
-
-```php
-add_filter('vs_notification_email', function($email_data, $voting_id) {
-    // Personalizar dados do email
-    return $email_data;
-}, 10, 2);
-```
-
-### Como fazer backup dos dados?
-
-1. **Exporte via CSV** na interface administrativa
-2. **Backup do banco de dados** WordPress
-3. **Backup dos arquivos** do plugin
-
-## 🆘 Suporte
-
-### Reportar Problemas
-
-- **GitHub Issues**: [Criar nova issue](https://github.com/guilhermemandeli/voting-system/issues)
-- **Documentação**: Consulte a documentação completa no arquivo `documentation.php`
-
-### Logs de Debug
-
-Para ativar logs detalhados:
-
-```php
-// No wp-config.php
-define('WP_DEBUG', true);
-define('WP_DEBUG_LOG', true);
-
-// Acessar debug do plugin
-/wp-admin/admin.php?debug_vs=1
-```
-
-### Problemas Comuns
-
-#### Votação não aparece
-- Verifique se o plugin está ativo
-- Confirme se a votação está publicada
-- Verifique permalinks
-
-#### Erro 403 em AJAX
-- Verifique nonces
-- Confirme permissões de usuário
-- Verifique logs de erro
-
-#### Shortcodes da área do usuário não funcionam
-- Confirme que o usuário está logado
-- Verifique se há votações disponíveis
-- Confirme que o CSS está carregando
+### Contribuição
+1. Fork o projeto
+2. Crie uma branch para sua feature
+3. Commit suas mudanças
+4. Push para a branch
+5. Abra um Pull Request
 
 ## 📄 Licença
 
-Este projeto está licenciado sob a **GPL v2 ou posterior** - veja o arquivo [LICENSE](LICENSE) para detalhes.
-
-Copyright (C) 2025 Guilherme Mandeli
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-## 👨‍💻 Autor
-
-**Guilherme Mandeli**
-- GitHub: [@guilhermemandeli](https://github.com/guilhermemandeli)
-- Website: [https://github.com/guilhermemandeli](https://github.com/guilhermemandeli)
+Este projeto está licenciado sob a GPL v2 ou posterior - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
 ---
 
-⭐ **Se este projeto foi útil para você, considere dar uma estrela no GitHub!**
-
-📧 **Dúvidas?** Abra uma [issue](https://github.com/guilhermemandeli/voting-system/issues) ou entre em contato!
+**Desenvolvido com ❤️ por [Guilherme Mandeli](https://github.com/guilhermemandeli)**

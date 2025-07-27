@@ -38,7 +38,22 @@ function vs_votacao_shortcode($atts) {
     $respostas = vs_get_user_responses($user_id, $votacao_id);
 
     ob_start();
+    
+    // Garante que o CSS seja carregado usando a classe centralizada
+    VS_CSS_Conditional_Loader::ensure_css_for_shortcode('votacao_formulario');
+    
     include VS_PLUGIN_PATH . 'templates/public/template-voting-form.php';
     return ob_get_clean();
 }
 add_shortcode('votacao_formulario', 'vs_votacao_shortcode');
+
+/**
+ * Hook adicional para garantir que o CSS seja carregado no footer se necessário
+ */
+add_action('wp_footer', function() {
+    // Se o shortcode foi usado mas o CSS inline não foi incluído, inclui agora
+    if (did_action('vs_voting_form_shortcode_used') && !did_action('vs_voting_form_css_included')) {
+        echo VS_CSS_Conditional_Loader::output_inline_css_for_shortcode('votacao_formulario');
+        do_action('vs_voting_form_css_included');
+    }
+}, 999);

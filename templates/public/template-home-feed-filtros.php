@@ -1,41 +1,58 @@
 <?php
-// Evita acesso direto
-if (!defined('ABSPATH')) {
-    exit;
-}
-
 /**
  * Template para o formulário de filtros do feed de votações
- * 
- * @param array $eventos Lista de termos da taxonomia eventos
- * @param array $anos_disponiveis Lista de anos disponíveis
- * @param string $filtro_evento Evento selecionado no filtro
- * @param string $filtro_ano Ano selecionado no filtro
+ * Design inspirado em Fluent Design + Material UI
  */
+
+defined('ABSPATH') || exit;
 ?>
 
-<form method="get" class="vs-feed-filtros">
-    <label>Evento:
-        <select name="evento">
-            <option value="">Todos</option>
-            <?php foreach ($eventos as $evento): ?>
-                <option value="<?php echo esc_attr($evento->slug); ?>" <?php selected($evento->slug, $filtro_evento); ?>>
-                    <?php echo esc_html($evento->name); ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </label>
+<div class="vs-home-filtros-container">
+    <form method="get" class="vs-home-filtros">
+        <div class="vs-filtros-grid">
+            <div class="vs-filtro-grupo">
+                <label for="evento-filter" class="vs-filtro-label">
+                    <span class="vs-filtro-icon">🏷️</span>
+                    Evento
+                </label>
+                <select name="evento" id="evento-filter" class="vs-filtro-select">
+                    <option value="">Todos os eventos</option>
+                    <?php foreach ($eventos as $evento): ?>
+                        <option value="<?php echo esc_attr($evento->slug); ?>" <?php selected($evento->slug, $filtro_evento); ?>>
+                            <?php echo esc_html($evento->name); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
 
-    <label>Ano:
-        <select name="ano">
-            <option value="">Todos</option>
-            <?php foreach ($anos_disponiveis as $ano): ?>
-                <option value="<?php echo esc_attr($ano); ?>" <?php selected($ano, $filtro_ano); ?>>
-                    <?php echo esc_html($ano); ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </label>
+            <div class="vs-filtro-grupo">
+                <label for="ano-filter" class="vs-filtro-label">
+                    <span class="vs-filtro-icon">📅</span>
+                    Ano
+                </label>
+                <select name="ano" id="ano-filter" class="vs-filtro-select">
+                    <option value="">Todos os anos</option>
+                    <?php foreach ($anos_disponiveis as $ano): ?>
+                        <option value="<?php echo esc_attr($ano); ?>" <?php selected($ano, $filtro_ano); ?>>
+                            <?php echo esc_html($ano); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
 
-    <button type="submit">Filtrar</button>
-</form>
+            <div class="vs-filtro-grupo vs-filtro-acoes">
+                <button type="submit" class="vs-btn-filtrar">
+                    <span class="vs-btn-icon">🔍</span>
+                    Filtrar
+                </button>
+                
+                <?php if ($filtro_evento || $filtro_ano): ?>
+                    <a href="<?php echo esc_url(strtok($_SERVER['REQUEST_URI'], '?')); ?>" class="vs-btn-limpar">
+                        <span class="vs-btn-icon">✖️</span>
+                        Limpar
+                    </a>
+                <?php endif; ?>
+            </div>
+        </div>
+    </form>
+</div>

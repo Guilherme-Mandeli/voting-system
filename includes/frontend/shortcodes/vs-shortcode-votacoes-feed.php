@@ -24,6 +24,9 @@ if (!defined('ABSPATH')) {
  * [votacoes_feed ano="2024" status="aberta"]
  */
 function vs_shortcode_votacoes_feed($atts) {
+    // Garante que o CSS seja carregado usando a classe centralizada
+    VS_CSS_Conditional_Loader::ensure_css_for_shortcode('votacoes_feed');
+    
     $atts = shortcode_atts([
         'evento' => '',
         'ano' => '',
@@ -55,4 +58,5 @@ function vs_shortcode_votacoes_feed($atts) {
     include(plugin_dir_path(dirname(dirname(dirname(__FILE__)))) . 'templates/public/template-votacoes-feed.php');
     return ob_get_clean();
 }
+
 add_shortcode('votacoes_feed', 'vs_shortcode_votacoes_feed');

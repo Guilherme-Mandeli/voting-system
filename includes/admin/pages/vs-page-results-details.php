@@ -101,90 +101,147 @@ function vs_render_todos_resultados_page($votacao_id) {
 
         <?php vs_render_subpage_navigation($votacao_id, 'todos'); ?>
 
-        <form method="GET" style="margin-bottom:20px;">
-            <input type="hidden" name="post_type" value="votacoes" />
-            <input type="hidden" name="page" value="votacoes_resultados_visualizar" />
-            <input type="hidden" name="votacao_id" value="<?php echo esc_attr($votacao_id); ?>" />
-            <input type="hidden" name="paged" value="1" />
-            <label for="user_search">Buscar usuário:</label>
-            <input type="search" id="user_search" name="s" value="<?php echo esc_attr($search_term); ?>" />
-            <button type="submit" class="button">Buscar</button>
-        </form>
+        <div class="results-container">
+            <div class="row">
+                <div class="column">
+                    <div class="card">
+                        <div class="card-header">
+                            <p><strong>Votos totais:</strong> <?php echo esc_html($total_users); ?></p>
+                            <h2>Mais votados</h2>
+                            <p>Respostas mais recorrentes</p>
 
-        <?php if (empty($voting_users)) : ?>
-            <p>Nenhum voto registrado para esta votação.</p>
-        <?php else : ?>
-            <table class="wp-list-table widefat fixed striped users">
-                <thead>
-                    <tr>
-                        <th scope="col" class="manage-column">
-                            <a href="<?php echo vs_build_sort_url($base_url, 'user_id', $order); ?>">
-                                ID
-                                <?php if ($orderby == 'user_id') : ?>
-                                    <span class="dashicons dashicons-arrow-<?php echo ($order == 'asc') ? 'up' : 'down'; ?>"></span>
-                                <?php else : ?>
-                                    <span class="dashicons dashicons-leftright"></span>
-                                <?php endif; ?>
-                            </a>
-                        </th>
-                        <th scope="col" class="manage-column">
-                            <a href="<?php echo vs_build_sort_url($base_url, 'user_name', $order); ?>">
-                                Nome
-                                <?php if ($orderby == 'user_name') : ?>
-                                    <span class="dashicons dashicons-arrow-<?php echo ($order == 'asc') ? 'up' : 'down'; ?>"></span>
-                                <?php else : ?>
-                                    <span class="dashicons dashicons-leftright"></span>
-                                <?php endif; ?>
-                            </a>
-                        </th>
-                        <th scope="col" class="manage-column">
-                            <a href="<?php echo vs_build_sort_url($base_url, 'user_email', $order); ?>">
-                                E-mail
-                                <?php if ($orderby == 'user_email') : ?>
-                                    <span class="dashicons dashicons-arrow-<?php echo ($order == 'asc') ? 'up' : 'down'; ?>"></span>
-                                <?php else : ?>
-                                    <span class="dashicons dashicons-leftright"></span>
-                                <?php endif; ?>
-                            </a>
-                        </th>
-                        <th scope="col" class="manage-column">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($voting_users as $user) : ?>
+                            <label for="question_filter" class="screen-reader-text">Filtrar por pergunta</label>
+                            <select id="question_filter" name="question_filter" class="question-filter">
+                                <option value="all">Todas as perguntas</option>
+                                <option value="q1">Pergunta 1</option>
+                                <option value="q2">Pergunta 2</option>
+                            </select>
+
+                            <hr>
+                        </div>
+
+                        <div class="card-body">
+                            <table class="vote-results-table">
+                                <thead>
+                                    <tr>
+                                        <th>Resposta</th>
+                                        <th>Votos</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Opção A</td>
+                                        <td>42</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Opção B</td>
+                                        <td>36</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Opção C</td>
+                                        <td>18</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="card-footer">
+                            <a href="#" class="button button-primary">Ver lista completa</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="column"></div>
+                <div class="column"></div>
+            </div>
+        </div>
+
+        <div class="user-container">
+            <form method="GET" style="margin-bottom:20px;">
+                <input type="hidden" name="post_type" value="votacoes" />
+                <input type="hidden" name="page" value="votacoes_resultados_visualizar" />
+                <input type="hidden" name="votacao_id" value="<?php echo esc_attr($votacao_id); ?>" />
+                <input type="hidden" name="paged" value="1" />
+                <label for="user_search">Buscar usuário:</label>
+                <input type="search" id="user_search" name="s" value="<?php echo esc_attr($search_term); ?>" />
+                <button type="submit" class="button">Buscar</button>
+            </form>
+    
+            <?php if (empty($voting_users)) : ?>
+                <p>Nenhum voto registrado para esta votação.</p>
+            <?php else : ?>
+                <table class="wp-list-table widefat fixed striped users">
+                    <thead>
                         <tr>
-                            <td><?php echo esc_html($user['user_id']); ?></td>
-                            <td><?php echo esc_html($user['user_name']); ?></td>
-                            <td><?php echo esc_html($user['user_email']); ?></td>
-                            <td>
-                                <button type="button" 
-                                        class="button vs-view-user-votes" 
-                                        data-user-id="<?php echo esc_attr($user['user_id']); ?>" 
-                                        data-votacao-id="<?php echo esc_attr($votacao_id); ?>">
-                                    Ver Respostas
-                                </button>
-                            </td>
+                            <th scope="col" class="manage-column">
+                                <a href="<?php echo vs_build_sort_url($base_url, 'user_id', $order); ?>">
+                                    ID
+                                    <?php if ($orderby == 'user_id') : ?>
+                                        <span class="dashicons dashicons-arrow-<?php echo ($order == 'asc') ? 'up' : 'down'; ?>"></span>
+                                    <?php else : ?>
+                                        <span class="dashicons dashicons-leftright"></span>
+                                    <?php endif; ?>
+                                </a>
+                            </th>
+                            <th scope="col" class="manage-column">
+                                <a href="<?php echo vs_build_sort_url($base_url, 'user_name', $order); ?>">
+                                    Nome
+                                    <?php if ($orderby == 'user_name') : ?>
+                                        <span class="dashicons dashicons-arrow-<?php echo ($order == 'asc') ? 'up' : 'down'; ?>"></span>
+                                    <?php else : ?>
+                                        <span class="dashicons dashicons-leftright"></span>
+                                    <?php endif; ?>
+                                </a>
+                            </th>
+                            <th scope="col" class="manage-column">
+                                <a href="<?php echo vs_build_sort_url($base_url, 'user_email', $order); ?>">
+                                    E-mail
+                                    <?php if ($orderby == 'user_email') : ?>
+                                        <span class="dashicons dashicons-arrow-<?php echo ($order == 'asc') ? 'up' : 'down'; ?>"></span>
+                                    <?php else : ?>
+                                        <span class="dashicons dashicons-leftright"></span>
+                                    <?php endif; ?>
+                                </a>
+                            </th>
+                            <th scope="col" class="manage-column">Ações</th>
                         </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($voting_users as $user) : ?>
+                            <tr>
+                                <td><?php echo esc_html($user['user_id']); ?></td>
+                                <td><?php echo esc_html($user['user_name']); ?></td>
+                                <td><?php echo esc_html($user['user_email']); ?></td>
+                                <td>
+                                    <button type="button" 
+                                            class="button vs-view-user-votes" 
+                                            data-user-id="<?php echo esc_attr($user['user_id']); ?>" 
+                                            data-votacao-id="<?php echo esc_attr($votacao_id); ?>">
+                                        Ver Respostas
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+    
+                <?php
+                // Paginação
+                $pagination_links = paginate_links([
+                    'base' => add_query_arg('paged', '%#%'),
+                    'format' => '',
+                    'current' => $paged,
+                    'total' => $total_pages,
+                    'prev_text' => '&laquo;',
+                    'next_text' => '&raquo;',
+                ]);
+    
+                if ($pagination_links) {
+                    echo '<div class="tablenav"><div class="tablenav-pages">' . $pagination_links . '</div></div>';
+                }
+                ?>
+            <?php endif; ?>
+        </div>
 
-            <?php
-            // Paginação
-            $pagination_links = paginate_links([
-                'base' => add_query_arg('paged', '%#%'),
-                'format' => '',
-                'current' => $paged,
-                'total' => $total_pages,
-                'prev_text' => '&laquo;',
-                'next_text' => '&raquo;',
-            ]);
-
-            if ($pagination_links) {
-                echo '<div class="tablenav"><div class="tablenav-pages">' . $pagination_links . '</div></div>';
-            }
-            ?>
-        <?php endif; ?>
     </div>
 
     <!-- Modal para exibir respostas do usuário -->
@@ -215,7 +272,7 @@ function vs_render_subpage_navigation($votacao_id, $current_page = 'todos') {
         ],
     ];
 
-    echo '<div class="subsubsub" style="display: block; position: relative; width: 100%; margin-bottom: 30px;">';
+    echo '<div class="subsubsub" style="display: block; position: relative; width: 100%; margin-bottom: 30px; float: unset !important;">';
     
     foreach ($links as $key => $link) {
         $class = ($current_page === $key) ? 'current' : '';
