@@ -22,7 +22,7 @@ function vs_render_unificacao_page($votacao_id) {
         $perguntas = array();
     }
 
-    // Busca todos os posts de resposta vinculados a esta votação
+    // Busca todos os posts de resposta vinculados a esta votação (excluindo lixeira)
     $args = array(
         'post_type'      => 'votacao_resposta',
         'posts_per_page' => -1,
@@ -40,6 +40,7 @@ function vs_render_unificacao_page($votacao_id) {
     $query = new WP_Query($args);
 
     // Constrói agregação para Coluna 2 baseada nas unificações armazenadas por resposta
+    // Agora só considera respostas que não estão na lixeira
     $agg_counts = array();
     $agg_posts = array();
     $agg_slot_map = array();
@@ -49,6 +50,12 @@ function vs_render_unificacao_page($votacao_id) {
             $query->the_post();
 
             $resp_post_id = get_the_ID();
+            
+            // Verificação adicional de segurança: pula posts que estão na lixeira
+            $post_status = get_post_status($resp_post_id);
+            if ($post_status === 'trash') {
+                continue;
+            }
 
             // Cada post de resposta pode ter um array de valores unificados por pergunta
             $unifications = get_post_meta($resp_post_id, 'vs_resposta_unificada', true);
@@ -141,6 +148,12 @@ function vs_render_unificacao_page($votacao_id) {
                                 while ($query->have_posts()) :
                                     $query->the_post();
                                     $post_id = get_the_ID();
+
+                                    // Verificação adicional de segurança: pula posts que estão na lixeira
+                                    $post_status = get_post_status($post_id);
+                                    if ($post_status === 'trash') {
+                                        continue;
+                                    }
 
                                     // Coleta exibição do usuário (meta armazenado vs_usuario_id)
                                     $user_id = get_post_meta($post_id, 'vs_usuario_id', true);

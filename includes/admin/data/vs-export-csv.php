@@ -215,3 +215,106 @@ function get_respostas_votacao($votacao_id) {
 
     return $respostas;
 }
+
+
+// Registrar a ação para exportar CSV de estatísticas
+add_action('admin_post_export_csv_statistics', 'vs_export_csv_statistics');
+
+/**
+ * Função para exportar as estatísticas de uma votação para um arquivo CSV.
+ * Esta função gera um CSV com as respostas agrupadas e suas contagens.
+ * 
+ * Parâmetros:
+ *  - $_GET['votacao_id']: ID da votação que será exportada.
+ *  - $_GET['group_mode']: Modo de agrupamento ('by_answer' ou 'by_question').
+ *  - $_GET['question_filter']: Filtro de pergunta (opcional).
+ */
+function vs_export_csv_statistics() {
+    // Verificar parâmetros obrigatórios
+    if (!isset($_GET['votacao_id']) || !isset($_GET['group_mode'])) {
+        wp_die('Parâmetros obrigatórios não fornecidos.');
+    }
+
+    // Verificar permissão
+    if (!current_user_can('manage_options')) {
+        wp_die('Você não tem permissão para exportar os dados.');
+    }
+
+    $votacao_id = (int) $_GET['votacao_id'];
+    $group_mode = sanitize_text_field($_GET['group_mode']);
+    $question_filter = isset($_GET['question_filter']) ? sanitize_text_field($_GET['question_filter']) : 'all';
+
+    // Verificar se a votação existe
+    if (get_post_status($votacao_id) === false) {
+        wp_die('ID de votação inválido.');
+    }
+
+    // Validar modo de agrupamento
+    if (!in_array($group_mode, ['by_answer', 'by_question'])) {
+        wp_die('Modo de agrupamento inválido.');
+    }
+
+    // Obter informações da votação
+    $votacao_titulo = get_the_title($votacao_id);
+    $votacao_codigo = get_post_meta($votacao_id, '_vs_codigo', true);
+    $votacao_ano = get_post_meta($votacao_id, '_vs_ano', true);
+
+    // Se não houver código ou ano, usar valores padrão
+    if (empty($votacao_codigo)) {
+        $votacao_codigo = 'VOT-' . date('Y') . '-' . $votacao_id;
+    }
+    if (empty($votacao_ano)) {
+        $votacao_ano = date('Y');
+    }
+
+    // Obter estatísticas usando a função existente
+    if (!function_exists('vs_get_voting_statistics')) {
+        wp_die('Função de estatísticas não encontrada. Certifique-se de que o arquivo vs-page-results-details.php está carregado.');
+    }
+
+    $statistics = vs_get_voting_statistics($votacao_id, $question_filter, $group_mode);
+
+    if (empty($statistics)) {
+        wp_die('Não há dados para exportar com os filtros selecionados.');
+    }
+
+    // Configurar headers para download do CSV
+    $filename = 'estatisticas_votacao_' . $group_mode . '_' . $votacao_id . '_' . date('Y-m-d_H-i-s') . '.csv';
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    $output = fopen('php://output', 'w');
+
+    // Adicionar BOM para UTF-8
+    fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+
+    // Definir cabeçalhos baseado no modo de agrupamento
+    if ($group_mode === 'by_question') {
+        $headers = ['Votação', 'Código', 'Ano', 'Respostas', 'Votos totais', 'Unificado (sim/não)', 'Pergunta'];
+    } else {
+        $headers = ['Votação', 'Código', 'Ano', 'Respostas', 'Votos totais', 'Unificado (sim/não)'];
+    }
+
+    fputcsv($output, $headers);
+
+    // Preencher dados
+    foreach ($statistics as $stat) {
+        $row = [
+            $votacao_titulo,
+            $votacao_codigo,
+            $votacao_ano,
+            $stat['answer'],
+            $stat['count'],
+            $stat['is_unified'] ? 'Sim' : 'Não'
+        ];
+
+        // Adicionar coluna de pergunta se necessário
+        if ($group_mode === 'by_question') {
+            $row[] = $stat['question_label'] ?? '';
+        }
+
+        fputcsv($output, $row);
+    }
+
+    fclose($output);
+    exit();
+}

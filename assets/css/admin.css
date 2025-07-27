@@ -449,3 +449,22 @@
     display: inline-block;
     opacity: 1;
 }
+
+
+/* vs-page-results-details */
+.statistics-card {
+    position: relative;
+    margin-bottom: 60px;
+    padding: .7em 2em 1em;
+    background: #fff;
+    box-shadow: 0 10px 15px rgb(24 21 125 / 6%), 0 10px 30px rgb(24 21 125 / 6%);
+    box-sizing: border-box;
+    border-radius: 10px;
+}
+
+/* ADMIN - GLOBAL */
+
+.wp-list-table {
+    border-radius: 10px;
+    box-shadow: 0 10px 15px rgb(24 21 125 / 6%), 0 10px 30px rgb(24 21 125 / 6%) !important;
+}

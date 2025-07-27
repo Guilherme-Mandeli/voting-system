@@ -48,6 +48,30 @@ function vs_restrict_answer_to_logged_in() {
 }
 add_action( 'template_redirect', 'vs_restrict_answer_to_logged_in' );
 
+/**
+ * Automatically publish 'votacao_resposta' posts when restored from trash.
+ *
+ * @param int $post_id The post ID that was restored.
+ * @return void
+ */
+function vs_auto_publish_restored_answer( $post_id ) {
+    $post = get_post( $post_id );
+    
+    // Verifica se é um post do tipo 'votacao_resposta'
+    if ( ! $post || $post->post_type !== 'votacao_resposta' ) {
+        return;
+    }
+    
+    // Se o post foi restaurado como rascunho, publica automaticamente
+    if ( $post->post_status === 'draft' ) {
+        wp_update_post( array(
+            'ID' => $post_id,
+            'post_status' => 'publish'
+        ) );
+    }
+}
+add_action( 'untrashed_post', 'vs_auto_publish_restored_answer' );
+
 /* ------------------------------------------------------------------------- *
  * Admin List Table Columns
  * ------------------------------------------------------------------------- */
