@@ -49,10 +49,8 @@ function vs_handle_form_submit() {
         wp_die('Você precisa estar logado para votar.', 'Erro', ['response' => 403]);
     }
 
-    if ( !isset($_POST['vs_votacao_nonce']) || !wp_verify_nonce($_POST['vs_votacao_nonce'], 'vs_votacao_nonce') ) {
-        wp_die('Ação não autorizada.', 'Erro', ['response' => 403]);
-    }
-
+    vs_verify_form_nonce_or_die( VS_Nonce_Actions::FORM_VOTING, 'vs_votacao_nonce' );
+    
     $user_id = get_current_user_id();
     $votacao_id = intval($_POST['vs_votacao_id']);
     $respostas = $_POST['respostas'] ?? [];

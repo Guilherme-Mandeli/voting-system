@@ -239,11 +239,13 @@ function vs_render_todos_resultados_page($votacao_id) {
                                 <td>
                                     <a href="<?php echo admin_url('edit.php?post_type=votacoes&page=votacoes_resultados_visualizar&votacao_id=' . $votacao_id . '&user_id=' . $user['user_id']); ?>" class="button button-small">Ver Detalhes</a>
                                     
-                                    <?php if ($user['response_post_id']) : ?>
-                                        <?php if ($user['response_status'] === 'trash') : ?>
-                                            <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vs_restore_response&post_id=' . $user['response_post_id'] . '&votacao_id=' . $votacao_id), 'vs_restore_response_' . $user['response_post_id']); ?>" class="button button-small" style="color: #46b450;">Restaurar</a>
+                                    <?php if ( $user['response_post_id'] ) : ?>
+                                        <?php if ( $user['response_status'] === 'trash' ) : ?>
+                                            <a href="<?php echo esc_url( vs_create_post_action_url( admin_url( 'admin-post.php' ), VS_Nonce_Actions::ACTION_RESTORE, $user['response_post_id'], [ 'votacao_id' => $votacao_id ] ) ); ?>" class="button button-small" style="color: #46b450;">Restaurar</a>
+
+                                            <a href="<?php echo esc_url( vs_create_post_action_url( admin_url( 'admin-post.php' ), VS_Nonce_Actions::ACTION_TRASH, $user['response_post_id'], [ 'votacao_id' => $votacao_id ] ) ); ?>" class="button button-small" style="color: #dc3232;" onclick="return confirm('Tem certeza que deseja remover esta resposta?')">Remover</a>
                                         <?php else : ?>
-                                            <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vs_trash_response&post_id=' . $user['response_post_id'] . '&votacao_id=' . $votacao_id), 'vs_trash_response_' . $user['response_post_id']); ?>" class="button button-small" style="color: #dc3232;" onclick="return confirm('Tem certeza que deseja remover esta resposta?')">Remover</a>
+                                            <a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=vs_trash_response&post_id=' . $user['response_post_id'] . '&votacao_id=' . $votacao_id ), 'vs_trash_response_' . $user['response_post_id'] ) ); ?>" class="button button-small" style="color: #dc3232;" onclick="return confirm('Tem certeza que deseja remover esta resposta?')">Remover</a>
                                         <?php endif; ?>
                                     <?php endif; ?>
                                 </td>

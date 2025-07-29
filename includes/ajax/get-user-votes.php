@@ -55,11 +55,8 @@ defined( 'ABSPATH' ) || exit;
 
 // Função de tratamento do Ajax
 function vs_ajax_get_user_votes() {
-    // Verifica o nonce correto que vem do JavaScript
-    if ( ! wp_verify_nonce( $_POST['vs_nonce'], 'vs_ajax_nonce' ) ) {
-        wp_send_json_error( 'Nonce inválido.' );
-    }
-
+    vs_verify_ajax_nonce_or_die( VS_Nonce_Actions::AJAX_GENERAL, 'vs_nonce' );
+    
     // Verifica permissões do usuário
     if ( ! current_user_can( 'manage_options' ) ) {
         wp_send_json_error( 'Permissão insuficiente.' );

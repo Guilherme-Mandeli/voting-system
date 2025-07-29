@@ -135,7 +135,7 @@ function vs_update_votantes($votacao_id, $user_id) {
 }
 
 function vs_generate_thank_you_token($user_id, $votacao_id) {
-    $token = wp_create_nonce('vs_obrigado_' . $user_id . '_' . $votacao_id);
+    $token = vs_generate_user_token( $user_id, $votacao_id );
     set_transient('vs_obrigado_token_' . $user_id . '_' . $votacao_id, $token, 5 * MINUTE_IN_SECONDS);
     return $token;
 }

@@ -47,6 +47,29 @@ class VS_Bootstrap {
         require_once VS_PLUGIN_PATH . 'helpers/vs-utils-permissions.php';
         require_once VS_PLUGIN_PATH . 'helpers/vs-utils-css-loader.php';
         require_once VS_PLUGIN_PATH . 'helpers/vs-utils-admin-ranking.php';
+        
+        // Carrega partials dos templates admin
+        $this->load_admin_template_partials();
+    }
+    
+    /**
+     * Carrega os partials dos templates administrativos
+     */
+    private function load_admin_template_partials() {
+        $partials_path = VS_PLUGIN_PATH . 'templates/admin/partials/';
+        
+        if ( is_admin() ) {
+            // Carrega partials de ranking
+            if ( file_exists( $partials_path . 'ranking-filters.php' ) ) {
+                require_once $partials_path . 'ranking-filters.php';
+            }
+            if ( file_exists( $partials_path . 'ranking-table.php' ) ) {
+                require_once $partials_path . 'ranking-table.php';
+            }
+            if ( file_exists( $partials_path . 'ranking-modal.php' ) ) {
+                require_once $partials_path . 'ranking-modal.php';
+            }
+        }
     }
     
     private function load_frontend() {
@@ -120,6 +143,26 @@ class VS_Bootstrap {
             wp_localize_script( 'vs-votacao-ajax', 'vsAjax', array(
                 'ajaxurl' => admin_url( 'admin-ajax.php' ),
                 'nonce'   => wp_create_nonce( 'vs_ajax_nonce' )
+            ));
+        }
+        
+        // Script para ranking (páginas de resultados com ranking)
+        if ( $page === 'votacoes_resultados_visualizar' ||
+             ( $current_screen && strpos( $current_screen->id, 'votacoes_page_votacoes_resultados' ) !== false ) ) {
+            
+            wp_enqueue_script( 
+                'vs-admin-ranking', 
+                VS_PLUGIN_URL . 'assets/js/admin-ranking.js', 
+                array( 'jquery' ), 
+                VS_PLUGIN_VERSION, 
+                true 
+            );
+            
+            // Localizar script para ranking
+            wp_localize_script( 'vs-admin-ranking', 'vsAdminAjax', array(
+                'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+                'adminUrl'  => admin_url(),
+                'nonce'     => wp_create_nonce( 'vs_ranking_nonce' )
             ));
         }
         

@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="vs-form border rounded-lg p-4 bg-white shadow-md">
     <input type="hidden" name="action" value="vs_enviar_voto">
     <input type="hidden" name="vs_votacao_id" value="<?php echo esc_attr($votacao_id); ?>">
-    <input type="hidden" name="vs_votacao_nonce" value="<?php echo wp_create_nonce('vs_votacao_nonce'); ?>">
+    <input type="hidden" name="vs_votacao_nonce" value="<?php echo vs_create_nonce( VS_Nonce_Actions::FORM_VOTING ); ?>">
 
     <?php foreach ($perguntas as $index => $pergunta): ?>
         <?php
