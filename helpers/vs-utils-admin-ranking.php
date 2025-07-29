@@ -118,18 +118,18 @@ function vs_get_voting_ranking($votacao_id, $question_filter = 'all', $group_mod
     });
 
     // === INÍCIO SIMULAÇÃO PARA TESTE DE PAGINAÇÃO - REMOVER APÓS TESTE ===
-    // Adiciona 132 itens fictícios para testar paginação
-    for ($i = 1; $i <= 1432; $i++) {
-        $ranking[] = [
-            'question_index' => 0,
-            'question_label' => 'Pergunta Teste #1',
-            'answer' => 'Resposta simulada #' . $i,
-            'count' => rand(1, 50),
-            'questions' => [0, 1], // Simula que aparece em 2 perguntas
-            'is_unified' => $i % 3 === 0, // 1/3 dos itens será unificado
-            'unified_count' => $i % 3 === 0 ? rand(1, 5) : 0,
-        ];
-    }
+    // Adiciona 1100 itens fictícios para testar paginação
+    // for ($i = 1; $i <= 1100; $i++) {
+    //     $ranking[] = [
+    //         'question_index' => 0,
+    //         'question_label' => 'Pergunta Teste #1',
+    //         'answer' => 'Resposta simulada #' . $i,
+    //         'count' => rand(1, 50),
+    //         'questions' => [0, 1], // Simula que aparece em 2 perguntas
+    //         'is_unified' => $i % 3 === 0, // 1/3 dos itens será unificado
+    //         'unified_count' => $i % 3 === 0 ? rand(1, 5) : 0,
+    //     ];
+    // }
     // === FIM SIMULAÇÃO PARA TESTE DE PAGINAÇÃO ===
 
     return array_values($ranking);

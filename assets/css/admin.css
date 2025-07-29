@@ -2,6 +2,19 @@
    ESTILOS ADMINISTRATIVOS - VOTING SYSTEM
    ========================================================================== */
 
+.vs-notice {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-left-width: 4px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+    padding: 1px 12px;
+    margin-bottom: 8px;
+}
+
+.vs-notice-info {
+    border-left-color: #72aee6;
+}
+
 /* Modal de Respostas do Usuário */
 .resposta-modal {
     position: fixed;

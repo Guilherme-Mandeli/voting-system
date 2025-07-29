@@ -9,6 +9,7 @@
         initRankingFilters();
         initCardFilters();
         updateCardGroupModeVisibility();
+        updateCardFilterDescription();
     });
 
     function initRankingModal() {
@@ -80,6 +81,9 @@
         } else {
             $('#group-mode-container').hide();
         }
+        
+        // Atualiza a descrição do card
+        updateCardFilterDescription();
     }
 
     // Redireciona a página com os novos filtros
@@ -115,6 +119,7 @@
         }
     }
 
+    // 2. Agora vamos atualizar o JavaScript para controlar ambos os elementos:
     function updateModalFilterDescription() {
         var questionFilter = $('#modal_question_filter').val();
         var groupMode = $('input[name="modal_group_mode"]:checked').val();
@@ -130,7 +135,62 @@
             description = 'Exibindo resultados apenas para a pergunta selecionada.';
         }
         
-        $('#modal-filter-description').html(description);
+        // Atualiza o elemento do modal (se existir)
+        var modalElement = $('#modal-filter-description');
+        if (modalElement.length > 0) {
+            modalElement.html(description);
+        }
+    }
+
+    // Nova função para atualizar a descrição do card
+    function updateCardFilterDescription() {
+        var questionFilter = $('#question_filter').val();
+        var groupMode = $('input[name="group_mode"]:checked').val();
+        var description = '';
+        var cardElement = $('#filter-description');
+        
+        if (questionFilter === 'all') {
+            if (groupMode === 'by_answer') {
+                description = '<strong>Por resposta:</strong> considera respostas iguais independentemente da pergunta.';
+            } else {
+                description = '<strong>Por pergunta:</strong> considera respostas iguais apenas dentro da mesma pergunta.';
+            }
+            cardElement.show().html(description);
+        } else {
+            cardElement.hide();
+        }
+    }
+
+    // Atualiza a visibilidade do agrupamento no card
+    function updateCardGroupModeVisibility() {
+        var questionFilter = $('#question_filter').val();
+        console.log('Card question filter:', questionFilter); // Debug
+        if (questionFilter === 'all') {
+            $('#group-mode-container').show();
+        } else {
+            $('#group-mode-container').hide();
+        }
+        
+        // Atualiza a descrição do card também
+        updateCardFilterDescription();
+    }
+
+    // Nova função para filtros do card
+    function initCardFilters() {
+        // Filtro de pergunta do card
+        $('#question_filter').on('change', function() {
+            updateCardGroupModeVisibility();
+            redirectWithFilters();
+        });
+
+        // Filtros de modo de agrupamento do card
+        $('input[name="group_mode"]').on('change', function() {
+            updateCardFilterDescription();
+            redirectWithFilters();
+        });
+        
+        // Inicializa a descrição do card na primeira carga
+        updateCardFilterDescription();
     }
 
     function updateModalExportUrl(votacaoId) {

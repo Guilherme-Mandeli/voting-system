@@ -57,25 +57,12 @@ function vs_render_ranking_filters($perguntas, $question_filter, $group_mode, $c
             </fieldset>
         </div>
 
-        <?php if ($context === 'card') : ?>
-            <div>
-                <a href="#" id="export-csv" class="button button-secondary <?php echo $class_prefix; ?>export-button">
-                    <span id="export-text">Exportar | CSV</span>
-                </a>
-            </div>
-        <?php else : ?>
-            <div>
-                <a href="#" id="modal-export-csv" class="button button-secondary modal-export-button">
-                    <span id="modal-export-text">Exportar | CSV</span>
-                </a>
-            </div>
-        <?php endif; ?>
+        
     </div>
 
-    <?php if ($question_filter === 'all') : ?>
-        <div class="<?php echo $class_prefix; ?>filter-description">
-            <strong>Por resposta:</strong> considera respostas iguais independentemente da pergunta.<br>
-            <strong>Por pergunta:</strong> considera respostas iguais apenas dentro da mesma pergunta.
+    <?php if ($context === 'card' && $question_filter === 'all') : ?>
+        <div id="filter-description" class="filter-description">
+            <!-- Descrição será atualizada via JavaScript -->
         </div>
     <?php endif; ?>
     <?php

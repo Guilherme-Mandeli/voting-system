@@ -128,6 +128,29 @@ function vs_render_todos_resultados_page($votacao_id) {
         </div>
 
         <div class="user-container">
+            <div class="notification-container" style="margin-bottom: 15px;">
+                <?php if ($status_filter !== 'all') : ?>
+                    <div class="vs-notice vs-notice-info">
+                        <p><strong>Filtro ativo:</strong> 
+                            <?php 
+                            switch($status_filter) {
+                                case 'active':
+                                    echo 'Exibindo apenas respostas ativas.';
+                                    break;
+                                case 'trashed':
+                                    echo 'Exibindo apenas respostas removidas.';
+                                    break;
+                            }
+                            ?>
+                        </p>
+                    </div>
+                <?php endif; ?>
+    
+                <div class="vs-notice vs-notice-info">
+                    <p><strong>Resultados encontrados:</strong> <?php echo count($voting_users); ?></p>
+                </div>
+            </div>
+
             <form method="GET" style="margin-bottom:20px;">
                 <input type="hidden" name="post_type" value="votacoes" />
                 <input type="hidden" name="page" value="votacoes_resultados_visualizar" />
@@ -151,23 +174,6 @@ function vs_render_todos_resultados_page($votacao_id) {
                     
                     <button type="submit" class="button">Filtrar</button>
                 </div>
-                
-                <?php if ($status_filter !== 'all') : ?>
-                    <div class="notice notice-info" style="margin-top: 10px;">
-                        <p><strong>Filtro ativo:</strong> 
-                            <?php 
-                            switch($status_filter) {
-                                case 'active':
-                                    echo 'Exibindo apenas respostas ativas (' . count($voting_users) . ' encontradas)';
-                                    break;
-                                case 'trashed':
-                                    echo 'Exibindo apenas respostas removidas (' . count($voting_users) . ' encontradas)';
-                                    break;
-                            }
-                            ?>
-                        </p>
-                    </div>
-                <?php endif; ?>
             </form>
     
             <?php if (empty($voting_users)) : ?>
