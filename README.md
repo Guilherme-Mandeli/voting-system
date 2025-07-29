@@ -28,7 +28,7 @@ Sistema completo de votações personalizado para WordPress com interface admini
 ### 🎯 Funcionalidades Principais
 - **Votações Personalizadas**: Crie votações com perguntas dinâmicas e diferentes tipos de campos
 - **Interface Administrativa**: Painel completo para gerenciamento de votações e resultados
-- **Sistema de Unificação**: Agrupe respostas similares para análise estatística avançada
+- **Sistema de Unificação**: Agrupe respostas similares
 - **Shortcodes Flexíveis**: Integre votações em qualquer página ou post
 - **Área do Usuário**: Painel personalizado para usuários gerenciarem suas votações
 - **Feeds Públicos**: Exiba listas de votações com filtros avançados
@@ -378,7 +378,7 @@ voting-system/
 ### Painel de Controle
 - **Dashboard**: Visão geral das votações
 - **Gerenciamento**: Criar, editar e excluir votações
-- **Resultados**: Visualizar respostas e estatísticas
+- **Resultados**: Visualizar respostas e ranking
 - **Unificação**: Agrupar respostas similares
 - **Exportação**: Download de dados em CSV
 
@@ -402,7 +402,7 @@ voting-system/
 5. **Aplicação**: Atualização automática via AJAX
 
 ### Benefícios
-- **Análise Estatística**: Dados mais precisos
+- **Ranking**: Dados facilitados
 - **Relatórios Limpos**: Menos variações desnecessárias
 - **Insights Melhores**: Padrões mais claros
 - **Exportação Organizada**: CSV com dados unificados

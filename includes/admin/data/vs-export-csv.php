@@ -217,11 +217,11 @@ function get_respostas_votacao($votacao_id) {
 }
 
 
-// Registrar a ação para exportar CSV de estatísticas
-add_action('admin_post_export_csv_statistics', 'vs_export_csv_statistics');
+// Registrar a ação para exportar CSV de ranking
+add_action('admin_post_export_csv_ranking', 'vs_export_csv_ranking');
 
 /**
- * Função para exportar as estatísticas de uma votação para um arquivo CSV.
+ * Função para exportar o ranking de uma votação para um arquivo CSV.
  * Esta função gera um CSV com as respostas agrupadas e suas contagens.
  * 
  * Parâmetros:
@@ -229,7 +229,7 @@ add_action('admin_post_export_csv_statistics', 'vs_export_csv_statistics');
  *  - $_GET['group_mode']: Modo de agrupamento ('by_answer' ou 'by_question').
  *  - $_GET['question_filter']: Filtro de pergunta (opcional).
  */
-function vs_export_csv_statistics() {
+function vs_export_csv_ranking() {
     // Verificar parâmetros obrigatórios
     if (!isset($_GET['votacao_id']) || !isset($_GET['group_mode'])) {
         wp_die('Parâmetros obrigatórios não fornecidos.');
@@ -267,19 +267,19 @@ function vs_export_csv_statistics() {
         $votacao_ano = date('Y');
     }
 
-    // Obter estatísticas usando a função existente
-    if (!function_exists('vs_get_voting_statistics')) {
-        wp_die('Função de estatísticas não encontrada. Certifique-se de que o arquivo vs-page-results-details.php está carregado.');
+    // Obter ranking usando a função existente
+    if (!function_exists('vs_get_voting_ranking')) {
+        wp_die('Função de ranking não encontrada. Certifique-se de que o arquivo vs-page-results-details.php está carregado.');
     }
 
-    $statistics = vs_get_voting_statistics($votacao_id, $question_filter, $group_mode);
+    $ranking = vs_get_voting_ranking($votacao_id, $question_filter, $group_mode);
 
-    if (empty($statistics)) {
+    if (empty($ranking)) {
         wp_die('Não há dados para exportar com os filtros selecionados.');
     }
 
     // Configurar headers para download do CSV
-    $filename = 'estatisticas_votacao_' . $group_mode . '_' . $votacao_id . '_' . date('Y-m-d_H-i-s') . '.csv';
+    $filename = 'ranking_votacao_' . $group_mode . '_' . $votacao_id . '_' . date('Y-m-d_H-i-s') . '.csv';
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     $output = fopen('php://output', 'w');
@@ -297,7 +297,7 @@ function vs_export_csv_statistics() {
     fputcsv($output, $headers);
 
     // Preencher dados
-    foreach ($statistics as $stat) {
+    foreach ($ranking as $stat) {
         $row = [
             $votacao_titulo,
             $votacao_codigo,

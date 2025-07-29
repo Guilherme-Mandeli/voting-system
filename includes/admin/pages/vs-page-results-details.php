@@ -7,6 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+require_once VS_PLUGIN_PATH . 'templates/admin/template-ranking-card.php';
+
 /**
  * Renderiza a página de detalhes dos resultados
  */
@@ -120,7 +122,7 @@ function vs_render_todos_resultados_page($votacao_id) {
         <div class="results-container">
             <div class="row">
                 <div class="column">
-                    <?php vs_render_statistics_card($votacao_id, $total_users); ?>
+                    <?php vs_render_ranking_card($votacao_id, $total_users); ?>
                 </div>
             </div>
         </div>
@@ -235,37 +237,15 @@ function vs_render_todos_resultados_page($votacao_id) {
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <div style="display: flex; gap: 10px; align-items: center;">
-                                        <button type="button" 
-                                                class="button vs-view-user-votes" 
-                                                data-user-id="<?php echo esc_attr($user['user_id']); ?>" 
-                                                data-votacao-id="<?php echo esc_attr($votacao_id); ?>"
-                                                <?php echo ($user['response_status'] === 'trash') ? 'disabled title="Resposta na lixeira"' : ''; ?>>
-                                            Ver respostas
-                                        </button>
-                                        
-                                        <?php if ($user['response_post_id']) : ?>
-                                            <?php if ($user['response_status'] === 'trash') : ?>
-                                                <!-- Ação de Restaurar -->
-                                                <span class="untrash">
-                                                    <a href="<?php echo wp_nonce_url(admin_url('post.php?post=' . $user['response_post_id'] . '&action=untrash'), 'untrash-post_' . $user['response_post_id']); ?>" 
-                                                       aria-label="Restaurar resposta do usuário <?php echo esc_attr($user['user_name']); ?> da lixeira">
-                                                        Restaurar
-                                                    </a>
-                                                </span>
-                                            <?php else : ?>
-                                                <!-- Ação de Mover para lixeira -->
-                                                <div id="delete-action">
-                                                    <a class="submitdelete deletion" 
-                                                       style="color: #d63638;"
-                                                       href="<?php echo wp_nonce_url(admin_url('post.php?post=' . $user['response_post_id'] . '&action=trash'), 'trash-post_' . $user['response_post_id']); ?>"
-                                                       onclick="return confirm('Tem certeza que deseja mover esta resposta para a lixeira?');">
-                                                        Mover para lixeira
-                                                    </a>
-                                                </div>
-                                            <?php endif; ?>
+                                    <a href="<?php echo admin_url('edit.php?post_type=votacoes&page=votacoes_resultados_visualizar&votacao_id=' . $votacao_id . '&user_id=' . $user['user_id']); ?>" class="button button-small">Ver Detalhes</a>
+                                    
+                                    <?php if ($user['response_post_id']) : ?>
+                                        <?php if ($user['response_status'] === 'trash') : ?>
+                                            <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vs_restore_response&post_id=' . $user['response_post_id'] . '&votacao_id=' . $votacao_id), 'vs_restore_response_' . $user['response_post_id']); ?>" class="button button-small" style="color: #46b450;">Restaurar</a>
+                                        <?php else : ?>
+                                            <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vs_trash_response&post_id=' . $user['response_post_id'] . '&votacao_id=' . $votacao_id), 'vs_trash_response_' . $user['response_post_id']); ?>" class="button button-small" style="color: #dc3232;" onclick="return confirm('Tem certeza que deseja remover esta resposta?')">Remover</a>
                                         <?php endif; ?>
-                                    </div>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -273,33 +253,103 @@ function vs_render_todos_resultados_page($votacao_id) {
                 </table>
     
                 <?php
-                // Paginação
-                $pagination_links = paginate_links([
-                    'base' => add_query_arg('paged', '%#%'),
-                    'format' => '',
-                    'current' => $paged,
-                    'total' => $total_pages,
-                    'prev_text' => '&laquo;',
-                    'next_text' => '&raquo;',
-                ]);
-    
-                if ($pagination_links) {
-                    echo '<div class="tablenav"><div class="tablenav-pages">' . $pagination_links . '</div></div>';
+                /**
+                 * Renderiza a paginação
+                 */
+                function vs_render_pagination($current_page, $total_pages, $base_url, $params = []) {
+                    if ($total_pages <= 1) return;
+                    
+                    echo '<div class="tablenav bottom">';
+                    echo '<div class="tablenav-pages">';
+                    
+                    $page_links = paginate_links([
+                        'base' => add_query_arg('paged', '%#%', $base_url),
+                        'format' => '',
+                        'prev_text' => '&laquo;',
+                        'next_text' => '&raquo;',
+                        'total' => $total_pages,
+                        'current' => $current_page,
+                        'add_args' => $params
+                    ]);
+                    
+                    if ($page_links) {
+                        echo '<span class="pagination-links">' . $page_links . '</span>';
+                    }
+                    
+                    echo '</div>';
+                    echo '</div>';
                 }
                 ?>
+
+                <div style="margin-top: 20px;">
+                    <label for="per_page">Itens por página:</label>
+                    <select id="per_page" name="per_page" onchange="location.href='<?php echo esc_url($base_url); ?>&per_page=' + this.value + '&orderby=<?php echo esc_attr($orderby); ?>&order=<?php echo esc_attr($order); ?>&s=<?php echo esc_attr($search_term); ?>&status_filter=<?php echo esc_attr($status_filter); ?>'">
+                        <?php foreach ($opcoes_por_pagina as $opcao) : ?>
+                            <option value="<?php echo $opcao; ?>" <?php selected($usuarios_por_pagina, $opcao); ?>><?php echo $opcao; ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
             <?php endif; ?>
         </div>
 
     </div>
 
-    <!-- Modal para exibir respostas do usuário -->
-    <div id="vs-user-votes-modal" style="display: none;">
-        <div class="vs-modal-content">
-            <span class="vs-modal-close">&times;</span>
-            <div id="vs-modal-body"></div>
-        </div>
-    </div>
 
+
+    <style>
+    .results-container {
+        margin: 20px 0;
+    }
+    
+    .row {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .column {
+        flex: 1;
+    }
+    
+    .ranking-card {
+        background: #fff;
+        border: 1px solid #ccd0d4;
+        border-radius: 4px;
+        padding: 20px;
+        box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    }
+    
+    .card-header h2 {
+        margin: 0 0 10px 0;
+        font-size: 18px;
+    }
+    
+    .vote-results-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    
+    .vote-results-table th,
+    .vote-results-table td {
+        padding: 8px 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .vote-results-table th {
+        background-color: #f1f1f1;
+        font-weight: bold;
+    }
+    
+    .vote-results-table tbody tr:hover {
+        background-color: #f9f9f9;
+    }
+    
+    .user-container {
+        margin-top: 30px;
+    }
+    </style>
     <?php
 }
 
@@ -438,320 +488,4 @@ function vs_build_url($base_url, $params = []) {
         $query[$key] = $value;
     }
     return $base_url . '&' . http_build_query($query);
-}
-
-/**
- * Obtém estatísticas das respostas mais votadas para uma votação
- */
-function vs_get_voting_statistics($votacao_id, $question_filter = 'all', $group_mode = 'by_answer') {
-    $perguntas = vs_get_voting_questions($votacao_id);
-    
-    if (empty($perguntas)) {
-        return [];
-    }
-
-    // Busca todas as respostas da votação
-    $args = [
-        'post_type' => 'votacao_resposta',
-        'posts_per_page' => -1,
-        'post_status' => ['publish', 'private'],
-        'meta_query' => [
-            [
-                'key' => 'vs_votacao_id',
-                'value' => $votacao_id,
-                'compare' => '=',
-            ],
-        ],
-    ];
-
-    $response_posts = get_posts($args);
-    $statistics = [];
-
-    foreach ($response_posts as $post) {
-        $respostas_detalhadas = get_post_meta($post->ID, 'vs_respostas_detalhadas', true);
-        $respostas_unificadas = get_post_meta($post->ID, 'vs_resposta_unificada', true);
-        
-        if (!is_array($respostas_detalhadas)) continue;
-        if (!is_array($respostas_unificadas)) $respostas_unificadas = [];
-
-        foreach ($respostas_detalhadas as $index => $resposta_original) {
-            // Verifica se deve filtrar por pergunta específica
-            if ($question_filter !== 'all' && $question_filter !== "q{$index}") {
-                continue;
-            }
-
-            // Verifica se existe resposta unificada para esta pergunta
-            $tem_resposta_unificada = isset($respostas_unificadas[$index]) && !empty(trim($respostas_unificadas[$index]));
-            
-            // Usa resposta unificada se existir, senão usa a original
-            $resposta_final = $tem_resposta_unificada
-                ? $respostas_unificadas[$index]
-                : $resposta_original;
-
-            // Formata a resposta (pode ser array ou string)
-            $resposta_formatada = is_array($resposta_final) 
-                ? implode(', ', array_map('sanitize_text_field', $resposta_final))
-                : sanitize_text_field($resposta_final);
-
-            // Ignora respostas vazias
-            if (empty(trim($resposta_formatada))) continue;
-
-            // Cria chave única para a estatística baseada no modo de agrupamento
-            if ($group_mode === 'by_answer') {
-                // Por resposta: agrupa apenas pelo conteúdo da resposta
-                $key = $resposta_formatada;
-            } else {
-                // Por pergunta: agrupa por pergunta + resposta (comportamento original)
-                $key = $index . '|' . $resposta_formatada;
-            }
-
-            if (!isset($statistics[$key])) {
-                $statistics[$key] = [
-                    'question_index' => $index,
-                    'question_label' => isset($perguntas[$index]['label']) 
-                        ? $perguntas[$index]['label'] 
-                        : 'Pergunta #' . ($index + 1),
-                    'answer' => $resposta_formatada,
-                    'count' => 0,
-                    'questions' => [], // Para modo "por resposta", armazena quais perguntas têm essa resposta
-                    'is_unified' => false, // Inicializa como false
-                    'unified_count' => 0, // Conta quantas respostas unificadas contribuem para esta estatística
-                ];
-            }
-
-            $statistics[$key]['count']++;
-            
-            // Se esta resposta específica foi unificada, incrementa o contador
-            if ($tem_resposta_unificada) {
-                $statistics[$key]['unified_count']++;
-            }
-            
-            // Se for agrupamento por resposta, adiciona a pergunta à lista
-            if ($group_mode === 'by_answer') {
-                if (!in_array($index, $statistics[$key]['questions'])) {
-                    $statistics[$key]['questions'][] = $index;
-                }
-            }
-        }
-    }
-
-    // Determina se cada estatística deve ser considerada "unificada"
-    foreach ($statistics as $key => &$stat) {
-        // Uma resposta é considerada "unificada" se pelo menos uma das respostas que contribuem para ela foi unificada
-        $stat['is_unified'] = $stat['unified_count'] > 0;
-    }
-
-    // Ordena por quantidade de votos (decrescente)
-    uasort($statistics, function($a, $b) {
-        return $b['count'] - $a['count'];
-    });
-
-    return array_values($statistics);
-}
-
-/**
- * Renderiza o card de estatísticas dinâmico
- */
-function vs_render_statistics_card($votacao_id, $total_users) {
-    $perguntas = vs_get_voting_questions($votacao_id);
-    $question_filter = isset($_GET['question_filter']) ? sanitize_text_field($_GET['question_filter']) : 'all';
-    $group_mode = isset($_GET['group_mode']) ? sanitize_text_field($_GET['group_mode']) : 'by_answer';
-    
-    // Valida o modo de agrupamento
-    if (!in_array($group_mode, ['by_question', 'by_answer'])) {
-        $group_mode = 'by_answer';
-    }
-    
-    $statistics = vs_get_voting_statistics($votacao_id, $question_filter, $group_mode);
-    
-    // Limita a 5 resultados para exibição inicial
-    $top_statistics = array_slice($statistics, 0, 5);
-    
-    // URL para exportação CSV
-    $export_url = admin_url('admin-post.php') . '?' . http_build_query([
-        'action' => 'export_csv_statistics',
-        'votacao_id' => $votacao_id,
-        'group_mode' => $group_mode,
-        'question_filter' => $question_filter
-    ]);
-    ?>
-    <div class="statistics-card">
-        <div class="card-header">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-                <div>
-                    <p><strong>Votos totais:</strong> <?php echo esc_html($total_users); ?></p>
-                    <h2>Mais votados</h2>
-                </div>
-                <div>
-                    <a href="<?php echo esc_url($export_url); ?>" class="button button-secondary" style="font-size: 12px; padding: 4px 8px;">
-                        <?php if ($group_mode === 'by_question') : ?>
-                            Exportar por pergunta | CSV
-                        <?php else : ?>
-                            Exportar por resposta | CSV
-                        <?php endif; ?>
-                    </a>
-                </div>
-            </div>
-            <p>Respostas mais recorrentes de:</p>
-
-            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
-                <div>
-                    <label for="question_filter" class="screen-reader-text">Filtrar por pergunta</label>
-                    <select id="question_filter" name="question_filter" class="question-filter">
-                        <option value="all" <?php selected($question_filter, 'all'); ?>>Todas as perguntas</option>
-                        <?php foreach ($perguntas as $index => $pergunta) : ?>
-                            <option value="q<?php echo $index; ?>" <?php selected($question_filter, "q{$index}"); ?>>
-                                <?php echo esc_html($pergunta['label'] ?? "Pergunta #" . ($index + 1)); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <?php if ($question_filter === 'all') : ?>
-                    <div id="group-mode-container">
-                        <fieldset>
-                            <legend style="font-size: 12px; margin-bottom: 5px;">Modo de agrupamento:</legend>
-                            <div style="display: flex; gap: 15px;">
-                                <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
-                                    <input type="radio" name="group_mode" value="by_answer" <?php checked($group_mode, 'by_answer'); ?>>
-                                    Por resposta
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
-                                    <input type="radio" name="group_mode" value="by_question" <?php checked($group_mode, 'by_question'); ?>>
-                                    Por pergunta
-                                </label>
-                            </div>
-                        </fieldset>
-                    </div>
-                <?php endif; ?>
-            </div>
-
-            <?php if ($question_filter === 'all') : ?>
-                <div style="font-size: 11px; color: #666; margin-top: 5px;">
-                    <strong>Por resposta:</strong> considera respostas iguais independentemente da pergunta.<br>
-                    <strong>Por pergunta:</strong> considera respostas iguais apenas dentro da mesma pergunta.
-                </div>
-            <?php endif; ?>
-        </div>
-
-        <div class="card-body">
-            <?php if (empty($top_statistics)) : ?>
-                <p><em>Nenhuma resposta encontrada para os filtros selecionados.</em></p>
-            <?php else : ?>
-                <table class="vote-results-table">
-                    <thead>
-                        <tr>
-                            <th>Resposta</th>
-                            <th>Votos</th>
-                            <?php if ($question_filter === 'all' && $group_mode === 'by_question') : ?>
-                                <th>Pergunta</th>
-                            <?php endif; ?>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($top_statistics as $stat) : ?>
-                            <tr>
-                                <td title="<?php echo esc_attr($stat['answer']); ?>">
-                                    <?php 
-                                    // Limita o texto para não quebrar o layout
-                                    $answer_display = strlen($stat['answer']) > 50 
-                                        ? substr($stat['answer'], 0, 47) . '...' 
-                                        : $stat['answer'];
-                                    echo esc_html($answer_display); 
-                                    ?>
-                                </td>
-                                <td><strong><?php echo esc_html($stat['count']); ?></strong></td>
-                                <?php if ($question_filter === 'all' && $group_mode === 'by_question') : ?>
-                                    <td>
-                                        <small><?php echo esc_html($stat['question_label']); ?></small>
-                                    </td>
-                                <?php endif; ?>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                    <?php if (count($statistics) > 5) : ?>
-                        <tfoot>
-                            <tr>
-                                <td colspan="<?php echo ($question_filter === 'all' && $group_mode === 'by_question') ? '3' : '2'; ?>">
-                                    <a href="#" id="vs-show-all-results" data-votacao-id="<?php echo esc_attr($votacao_id); ?>" data-question-filter="<?php echo esc_attr($question_filter); ?>" data-group-mode="<?php echo esc_attr($group_mode); ?>">
-                                        Ver todos os votos
-                                    </a>
-                                </td>
-                            </tr>
-                        </tfoot>
-                    <?php endif; ?>
-                </table>
-            <?php endif; ?>
-        </div>
-
-        <div class="card-footer">
-            <?php if ($question_filter !== 'all') : ?>
-                <p><small>
-                    <strong>Filtro ativo:</strong> 
-                    <?php 
-                    $pergunta_selecionada = null;
-                    foreach ($perguntas as $index => $pergunta) {
-                        if ("q{$index}" === $question_filter) {
-                            $pergunta_selecionada = $pergunta['label'] ?? "Pergunta #" . ($index + 1);
-                            break;
-                        }
-                    }
-                    echo esc_html($pergunta_selecionada);
-                    ?>
-                </small></p>
-            <?php else : ?>
-                <p><small>
-                    <strong>Modo ativo:</strong> 
-                    <?php if ($group_mode === 'by_answer') : ?>
-                        Agrupamento por resposta - respostas iguais de diferentes perguntas são unificadas.
-                    <?php else : ?>
-                        Agrupamento por pergunta - respostas iguais apenas dentro da mesma pergunta.
-                    <?php endif; ?>
-                </small></p>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <script>
-    jQuery(document).ready(function($) {
-        // Filtro por pergunta
-        $('#question_filter').on('change', function() {
-            var currentUrl = new URL(window.location.href);
-            var selectedValue = $(this).val();
-            
-            if (selectedValue === 'all') {
-                currentUrl.searchParams.delete('question_filter');
-            } else {
-                currentUrl.searchParams.set('question_filter', selectedValue);
-                // Remove o group_mode quando uma pergunta específica é selecionada
-                currentUrl.searchParams.delete('group_mode');
-            }
-            
-            window.location.href = currentUrl.toString();
-        });
-
-        // Radio buttons de modo de agrupamento
-        $('input[name="group_mode"]').on('change', function() {
-            var currentUrl = new URL(window.location.href);
-            var selectedValue = $(this).val();
-            
-            currentUrl.searchParams.set('group_mode', selectedValue);
-            window.location.href = currentUrl.toString();
-        });
-
-        // Modal para ver lista completa
-        $('#vs-show-all-results').on('click', function(e) {
-            e.preventDefault();
-            
-            var votacaoId = $(this).data('votacao-id');
-            var questionFilter = $(this).data('question-filter');
-            var groupMode = $(this).data('group-mode');
-            
-            // Aqui você pode implementar um modal ou redirecionar para uma página com todos os resultados
-            // Por enquanto, vamos mostrar um alert
-            alert('Funcionalidade de lista completa será implementada em breve.');
-        });
-    });
-    </script>
-    <?php
 }

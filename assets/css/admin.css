@@ -452,19 +452,242 @@
 
 
 /* vs-page-results-details */
-.statistics-card {
-    position: relative;
-    margin-bottom: 60px;
-    padding: .7em 2em 1em;
-    background: #fff;
-    box-shadow: 0 10px 15px rgb(24 21 125 / 6%), 0 10px 30px rgb(24 21 125 / 6%);
-    box-sizing: border-box;
-    border-radius: 10px;
+
+/* ==========================================================================
+   RANKING - MODAL E COMPONENTES
+   ========================================================================== */
+.vs-modal {
+    position: fixed;
+    z-index: 100000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
 }
 
-/* ADMIN - GLOBAL */
+.vs-modal-content {
+    background-color: #fefefe;
+    margin: 2% auto;
+    padding: 0;
+    border: 1px solid #888;
+    width: 95%;
+    height: 90%;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+}
 
-.wp-list-table {
-    border-radius: 10px;
-    box-shadow: 0 10px 15px rgb(24 21 125 / 6%), 0 10px 30px rgb(24 21 125 / 6%) !important;
+.vs-modal-header {
+    padding: 15px 20px;
+    background: #f1f1f1;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 5px 5px 0 0;
+}
+
+.vs-modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.vs-modal-close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.vs-modal-close:hover {
+    color: #000;
+}
+
+.vs-modal-filters {
+    border-bottom: 1px solid #ddd;
+    background: #fff;
+}
+
+.vs-modal-body {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.unified-badge {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.unified-yes {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.unified-no {
+    background-color: #f5f5f5;
+    color: #666;
+    border: 1px solid #ddd;
+}
+
+.pagination-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 15px 0;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.pagination-info {
+    margin: 0;
+    font-style: italic;
+    color: #666;
+    flex-shrink: 0;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.pagination-controls button {
+    margin: 0;
+    padding: 5px 10px;
+    white-space: nowrap;
+}
+
+/* Responsividade: quando não há espaço suficiente, quebra linha */
+@media (max-width: 600px) {
+    .pagination-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .pagination-controls {
+        align-self: flex-end;
+    }
+}
+
+/* ==========================================================================
+   RANKING - CARD E COMPONENTES ESPECÍFICOS
+   ========================================================================== */
+
+/* Card de ranking */
+.ranking-card .card-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.ranking-card .export-button {
+    font-size: 12px;
+    padding: 4px 8px;
+}
+
+.ranking-card .filters-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.ranking-card .group-mode-legend {
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.ranking-card .group-mode-options {
+    display: flex;
+    gap: 15px;
+}
+
+.ranking-card .group-mode-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+}
+
+.ranking-card .filter-description {
+    font-size: 11px;
+    color: #666;
+    margin-top: 5px;
+}
+
+.ranking-card .show-all-container {
+    margin-top: 15px;
+    text-align: center;
+}
+
+/* Modal de ranking - filtros */
+.vs-modal-filters .modal-filters-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 5px;
+}
+
+.vs-modal-filters .modal-filter-label {
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.vs-modal-filters .modal-group-legend {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.vs-modal-filters .modal-group-options {
+    display: flex;
+    gap: 15px;
+}
+
+.vs-modal-filters .modal-group-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.vs-modal-filters .modal-export-button {
+    font-size: 12px;
+    padding: 4px 8px;
+}
+
+.vs-modal-filters .modal-filter-description {
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 15px;
+    padding: 0 15px;
+}
+
+/* Ajuste específico para paginação no helper */
+.pagination-info.single-page {
+    margin: 15px 0;
+}
+
+/* Responsividade para filtros do modal */
+@media (max-width: 768px) {
+    .vs-modal-filters .modal-filters-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .ranking-card .filters-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
 }

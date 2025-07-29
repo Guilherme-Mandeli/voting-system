@@ -46,6 +46,7 @@ class VS_Bootstrap {
         require_once VS_PLUGIN_PATH . 'helpers/vs-utils-templates.php';
         require_once VS_PLUGIN_PATH . 'helpers/vs-utils-permissions.php';
         require_once VS_PLUGIN_PATH . 'helpers/vs-utils-css-loader.php';
+        require_once VS_PLUGIN_PATH . 'helpers/vs-utils-admin-ranking.php';
     }
     
     private function load_frontend() {
