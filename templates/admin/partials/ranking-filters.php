@@ -25,8 +25,8 @@ function vs_render_ranking_filters($perguntas, $question_filter, $group_mode, $c
     ?>
     <div class="<?php echo $class_prefix; ?>filters-container">
         <div>
-            <label for="<?php echo $prefix; ?>question_filter" class="<?php echo $context === 'modal' ? 'modal-filter-label' : 'screen-reader-text'; ?>">
-                <?php echo $context === 'modal' ? 'Pergunta:' : 'Filtrar por pergunta'; ?>
+            <label for="<?php echo $prefix; ?>question_filter" class="<?php echo $class_prefix; ?>filter-label">
+                <?php echo $context === 'modal' ? 'Pergunta:' : 'Pergunta:'; ?>
             </label>
             <select id="<?php echo $prefix; ?>question_filter" name="<?php echo $prefix; ?>question_filter" class="<?php echo $class_prefix; ?>question-filter">
                 <option value="all" <?php selected($question_filter, 'all'); ?>>Todas as perguntas</option>
@@ -38,29 +38,42 @@ function vs_render_ranking_filters($perguntas, $question_filter, $group_mode, $c
             </select>
         </div>
 
-        <?php if ($question_filter === 'all' || $context === 'modal') : ?>
-            <div id="<?php echo $prefix; ?>group-mode-container" <?php echo $context === 'modal' ? '' : 'style="display: ' . ($question_filter === 'all' ? 'block' : 'none') . ';"'; ?>>
-                <fieldset>
-                    <legend class="<?php echo $class_prefix; ?>group-<?php echo $context === 'modal' ? 'legend' : 'mode-legend'; ?>">
-                        <?php echo $context === 'modal' ? 'Agrupamento:' : 'Modo de agrupamento:'; ?>
-                    </legend>
-                    <div class="<?php echo $class_prefix; ?>group-<?php echo $context === 'modal' ? 'options' : 'mode-options'; ?>">
-                        <label class="<?php echo $class_prefix; ?>group-<?php echo $context === 'modal' ? 'label' : 'mode-label'; ?>">
-                            <input type="radio" name="<?php echo $prefix; ?>group_mode" value="by_answer" <?php checked($group_mode, 'by_answer'); ?>>
-                            Por resposta
-                        </label>
-                        <label class="<?php echo $class_prefix; ?>group-<?php echo $context === 'modal' ? 'label' : 'mode-label'; ?>">
-                            <input type="radio" name="<?php echo $prefix; ?>group_mode" value="by_question" <?php checked($group_mode, 'by_question'); ?>>
-                            Por pergunta
-                        </label>
-                    </div>
-                </fieldset>
+        <!-- Container dos radio buttons sempre renderizado -->
+        <div id="<?php echo $prefix; ?>group-mode-container" style="display: <?php echo $question_filter === 'all' ? 'block' : 'none'; ?>;">
+            <fieldset>
+                <legend class="<?php echo $class_prefix; ?>group-legend">
+                    Agrupamento:
+                </legend>
+                <div class="<?php echo $class_prefix; ?>group-options">
+                    <label class="<?php echo $class_prefix; ?>group-label">
+                        <input type="radio" name="<?php echo $prefix; ?>group_mode" value="by_answer" <?php checked($group_mode, 'by_answer'); ?>>
+                        Por resposta
+                    </label>
+                    <label class="<?php echo $class_prefix; ?>group-label">
+                        <input type="radio" name="<?php echo $prefix; ?>group_mode" value="by_question" <?php checked($group_mode, 'by_question'); ?>>
+                        Por pergunta
+                    </label>
+                </div>
+            </fieldset>
+        </div>
+
+        <?php if ($context === 'card') : ?>
+            <div>
+                <a href="#" id="export-csv" class="button button-secondary <?php echo $class_prefix; ?>export-button">
+                    <span id="export-text">Exportar | CSV</span>
+                </a>
+            </div>
+        <?php else : ?>
+            <div>
+                <a href="#" id="modal-export-csv" class="button button-secondary modal-export-button">
+                    <span id="modal-export-text">Exportar | CSV</span>
+                </a>
             </div>
         <?php endif; ?>
     </div>
 
-    <?php if ($question_filter === 'all' && $context === 'card') : ?>
-        <div class="filter-description">
+    <?php if ($question_filter === 'all') : ?>
+        <div class="<?php echo $class_prefix; ?>filter-description">
             <strong>Por resposta:</strong> considera respostas iguais independentemente da pergunta.<br>
             <strong>Por pergunta:</strong> considera respostas iguais apenas dentro da mesma pergunta.
         </div>

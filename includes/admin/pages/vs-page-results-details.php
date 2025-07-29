@@ -237,15 +237,17 @@ function vs_render_todos_resultados_page($votacao_id) {
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <a href="<?php echo admin_url('edit.php?post_type=votacoes&page=votacoes_resultados_visualizar&votacao_id=' . $votacao_id . '&user_id=' . $user['user_id']); ?>" class="button button-small">Ver Detalhes</a>
+                                    <?php if ( $user['response_status'] !== 'trash' ) : ?>
+                                        <button type="button" class="button button-small vs-view-user-votes" data-user-id="<?php echo esc_attr($user['user_id']); ?>" data-votacao-id="<?php echo esc_attr($votacao_id); ?>">Ver Detalhes</button>
+                                    <?php endif; ?>
                                     
                                     <?php if ( $user['response_post_id'] ) : ?>
                                         <?php if ( $user['response_status'] === 'trash' ) : ?>
                                             <a href="<?php echo esc_url( vs_create_post_action_url( admin_url( 'admin-post.php' ), VS_Nonce_Actions::ACTION_RESTORE, $user['response_post_id'], [ 'votacao_id' => $votacao_id ] ) ); ?>" class="button button-small" style="color: #46b450;">Restaurar</a>
 
-                                            <a href="<?php echo esc_url( vs_create_post_action_url( admin_url( 'admin-post.php' ), VS_Nonce_Actions::ACTION_TRASH, $user['response_post_id'], [ 'votacao_id' => $votacao_id ] ) ); ?>" class="button button-small" style="color: #dc3232;" onclick="return confirm('Tem certeza que deseja remover esta resposta?')">Remover</a>
+                                            <a href="<?php echo esc_url( vs_create_post_action_url( admin_url( 'admin-post.php' ), VS_Nonce_Actions::ACTION_DELETE, $user['response_post_id'], [ 'votacao_id' => $votacao_id ] ) ); ?>" class="button button-small" style="color: #dc3232;" onclick="return confirm('Tem certeza que deseja remover esta resposta permanentemente? Esta ação não pode ser desfeita.')">Remover</a>
                                         <?php else : ?>
-                                            <a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=vs_trash_response&post_id=' . $user['response_post_id'] . '&votacao_id=' . $votacao_id ), 'vs_trash_response_' . $user['response_post_id'] ) ); ?>" class="button button-small" style="color: #dc3232;" onclick="return confirm('Tem certeza que deseja remover esta resposta?')">Remover</a>
+                                            <a href="<?php echo esc_url( vs_create_post_action_url( admin_url( 'admin-post.php' ), VS_Nonce_Actions::ACTION_TRASH, $user['response_post_id'], [ 'votacao_id' => $votacao_id ] ) ); ?>" class="button button-small" style="color: #dc3232;" onclick="return confirm('Tem certeza que deseja remover esta resposta?')">Remover</a>
                                         <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
@@ -311,45 +313,6 @@ function vs_render_todos_resultados_page($votacao_id) {
     
     .column {
         flex: 1;
-    }
-    
-    .ranking-card {
-        background: #fff;
-        border: 1px solid #ccd0d4;
-        border-radius: 4px;
-        padding: 20px;
-        box-shadow: 0 1px 1px rgba(0,0,0,.04);
-    }
-    
-    .card-header h2 {
-        margin: 0 0 10px 0;
-        font-size: 18px;
-    }
-    
-    .vote-results-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 15px;
-    }
-    
-    .vote-results-table th,
-    .vote-results-table td {
-        padding: 8px 12px;
-        text-align: left;
-        border-bottom: 1px solid #ddd;
-    }
-    
-    .vote-results-table th {
-        background-color: #f1f1f1;
-        font-weight: bold;
-    }
-    
-    .vote-results-table tbody tr:hover {
-        background-color: #f9f9f9;
-    }
-    
-    .user-container {
-        margin-top: 30px;
     }
     </style>
     <?php

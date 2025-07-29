@@ -7,6 +7,8 @@
     $(document).ready(function() {
         initRankingModal();
         initRankingFilters();
+        initCardFilters();
+        updateCardGroupModeVisibility();
     });
 
     function initRankingModal() {
@@ -22,7 +24,7 @@
             $('#modal_question_filter').val(questionFilter);
             $('input[name="modal_group_mode"][value="' + groupMode + '"]').prop('checked', true);
             
-            // Atualiza a visibilidade do agrupamento
+            // Atualiza a visibilidade do agrupamento no modal
             updateModalGroupModeVisibility();
             updateModalFilterDescription();
             updateModalExportUrl(votacaoId);
@@ -40,25 +42,76 @@
     }
 
     function initRankingFilters() {
-        // Filtros do modal
-        $('#modal_question_filter').on('change', function() {
+        // Filtros do modal - usando event delegation para garantir que funcione
+        $(document).on('change', '#modal_question_filter', function() {
+            console.log('Modal question filter changed to:', $(this).val()); // Debug
             updateModalGroupModeVisibility();
             updateModalFilterDescription();
             reloadModalRanking();
         });
 
-        $('input[name="modal_group_mode"]').on('change', function() {
+        $(document).on('change', 'input[name="modal_group_mode"]', function() {
+            console.log('Modal group mode changed to:', $(this).val()); // Debug
             updateModalFilterDescription();
             reloadModalRanking();
         });
     }
 
+    // Nova função para filtros do card
+    function initCardFilters() {
+        // Filtro de pergunta do card
+        $('#question_filter').on('change', function() {
+            updateCardGroupModeVisibility();
+            redirectWithFilters();
+        });
+
+        // Filtros de modo de agrupamento do card
+        $('input[name="group_mode"]').on('change', function() {
+            redirectWithFilters();
+        });
+    }
+
+    // Atualiza a visibilidade do agrupamento no card
+    function updateCardGroupModeVisibility() {
+        var questionFilter = $('#question_filter').val();
+        console.log('Card question filter:', questionFilter); // Debug
+        if (questionFilter === 'all') {
+            $('#group-mode-container').show();
+        } else {
+            $('#group-mode-container').hide();
+        }
+    }
+
+    // Redireciona a página com os novos filtros
+    function redirectWithFilters() {
+        var questionFilter = $('#question_filter').val();
+        var groupMode = $('input[name="group_mode"]:checked').val();
+        
+        // Obtém a URL atual
+        var currentUrl = new URL(window.location.href);
+        
+        // Atualiza os parâmetros de filtro
+        currentUrl.searchParams.set('question_filter', questionFilter);
+        currentUrl.searchParams.set('group_mode', groupMode);
+        
+        // Redireciona para a nova URL
+        window.location.href = currentUrl.toString();
+    }
+
     function updateModalGroupModeVisibility() {
         var questionFilter = $('#modal_question_filter').val();
+        console.log('Updating modal visibility, question filter:', questionFilter); // Debug
+        
+        // CORREÇÃO: O ID correto é modal_group-mode-container (com underscore)
+        var container = $('#modal_group-mode-container');
+        console.log('Container found:', container.length); // Debug
+        
         if (questionFilter === 'all') {
-            $('#modal-group-mode-container').show();
+            container.show();
+            console.log('Showing modal group mode container'); // Debug
         } else {
-            $('#modal-group-mode-container').hide();
+            container.hide();
+            console.log('Hiding modal group mode container'); // Debug
         }
     }
 

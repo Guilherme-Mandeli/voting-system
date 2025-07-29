@@ -43,10 +43,7 @@ function vs_render_ranking_card($votacao_id, $total_users) {
     <div class="ranking-card">
         <div class="card-header">
             <div class="card-header-top">
-                <div>
-                    <p><strong>Votos totais:</strong> <?php echo esc_html($total_users); ?></p>
-                    <h2>Mais votados</h2>
-                </div>
+                <h2>Mais votados</h2>
                 <div>
                     <a href="<?php echo esc_url($export_url); ?>" class="button button-secondary export-button">
                         <?php if ($group_mode === 'by_question') : ?>
@@ -57,7 +54,6 @@ function vs_render_ranking_card($votacao_id, $total_users) {
                     </a>
                 </div>
             </div>
-            <p>Respostas mais recorrentes de:</p>
 
             <?php vs_render_ranking_filters($perguntas, $question_filter, $group_mode, 'card'); ?>
         </div>
@@ -81,5 +77,22 @@ function vs_render_ranking_card($votacao_id, $total_users) {
     </div>
 
     <?php vs_render_ranking_modal($perguntas, $question_filter, $group_mode); ?>
+    
+    <script>
+    // Inicializa a visibilidade do agrupamento no card quando a página carrega
+    jQuery(document).ready(function($) {
+        function updateCardGroupModeVisibility() {
+            var questionFilter = $('#question_filter').val();
+            if (questionFilter === 'all') {
+                $('#group-mode-container').show();
+            } else {
+                $('#group-mode-container').hide();
+            }
+        }
+        
+        // Executa na inicialização
+        updateCardGroupModeVisibility();
+    });
+    </script>
     <?php
 }

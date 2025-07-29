@@ -579,13 +579,54 @@
 /* ==========================================================================
    RANKING - CARD E COMPONENTES ESPECÍFICOS
    ========================================================================== */
+.ranking-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 10px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
 
-/* Card de ranking */
+.card-header h2 {
+    margin: 0 0 10px 0;
+    font-size: 18px;
+}
+
+.vote-results-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.vote-results-table th,
+.vote-results-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.vote-results-table th {
+    background-color: #f1f1f1;
+    font-weight: bold;
+}
+
+.vote-results-table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+.user-container {
+    margin-top: 30px;
+}
+
 .ranking-card .card-header-top {
+    padding: 15px 20px;
+    background: #ffffff;
+    border-bottom: 1px solid #ddd;
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 10px;
+    align-items: center;
+    border-radius: 10px 10px 0 0;
+}
+.ranking-card .card-header-top h2 {
+    margin-bottom: 0;
 }
 
 .ranking-card .export-button {
@@ -597,30 +638,46 @@
     display: flex;
     align-items: center;
     gap: 15px;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 5px;
 }
 
-.ranking-card .group-mode-legend {
-    font-size: 12px;
+.ranking-card .card-body {
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px;
+    padding: 0 0 15px 0;
+    border: 1px solid #c3c4c7;
+}
+
+.ranking-card .filter-label {
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.ranking-card .group-legend {
+    font-weight: bold;
     margin-bottom: 5px;
 }
 
-.ranking-card .group-mode-options {
+.ranking-card .group-options {
     display: flex;
     gap: 15px;
 }
 
-.ranking-card .group-mode-label {
+.ranking-card .group-label {
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 12px;
 }
 
 .ranking-card .filter-description {
     font-size: 11px;
     color: #666;
-    margin-top: 5px;
+    margin-bottom: 15px;
+    padding: 0 15px;
 }
 
 .ranking-card .show-all-container {

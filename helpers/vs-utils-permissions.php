@@ -156,6 +156,7 @@ class VS_Nonce_Actions {
     const FORM_ANSWER_DETAILS = 'vs_answer_details_nonce';
     const ACTION_RESTORE = 'vs_restore_response';
     const ACTION_TRASH = 'vs_trash_response';
+    const ACTION_DELETE = 'vs_delete_response';
     const TOKEN_THANK_YOU = 'vs_obrigado';
 }
 
@@ -175,6 +176,7 @@ function vs_get_nonce_actions() {
         'form_answer_details' => VS_Nonce_Actions::FORM_ANSWER_DETAILS,
         'action_restore' => VS_Nonce_Actions::ACTION_RESTORE,
         'action_trash' => VS_Nonce_Actions::ACTION_TRASH,
+        'action_delete' => VS_Nonce_Actions::ACTION_DELETE,
         'token_thank_you' => VS_Nonce_Actions::TOKEN_THANK_YOU,
     ];
 }

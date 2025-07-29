@@ -102,6 +102,7 @@ class VS_Bootstrap {
             require_once VS_PLUGIN_PATH . 'includes/admin/pages/vs-page-results-unificacao.php';
             require_once VS_PLUGIN_PATH . 'includes/admin/data/vs-export-csv.php';
             require_once VS_PLUGIN_PATH . 'includes/admin/data/vs-import.php';
+            require_once VS_PLUGIN_PATH . 'includes/admin/data/vs-response-actions.php';
             
             // Metaboxes
             require_once VS_PLUGIN_PATH . 'metaboxes/vs-metabox-voting-info.php';
