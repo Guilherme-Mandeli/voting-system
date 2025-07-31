@@ -1,6 +1,6 @@
 <?php
 /**
- * DOCUMENTAÇÃO DOS SHORTCODES - VOTING SYSTEM v2.260726.1
+ * DOCUMENTAÇÃO DOS SHORTCODES - VOTING SYSTEM v2.250730.1
  * 
  * Este arquivo documenta todos os shortcodes disponíveis no sistema de votação,
  * incluindo parâmetros, funcionalidades e exemplos de uso.

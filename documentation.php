@@ -6,7 +6,7 @@
  * 
  * Plugin WordPress para criação e gerenciamento de votações personalizadas
  * Desenvolvido por: Guilherme Mandeli
- * Versão: 2.250729.3
+ * Versão: 2.250730.1
  * 
  */
 

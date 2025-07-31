@@ -520,7 +520,7 @@ Na página de resultados, clique no link "Exportar CSV".
 
 ### Contato
 - **GitHub**: [Issues](https://github.com/Guilherme-Mandeli/voting-system/issues)
-- **Email**: [Suporte](mailto:guilherme.mandeli@example.com)
+- **Email**: [Suporte](mailto:guil.mandeli@gmail.com)
 
 ### Contribuição
 1. Fork o projeto
@@ -535,4 +535,4 @@ Este projeto está licenciado sob a GPL v2 ou posterior - veja o arquivo [LICENS
 
 ---
 
-**Desenvolvido com ❤️ por [Guilherme Mandeli](https://github.com/guilhermemandeli)**
+**Desenvolvido com ❤️ por [Guilherme Mandeli](https://github.com/Guilherme-Mandeli)**

@@ -77,14 +77,14 @@ function vs_render_metabox_questions_scripts($post) {
     $last_index = 0;
     $perguntas = get_post_meta($post->ID, 'vs_perguntas', true);
     if (!empty($perguntas) && is_array($perguntas)) {
-        $last_index = count($perguntas);
+        $last_index = count($perguntas) - 1;
     }
     ?>
     <script>
         (function($) {
             const wrapper = document.getElementById('vs-perguntas-wrapper');
             const addBtn = document.getElementById('vs-add-pergunta');
-            let perguntaIndex = <?php echo $last_index; ?>;
+            let perguntaIndex = <?php echo $last_index + 1; ?>;
 
             // Agregar nueva pregunta
             addBtn.addEventListener('click', function () {
@@ -133,13 +133,25 @@ function vs_render_metabox_questions_scripts($post) {
                     const perguntaIndex = e.target.getAttribute('data-pergunta-index');
                     const opcoesContainer = e.target.closest('.vs-opcoes');
                     const opcaoCount = opcoesContainer.querySelectorAll('.vs-opcao-item').length;
+                    const tipoCampo = e.target.closest('.vs-pergunta').querySelector('.vs-tipo-campo').value;
                     
-                    const newOpcaoHTML = `
+                    let newOpcaoHTML = `
                         <div class='vs-opcao-item' style='margin-bottom: 5px;'>
                             <input type='text' 
                                    name='vs_perguntas[${perguntaIndex}][opcoes][]' 
                                    style='width: 90%;'
-                                   placeholder='Opción ${opcaoCount + 1}'>
+                                   placeholder='Opción ${opcaoCount + 1}'>`;
+
+                    // Adiciona o input hidden apenas se for do tipo votacao_anterior
+                    if (tipoCampo === 'votacao_anterior') {
+                        newOpcaoHTML += `
+                            <input type='hidden' 
+                                   name='vs_perguntas[${perguntaIndex}][valores_reais][]' 
+                                   value='' 
+                                   class='vs-valor-real'>`;
+                    }
+
+                    newOpcaoHTML += `
                             <button type='button' class='button button-small vs-remove-opcao'>Remover</button>
                         </div>
                     `;

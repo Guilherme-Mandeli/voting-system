@@ -35,6 +35,7 @@ class VS_Bootstrap {
         
         // Submission
         require_once VS_PLUGIN_PATH . 'includes/core/submission/vs-handle-form-submit.php';
+        require_once VS_PLUGIN_PATH . 'includes/core/submission/vs-process-voting.php';
         
         // Cron (quando implementado)
         // require_once VS_PLUGIN_PATH . 'includes/core/cron/vs-voting-scheduler.php';
@@ -115,6 +116,7 @@ class VS_Bootstrap {
         require_once VS_PLUGIN_PATH . 'includes/ajax/get-user-votes.php';
         require_once VS_PLUGIN_PATH . 'includes/ajax/vs-handle-get-unificacao-group.php';
         require_once VS_PLUGIN_PATH . 'includes/ajax/vs-handle-update-unificacao.php';
+        require_once VS_PLUGIN_PATH . 'includes/ajax/vs-handle-votacao-anterior.php';
     }
     
     public function enqueue_admin_assets() {
@@ -123,6 +125,12 @@ class VS_Bootstrap {
         
         // JavaScript administrativo básico
         wp_enqueue_script( 'vs-admin-script', VS_PLUGIN_URL . 'assets/js/admin.js', array( 'jquery' ), VS_PLUGIN_VERSION, true );
+        
+        // Localizar script admin básico
+        wp_localize_script( 'vs-admin-script', 'vs_admin', array(
+            'ajaxurl' => admin_url( 'admin-ajax.php' ),
+            'nonce'   => wp_create_nonce( 'vs_admin_nonce' )
+        ));
         
         // Obtém informações da tela atual
         $current_screen = get_current_screen();
