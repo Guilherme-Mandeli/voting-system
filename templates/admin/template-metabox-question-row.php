@@ -66,7 +66,7 @@ defined( 'ABSPATH' ) || exit;
     <input type="hidden"
         name="vs_perguntas[<?php echo esc_attr($index); ?>][respostas_importadas]"
         class="vs-respostas-importadas"
-        value="<?php echo esc_attr($pergunta['respostas_importadas'] ?? ''); ?>">
+        value="<?php echo esc_attr($pergunta['respostas_importadas'] ?? wp_json_encode(['perguntas' => []])); ?>">
 
     <!-- Botão para abrir modal (visível apenas quando tipo 'votacao_anterior' estiver selecionado) -->
     <div class="vs-votacao-anterior-container" style="display: none; margin-top: 10px;">
@@ -153,24 +153,8 @@ defined( 'ABSPATH' ) || exit;
         <?php if (($pergunta['tipo'] ?? '') === 'votacao_anterior'): ?>
         <div class="vs-opcoes-grid">
             <!-- Coluna 1: Interface de Seleção -->
-            <div class="vs-coluna-selecao">
-                <h3>Seleção de <?php echo esc_html(get_the_title($pergunta['votacao_anterior_id'] ?? '')); ?></h3>
-                
-                <!-- Filtros e Busca -->
-                <div class="vs-filtros-container">
-                    <input type="text" class="vs-busca-opcoes" placeholder="Buscar por valor ou quantidade de votos...">
-                    <input type="text" class="vs-busca-pergunta" placeholder="Filtrar por pergunta...">
-                    <div class="vs-ordenacao">
-                        <button type="button" class="button vs-ordenar-valor" data-ordem="asc">Resposta ▲</button>
-                        <button type="button" class="button vs-ordenar-votos" data-ordem="desc">Votos ▼</button>
-                    </div>
-                    <label>
-                        <input type="checkbox" class="vs-selecionar-todas">
-                        Selecionar todas
-                    </label>
-                </div>
-
-                <!-- Tabela de Opções -->
+            <div class="vs-coluna-importadas">
+                <h3>Respostas Importadas</h3>
                 <div class="vs-tabela-container">
                     <table class="wp-list-table widefat fixed striped">
                         <thead>
@@ -189,9 +173,6 @@ defined( 'ABSPATH' ) || exit;
                         </tbody>
                     </table>
                 </div>
-
-                <button type="button" class="button button-primary vs-adicionar-selecionadas">Adicionar Selecionadas</button>
-
             </div>
 
             <!-- Coluna 2: Opções Selecionadas -->

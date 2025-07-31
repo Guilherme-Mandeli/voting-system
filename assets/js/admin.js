@@ -3,6 +3,70 @@
 
     let currentPergunta = null;
 
+    function atualizarTabelaRespostasImportadas() {
+        console.log('Iniciando atualizarTabelaRespostasImportadas');
+        
+        const jsonData = currentPergunta.find('.vs-respostas-importadas').val();
+        console.log('JSON Data encontrado:', jsonData);
+        
+        if (!jsonData) {
+            console.log('JSON Data está vazio, retornando...');
+            return;
+        }
+
+        try {
+            const dados = JSON.parse(jsonData);
+            console.log('JSON parseado com sucesso:', dados);
+            
+            if (!dados.perguntas || !Array.isArray(dados.perguntas)) {
+                console.error('Formato de dados inválido:', dados);
+                return;
+            }
+            
+            const tbody = currentPergunta.find('.vs-coluna-importadas tbody');
+            if (!tbody.length) {
+                console.error('Tbody não encontrado');
+                return;
+            }
+            
+            tbody.empty();
+            console.log('Tbody limpo');
+            
+            let numeroLinha = 1;
+            dados.perguntas.forEach((pergunta, indexPergunta) => {
+                console.log(`Processando pergunta ${indexPergunta + 1}:`, pergunta);
+                
+                if (pergunta.respostas_importadas && pergunta.respostas_importadas.length > 0) {
+                    pergunta.respostas_importadas.forEach(resposta => {
+                        const valorExibir = resposta.value_unificada || resposta.value;
+                        if (!valorExibir) {
+                            console.log('Resposta sem valor, pulando...');
+                            return;
+                        }
+                        
+                        console.log('Criando linha para resposta:', valorExibir);
+                        
+                        const tr = $('<tr>');
+                        tr.append(`
+                            <td style="text-align: center; font-size: 12px;">${numeroLinha}</td>
+                            <td><input type="checkbox" class="vs-selecionar-resposta" data-valor="${resposta.value}" data-valor-unificado="${resposta.value_unificada}"></td>
+                            <td>${valorExibir}</td>
+                            <td>${resposta.qtd_votos}</td>
+                            <td>${pergunta.pergunta_origem}</td>
+                        `);
+                        tbody.append(tr);
+                        console.log(`Linha ${numeroLinha} adicionada ao tbody`);
+                        numeroLinha++;
+                    });
+                } else {
+                    console.log(`Pergunta ${indexPergunta + 1} não tem respostas importadas`);
+                }
+            });
+        } catch (error) {
+            console.error('Erro ao processar JSON:', error);
+        }
+    }
+
     $(document).ready(function() {
         initTipoCampoHandler();
         initVotacaoAnteriorModal();
@@ -13,6 +77,8 @@
             const container = $(this).closest('.vs-pergunta').find('.vs-votacao-anterior-container');
             if ($(this).val() === 'votacao_anterior') {
                 container.show();
+                currentPergunta = $(this).closest('.vs-pergunta');
+                atualizarTabelaRespostasImportadas();
             } else {
                 container.hide();
             }
@@ -22,6 +88,8 @@
         $('.vs-tipo-campo').each(function() {
             if ($(this).val() === 'votacao_anterior') {
                 $(this).closest('.vs-pergunta').find('.vs-votacao-anterior-container').show();
+                currentPergunta = $(this).closest('.vs-pergunta');
+                atualizarTabelaRespostasImportadas();
             }
         });
     }
@@ -541,69 +609,7 @@
             $('#vs-modal-votacao-anterior').hide();
         });
 
-        function atualizarTabelaRespostasImportadas() {
-            console.log('Iniciando atualizarTabelaRespostasImportadas');
-            
-            const jsonData = currentPergunta.find('.vs-respostas-importadas').val();
-            console.log('JSON Data encontrado:', jsonData);
-            
-            if (!jsonData) {
-                console.log('JSON Data está vazio, retornando...');
-                return;
-            }
-
-            try {
-                const dados = JSON.parse(jsonData);
-                console.log('JSON parseado com sucesso:', dados);
-                
-                if (!dados.perguntas || !Array.isArray(dados.perguntas)) {
-                    console.error('Formato de dados inválido:', dados);
-                    return;
-                }
-                
-                const tbody = currentPergunta.find('.vs-coluna-importadas tbody');
-                if (!tbody.length) {
-                    console.error('Tbody não encontrado');
-                    return;
-                }
-                
-                tbody.empty();
-                console.log('Tbody limpo');
-                
-                let numeroLinha = 1;
-                dados.perguntas.forEach((pergunta, indexPergunta) => {
-                    console.log(`Processando pergunta ${indexPergunta + 1}:`, pergunta);
-                    
-                    if (pergunta.respostas_importadas && pergunta.respostas_importadas.length > 0) {
-                        pergunta.respostas_importadas.forEach(resposta => {
-                            const valorExibir = resposta.value_unificada || resposta.value;
-                            if (!valorExibir) {
-                                console.log('Resposta sem valor, pulando...');
-                                return;
-                            }
-                            
-                            console.log('Criando linha para resposta:', valorExibir);
-                            
-                            const tr = $('<tr>');
-                            tr.append(`
-                                <td style="text-align: center; font-size: 12px;">${numeroLinha}</td>
-                                <td><input type="checkbox" class="vs-selecionar-resposta" data-valor="${resposta.value}" data-valor-unificado="${resposta.value_unificada}"></td>
-                                <td>${valorExibir}</td>
-                                <td>${resposta.qtd_votos}</td>
-                                <td>${pergunta.pergunta_origem}</td>
-                            `);
-                            tbody.append(tr);
-                            console.log(`Linha ${numeroLinha} adicionada ao tbody`);
-                            numeroLinha++;
-                        });
-                    } else {
-                        console.log(`Pergunta ${indexPergunta + 1} não tem respostas importadas`);
-                    }
-                });
-            } catch (error) {
-                console.error('Erro ao processar JSON:', error);
-            }
-        }        // Ordenação
+        // Ordenação
         $(document).on('click', '.vs-ordenar-valor, .vs-ordenar-votos', function() {
             const isValor = $(this).hasClass('vs-ordenar-valor');
             const tbody = $(this).closest('.vs-coluna-selecao').find('.vs-tabela-opcoes tbody');
@@ -684,6 +690,14 @@
     $(document).on('change', '.vs-selecionar-todas-respostas', function() {
         const isChecked = $(this).prop('checked');
         $(this).closest('table').find('.vs-selecionar-resposta').prop('checked', isChecked);
+    });
+
+    // Adicionar as chamadas aqui, depois da definição da função
+    $('.vs-tipo-campo').each(function() {
+        if ($(this).val() === 'votacao_anterior') {
+            currentPergunta = $(this).closest('.vs-pergunta');
+            atualizarTabelaRespostasImportadas();
+        }
     });
 
     function debounce(func, wait) {

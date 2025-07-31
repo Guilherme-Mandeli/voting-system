@@ -1,12 +1,12 @@
 <?php
 /**
  * ===============================================================================
- * DOCUMENTAÇÃO DO SISTEMA DE VOTAÇÕES - VOTING SYSTEM v2.250729.3
+ * DOCUMENTAÇÃO DO SISTEMA DE VOTAÇÕES - VOTING SYSTEM v2.250731.1
  * ===============================================================================
  * 
  * Plugin WordPress para criação e gerenciamento de votações personalizadas
  * Desenvolvido por: Guilherme Mandeli
- * Versão: 2.250730.1
+ * Versão: 2.250731.1
  * 
  */
 

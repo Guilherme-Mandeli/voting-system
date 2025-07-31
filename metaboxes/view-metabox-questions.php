@@ -14,6 +14,29 @@ defined( 'ABSPATH' ) || exit;
  */
 function vs_render_metabox_questions_view($post) {
     $perguntas = get_post_meta($post->ID, 'vs_perguntas', true);
+    if (!empty($perguntas) && is_array($perguntas)) {
+        foreach ($perguntas as &$pergunta) {
+            // Garantir que respostas_importadas seja um JSON válido
+            if (!empty($pergunta['respostas_importadas'])) {
+                // Decodifica o JSON para verificar se é válido
+                $json_decoded = json_decode($pergunta['respostas_importadas'], true);
+                if ($json_decoded !== null) {
+                    // Re-codifica para garantir um JSON válido e consistente
+                    $pergunta['respostas_importadas'] = wp_json_encode($json_decoded);
+                } else {
+                    // Se o JSON não for válido, inicializa com um objeto vazio
+                    $pergunta['respostas_importadas'] = wp_json_encode([
+                        'perguntas' => []
+                    ]);
+                }
+            } else {
+                // Se não houver respostas importadas, inicializa com um objeto vazio
+                $pergunta['respostas_importadas'] = wp_json_encode([
+                    'perguntas' => []
+                ]);
+            }
+        }
+    }
     wp_nonce_field('vs_salvar_perguntas', 'vs_nonce_perguntas');
 
     // Obtiene valor guardado para permitir edición
