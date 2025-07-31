@@ -59,7 +59,18 @@ defined( 'ABSPATH' ) || exit;
         type="hidden"
         name="vs_perguntas[<?php echo esc_attr($index); ?>][votacao_anterior_id]"
         class="vs-votacao-anterior-id"
-        value="<?php echo esc_attr($pergunta['votacao_anterior_id'] ?? ''); ?>"
+        value="<?php 
+        // Verifica se existem respostas importadas
+        $respostas_importadas = $pergunta['respostas_importadas'] ?? wp_json_encode(['perguntas' => []]);
+        $respostas_data = json_decode($respostas_importadas, true);
+        
+        // Se houver perguntas importadas, pega o ID da primeira pergunta
+        if (!empty($respostas_data['perguntas'][0]['pergunta_origem'])) {
+            echo esc_attr($respostas_data['perguntas'][0]['pergunta_origem']);
+        } else {
+            echo esc_attr($pergunta['votacao_anterior_id'] ?? '');
+        }
+    ?>"
     >
 
     <!-- Campo oculto para armazenar respostas importadas em JSON -->

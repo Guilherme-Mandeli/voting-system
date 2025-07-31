@@ -66,24 +66,13 @@ function vs_save_metabox_questions($post_id) {
                         : [];
             $obrigatoria = isset($pergunta_data['obrigatoria']) && $pergunta_data['obrigatoria'] ? true : false;
             $unificada = sanitize_text_field($pergunta_data['unificada'] ?? '');
-            // Sanitiza JSON mantendo sua estrutura
-            $respostas_importadas = '';
-            if (!empty($pergunta_data['respostas_importadas'])) {
-                $json_decoded = json_decode($pergunta_data['respostas_importadas'], true);
-                if ($json_decoded !== null && isset($json_decoded['perguntas'])) {
-                    // Garante que cada pergunta tem a estrutura correta
-                    foreach ($json_decoded['perguntas'] as &$pergunta) {
-                        if (isset($pergunta['respostas_importadas'])) {
-                            foreach ($pergunta['respostas_importadas'] as &$resposta) {
-                                // Garante que os campos obrigatórios existem
-                                $resposta['value'] = sanitize_text_field($resposta['value'] ?? '');
-                                $resposta['value_unificada'] = sanitize_text_field($resposta['value_unificada'] ?? '');
-                                $resposta['qtd_votos'] = intval($resposta['qtd_votos'] ?? 0);
-                            }
-                        }
-                    }
-                    $respostas_importadas = wp_json_encode($json_decoded);
-                }
+            $votacao_anterior_id = intval($pergunta_data['votacao_anterior_id'] ?? 0);
+
+            // Busca dados da votação anterior se o tipo for 'votacao_anterior' e houver um ID válido
+            if ($tipo === 'votacao_anterior' && $votacao_anterior_id > 0) {
+                $respostas_importadas = vs_get_votacao_anterior_data($votacao_anterior_id);
+            } else {
+                $respostas_importadas = wp_json_encode(['perguntas' => []]);
             }
 
             // Solo agregar si tiene label
@@ -94,6 +83,7 @@ function vs_save_metabox_questions($post_id) {
                     'opcoes' => $opcoes,
                     'obrigatoria' => $obrigatoria,
                     'unificada' => $unificada,
+                    'votacao_anterior_id' => $votacao_anterior_id,
                     'respostas_importadas' => $respostas_importadas
                 ];
             }

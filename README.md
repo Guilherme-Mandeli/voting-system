@@ -3,7 +3,7 @@
 [![WordPress](https://img.shields.io/badge/WordPress-5.0%2B-blue.svg)](https://wordpress.org/)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple.svg)](https://php.net/)
 [![License](https://img.shields.io/badge/License-GPL%20v2-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
-[![Version](https://img.shields.io/badge/Version-2.260726.1-orange.svg)](https://github.com/Guilherme-Mandeli/voting-system/releases)
+[![Version](https://img.shields.io/badge/Version-2.250731.1-orange.svg)](https://github.com/Guilherme-Mandeli/voting-system/releases)
 
 Sistema completo de votações personalizado para WordPress com interface administrativa avançada, shortcodes flexíveis e sistema inteligente de unificação de respostas.
 

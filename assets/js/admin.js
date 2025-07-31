@@ -460,9 +460,11 @@
                         });
 
                         const respostasJson = JSON.stringify(todasPerguntas);
-                        
+                
                         // Atualizar campo oculto com o JSON
                         currentPergunta.find('.vs-respostas-importadas').val(respostasJson);
+                        // Atualizar o campo votacao_anterior_id com o ID da votação
+                        currentPergunta.find('.vs-votacao-anterior-id').val(votacaoId);
                         
                         // Fechar o modal após importação
                         modal.hide();
@@ -588,6 +590,7 @@
                         });
                         
                         currentPergunta.find('.vs-respostas-importadas').val(respostasJson);
+                        currentPergunta.find('.vs-votacao-anterior-id').val(votacaoId);
                         console.log('JSON atualizado no campo hidden:', respostasJson);
                         
                         atualizarTabelaRespostasImportadas();

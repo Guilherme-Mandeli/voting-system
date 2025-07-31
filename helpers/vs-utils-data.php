@@ -146,3 +146,86 @@ function vs_check_votacao_status($data_fim) {
     $timestamp_fim = strtotime($data_fim . ' 00:00:00');
     return $timestamp_fim <= time();
 }
+
+function vs_get_votacao_anterior_data($votacao_id) {
+    if (empty($votacao_id)) {
+        return wp_json_encode(['perguntas' => []]);
+    }
+
+    // Busca todas as respostas da votação
+    $args = [
+        'post_type' => 'votacao_resposta',
+        'posts_per_page' => -1,
+        'post_status' => ['publish', 'private'],
+        'meta_query' => [
+            [
+                'key' => 'vs_votacao_id',
+                'value' => $votacao_id,
+                'compare' => '=',
+            ],
+        ],
+    ];
+
+    $response_posts = get_posts($args);
+    $contagem_respostas = [];
+    $respostas_por_pergunta = [];
+
+    // Processa as respostas para contagem
+    foreach ($response_posts as $post) {
+        $respostas_detalhadas = get_post_meta($post->ID, 'vs_respostas_detalhadas', true);
+        $respostas_unificadas = get_post_meta($post->ID, 'vs_resposta_unificada', true);
+        
+        if (!is_array($respostas_detalhadas)) continue;
+        if (!is_array($respostas_unificadas)) $respostas_unificadas = [];
+
+        foreach ($respostas_detalhadas as $index => $resposta_original) {
+            // Ignora respostas vazias
+            if (is_array($resposta_original)) {
+                if (empty($resposta_original)) continue;
+            } else {
+                if (empty(trim($resposta_original))) continue;
+            }
+
+            // Inicializa contagem se não existir
+            if (!isset($contagem_respostas[$index])) {
+                $contagem_respostas[$index] = 0;
+                $respostas_por_pergunta[$index] = [];
+            }
+
+            $contagem_respostas[$index]++;
+
+            // Armazena a resposta original e unificada
+            $valor_original = is_array($resposta_original) ? implode(', ', $resposta_original) : $resposta_original;
+            $valor_unificado = $respostas_unificadas[$index] ?? $valor_original;
+
+            // Adiciona ou atualiza a contagem para esta resposta
+            $chave_resposta = $valor_unificado;
+            if (!isset($respostas_por_pergunta[$index][$chave_resposta])) {
+                $respostas_por_pergunta[$index][$chave_resposta] = [
+                    'value' => $valor_original,
+                    'value_unificada' => $valor_unificado,
+                    'qtd_votos' => 1
+                ];
+            } else {
+                $respostas_por_pergunta[$index][$chave_resposta]['qtd_votos']++;
+            }
+        }
+    }
+
+    // Busca as perguntas originais
+    $perguntas = get_post_meta($votacao_id, 'vs_perguntas', true);
+    if (!is_array($perguntas)) {
+        $perguntas = [];
+    }
+
+    // Adiciona contagem de respostas e respostas unificadas para cada pergunta
+    foreach ($perguntas as $index => &$pergunta) {
+        $pergunta['total_votos'] = $contagem_respostas[$index] ?? 0;
+        $pergunta['respostas_importadas'] = !empty($respostas_por_pergunta[$index]) 
+            ? array_values($respostas_por_pergunta[$index]) 
+            : [];
+        $pergunta['pergunta_origem'] = $pergunta['label'] ?? '';
+    }
+
+    return wp_json_encode(['perguntas' => $perguntas]);
+}
