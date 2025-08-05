@@ -150,6 +150,7 @@ class VS_Nonce_Actions {
     const AJAX_GENERAL = 'vs_ajax_nonce';
     const AJAX_RANKING = 'vs_ranking_nonce';
     const AJAX_UNIFICACAO = 'vs_unificacao_nonce';
+    const AJAX_ADMIN = 'vs_admin_nonce';
     const FORM_VOTING = 'vs_votacao_nonce';
     const FORM_QUESTIONS = 'vs_salvar_perguntas';
     const FORM_INFO = 'vs_info_metabox_nonce';
@@ -170,6 +171,7 @@ function vs_get_nonce_actions() {
         'ajax_general' => VS_Nonce_Actions::AJAX_GENERAL,
         'ajax_ranking' => VS_Nonce_Actions::AJAX_RANKING,
         'ajax_unificacao' => VS_Nonce_Actions::AJAX_UNIFICACAO,
+        'ajax_admin' => VS_Nonce_Actions::AJAX_ADMIN,
         'form_voting' => VS_Nonce_Actions::FORM_VOTING,
         'form_questions' => VS_Nonce_Actions::FORM_QUESTIONS,
         'form_info' => VS_Nonce_Actions::FORM_INFO,

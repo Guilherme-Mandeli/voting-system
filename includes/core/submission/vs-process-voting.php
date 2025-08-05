@@ -10,30 +10,30 @@ defined('ABSPATH') || exit;
 /**
  * Obtém as respostas importadas de uma pergunta
  *
- * @param int $pergunta_id ID da pergunta
+ * @param int $question_id ID da pergunta
  * @return array Array com as respostas importadas
  */
-function vs_obter_respostas_importadas($pergunta_id) {
-    $respostas_json = get_post_meta($pergunta_id, 'vs_respostas_importadas', true);
+function vs_obter_imported_answers($question_id) {
+    $respostas_json = get_post_meta($question_id, 'vs_imported_answers', true);
     return $respostas_json ? json_decode($respostas_json, true) : [];
 }
 
 /**
  * Processa as respostas unificadas de uma votação anterior para criar opções de uma nova pergunta
  *
- * @param array $pergunta Array com dados da pergunta atual
+ * @param array $question Array com dados da pergunta atual
  * @param int $votacao_id ID da votação atual
  * @return array Array com opções únicas baseadas nas respostas unificadas
  */
-function vs_processar_pergunta_votacao_anterior($pergunta, $votacao_id) {
+function vs_processar_pergunta_imported_vote($question, $votacao_id) {
     // Verifica se existem respostas importadas
-    if (empty($pergunta['respostas_importadas'])) {
+    if (empty($question['imported_answers'])) {
         return [];
     }
 
     // Decodifica o JSON das respostas importadas
-    $respostas_data = json_decode($pergunta['respostas_importadas'], true);
-    if (!$respostas_data || empty($respostas_data['perguntas'])) {
+    $answers_data = json_decode($question['imported_answers'], true);
+    if (!$answers_data || empty($answers_data['questions'])) {
         return [];
     }
 
@@ -41,9 +41,9 @@ function vs_processar_pergunta_votacao_anterior($pergunta, $votacao_id) {
     $todas_respostas = [];
 
     // Processa cada pergunta e suas respostas
-    foreach ($respostas_data['perguntas'] as $pergunta_importada) {
-        if (!empty($pergunta_importada['respostas_importadas'])) {
-            foreach ($pergunta_importada['respostas_importadas'] as $resposta) {
+    foreach ($answers_data['questions'] as $question_importada) {
+        if (!empty($question_importada['imported_answers'])) {
+            foreach ($question_importada['imported_answers'] as $resposta) {
                 $todas_respostas[] = [
                     'value' => $resposta['value'] ?? '',
                     'value_unificada' => $resposta['value_unificada'] ?? '',
@@ -59,9 +59,9 @@ function vs_processar_pergunta_votacao_anterior($pergunta, $votacao_id) {
     });
 
     // Atualiza o post meta com as respostas processadas
-    update_post_meta($votacao_id, 'vs_respostas_importadas', wp_json_encode([
-        'perguntas' => [[
-            'respostas_importadas' => $todas_respostas
+    update_post_meta($votacao_id, 'vs_imported_answers', wp_json_encode([
+        'questions' => [[
+            'imported_answers' => $todas_respostas
         ]]
     ]));
 

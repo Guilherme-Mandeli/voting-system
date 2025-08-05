@@ -14,12 +14,12 @@ if (!defined('ABSPATH')) {
 /**
  * Renderiza os filtros do ranking
  * 
- * @param array $perguntas Lista de perguntas
+ * @param array $questions Lista de perguntas
  * @param string $question_filter Filtro atual de pergunta
  * @param string $group_mode Modo de agrupamento atual
  * @param string $context Contexto dos filtros ('card' ou 'modal')
  */
-function vs_render_ranking_filters($perguntas, $question_filter, $group_mode, $context = 'card') {
+function vs_render_ranking_filters($questions, $question_filter, $group_mode, $context = 'card') {
     $prefix = $context === 'modal' ? 'modal_' : '';
     $class_prefix = $context === 'modal' ? 'modal-' : '';
     ?>
@@ -30,9 +30,9 @@ function vs_render_ranking_filters($perguntas, $question_filter, $group_mode, $c
             </label>
             <select id="<?php echo $prefix; ?>question_filter" name="<?php echo $prefix; ?>question_filter" class="<?php echo $class_prefix; ?>question-filter">
                 <option value="all" <?php selected($question_filter, 'all'); ?>>Todas as perguntas</option>
-                <?php foreach ($perguntas as $index => $pergunta) : ?>
+                <?php foreach ($questions as $index => $question) : ?>
                     <option value="q<?php echo $index; ?>" <?php selected($question_filter, "q{$index}"); ?>>
-                        <?php echo esc_html($pergunta['label'] ?? "Pergunta #" . ($index + 1)); ?>
+                        <?php echo esc_html($question['label'] ?? "Pergunta #" . ($index + 1)); ?>
                     </option>
                 <?php endforeach; ?>
             </select>

@@ -31,26 +31,24 @@ defined( 'ABSPATH' ) || exit;
             pattern="\d{4}" 
             title="Digite um ano com 4 dígitos, ex: <?php echo date('Y'); ?>"
             maxlength="4"
-            placeholder="<?php echo date('Y'); ?>"
+            placeholder="<?php echo date('Y'); ?> (4 dígitos)"
         >
-        <p class="description">Año de la votación (4 dígitos)</p>
     </div>
 
     <div class="vs-field-group">
         <label for="vs_status"><strong>Status:</strong></label>
         <select id="vs_status" name="vs_status" style="width: 100%;">
             <?php
-            $opcoes_status = [
+            $options_status = [
                 'aberta' => 'Aberta',
                 'em_pausa' => 'Em Pausa',
                 'encerrada' => 'Encerrada'
             ];
-            foreach ($opcoes_status as $val => $label) {
+            foreach ($options_status as $val => $label) {
                 echo '<option value="' . esc_attr($val) . '" ' . selected($val, $status, false) . '>' . esc_html($label) . '</option>';
             }
             ?>
         </select>
-        <p class="description">Estado actual de la votación</p>
     </div>
 
     <div class="vs-field-group">
@@ -63,7 +61,7 @@ defined( 'ABSPATH' ) || exit;
             style="width: 100%;"
             placeholder="VOT-<?php echo esc_attr($ano); ?>-1"
         >
-        <p class="description">Código único para identificar la votación</p>
+        <p class="description">Código único para identificar a votação</p>
     </div>
 
     <div class="vs-field-group">
@@ -75,7 +73,7 @@ defined( 'ABSPATH' ) || exit;
             value="<?php echo esc_attr($data_inicio); ?>" 
             style="width: 100%;"
         >
-        <p class="description">Fecha de inicio de la votación</p>
+        <p class="description">Data de início da votação</p>
     </div>
 
     <div class="vs-field-group">
@@ -87,11 +85,11 @@ defined( 'ABSPATH' ) || exit;
             value="<?php echo esc_attr($data_fim); ?>" 
             style="width: 100%;"
         >
-        <p class="description">Fecha de finalización de la votación</p>
+        <p class="description">Data de finalização da votação</p>
     </div>
 
     <div class="vs-field-group">
-        <label for="vs_qtd_votos"><strong>Quantidade de votos submetidos:</strong></label>
+        <label for="vs_qtd_votos"><strong>Quantidade de votos recebidos:</strong></label>
         <input 
             type="number" 
             id="vs_qtd_votos"
@@ -100,7 +98,6 @@ defined( 'ABSPATH' ) || exit;
             readonly
             class="vs-readonly-field"
         >
-        <p class="description">Número total de votos recibidos (solo lectura)</p>
     </div>
 </div>
 

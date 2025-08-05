@@ -21,9 +21,9 @@ function vs_ajax_get_unificacao_group() {
 
     $raw = isset( $_POST['resposta_unificada'] ) ? wp_unslash( $_POST['resposta_unificada'] ) : '';
     if ( is_array( $raw ) ) {
-        $resposta_unificada_key = wp_json_encode( array_values( $raw ) );
+        $resposta_unificada_key = wp_json_encode( array_map('sanitize_text_field', array_values( $raw )) );
     } else {
-        $resposta_unificada_key = (string) $raw;
+        $resposta_unificada_key = sanitize_text_field( (string) $raw );
     }
 
     if ( ! $votacao_id || '' === $resposta_unificada_key ) {
@@ -54,7 +54,7 @@ function vs_ajax_get_unificacao_group() {
     }
 
     // Usando helper para obter perguntas
-    $perguntas = function_exists( 'vs_get_voting_questions' )
+    $questions = function_exists( 'vs_get_voting_questions' )
         ? vs_get_voting_questions( $votacao_id )
         : array();
 
@@ -98,8 +98,8 @@ function vs_ajax_get_unificacao_group() {
                 continue;
             }
 
-            $pergunta_label = isset( $perguntas[ $index ]['label'] )
-                ? $perguntas[ $index ]['label']
+            $question_label = isset( $questions[ $index ]['label'] )
+                ? $questions[ $index ]['label']
                 : 'Pergunta #' . ( $index + 1 );
 
             // Usando helper para formatar resposta detalhada
@@ -112,7 +112,7 @@ function vs_ajax_get_unificacao_group() {
 
             $results[] = array(
                 'usuario'  => $usuario_texto,
-                'pergunta' => $pergunta_label,
+                'pergunta' => $question_label,
                 'resposta' => $resposta_text,
             );
         }

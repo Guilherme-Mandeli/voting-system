@@ -13,31 +13,31 @@ defined( 'ABSPATH' ) || exit;
  * @param WP_Post $post Objeto del post actual
  */
 function vs_render_metabox_questions_view($post) {
-    $perguntas = get_post_meta($post->ID, 'vs_perguntas', true);
-    if (!empty($perguntas) && is_array($perguntas)) {
-        foreach ($perguntas as &$pergunta) {
-            // Garantir que respostas_importadas seja um JSON válido
-            if (!empty($pergunta['respostas_importadas'])) {
+    $questions = get_post_meta($post->ID, 'vs_questions', true);
+    if (!empty($questions) && is_array($questions)) {
+        foreach ($questions as &$question) {
+            // Garantir que imported_answers seja um JSON válido
+            if (!empty($question['imported_answers'])) {
                 // Decodifica o JSON para verificar se é válido
-                $json_decoded = json_decode($pergunta['respostas_importadas'], true);
+                $json_decoded = json_decode($question['imported_answers'], true);
                 if ($json_decoded !== null) {
                     // Re-codifica para garantir um JSON válido e consistente
-                    $pergunta['respostas_importadas'] = wp_json_encode($json_decoded);
+                    $question['imported_answers'] = wp_json_encode($json_decoded);
                 } else {
                     // Se o JSON não for válido, inicializa com um objeto vazio
-                    $pergunta['respostas_importadas'] = wp_json_encode([
+                    $question['imported_answers'] = wp_json_encode([
                         'perguntas' => []
                     ]);
                 }
             } else {
                 // Se não houver respostas importadas, inicializa com um objeto vazio
-                $pergunta['respostas_importadas'] = wp_json_encode([
+                $question['imported_answers'] = wp_json_encode([
                     'perguntas' => []
                 ]);
             }
         }
     }
-    wp_nonce_field('vs_salvar_perguntas', 'vs_nonce_perguntas');
+    wp_nonce_field('vs_salvar_perguntas', 'vs_nonce_questions');
 
     // Obtiene valor guardado para permitir edición
     $permitir_edicao = get_post_meta($post->ID, 'vs_permitir_edicao', true);
@@ -53,7 +53,7 @@ function vs_render_metabox_questions_view($post) {
                 </label>  
             </p>
             <p style="margin-top: 4px; padding: 6px 6px 8px 12px; border-left: 1px solid #ccc; background: #f6f7f7;">
-                Habilitar esta opción permitirá que los usuarios editen sus respuestas después de la primera submisión.
+                Habilitar esta opção permitirá que os usuários editem as respostas após a primeira submissão.
             </p>
         </div>
 
@@ -61,9 +61,9 @@ function vs_render_metabox_questions_view($post) {
 
         <!-- Container de preguntas -->
         <div id="vs-perguntas-wrapper">
-            <?php if (!empty($perguntas) && is_array($perguntas)) : ?>
-                <?php foreach ($perguntas as $index => $pergunta) : ?>
-                    <?php vs_render_question_row_template($index, $pergunta); ?>
+            <?php if (!empty($questions) && is_array($questions)) : ?>
+                <?php foreach ($questions as $index => $question) : ?>
+                    <?php vs_render_question_row_template($index, $question); ?>
                 <?php endforeach; ?>
             <?php else : ?>
                 <?php vs_render_question_row_template(0, ['obrigatoria' => true]); ?>
@@ -85,9 +85,9 @@ function vs_render_metabox_questions_view($post) {
  * Renderiza una fila de pregunta usando el template
  *
  * @param int $index Índice de la pregunta
- * @param array $pergunta Datos de la pregunta
+ * @param array $question Datos de la pregunta
  */
-function vs_render_question_row_template($index, $pergunta = []) {
+function vs_render_question_row_template($index, $question = []) {
     include VS_PLUGIN_PATH . 'templates/admin/template-metabox-question-row.php';
 }
 
@@ -98,9 +98,9 @@ function vs_render_question_row_template($index, $pergunta = []) {
  */
 function vs_render_metabox_questions_scripts($post) {
     $last_index = 0;
-    $perguntas = get_post_meta($post->ID, 'vs_perguntas', true);
-    if (!empty($perguntas) && is_array($perguntas)) {
-        $last_index = count($perguntas) - 1;
+    $questions = get_post_meta($post->ID, 'vs_questions', true);
+    if (!empty($questions) && is_array($questions)) {
+        $last_index = count($questions) - 1;
     }
     ?>
     <script>
@@ -126,11 +126,11 @@ function vs_render_metabox_questions_scripts($post) {
             document.addEventListener('change', function (e) {
                 if (e.target && e.target.classList.contains('vs-tipo-campo')) {
                     const container = e.target.closest('.vs-pergunta');
-                    const opcoesDiv = container.querySelector('.vs-opcoes-container');
+                    const optionsDiv = container.querySelector('.vs-options-container');
                     if (['radio', 'checkbox', 'select'].includes(e.target.value)) {
-                        opcoesDiv.style.display = 'block';
+                        optionsDiv.style.display = 'block';
                     } else {
-                        opcoesDiv.style.display = 'none';
+                        optionsDiv.style.display = 'none';
                     }
                 }
             });
@@ -146,40 +146,40 @@ function vs_render_metabox_questions_scripts($post) {
                 }
 
                 // Remover opción
-                if (e.target && e.target.classList.contains('vs-remove-opcao')) {
-                    const opcao = e.target.closest('.vs-opcao-item');
-                    opcao.remove();
+                if (e.target && e.target.classList.contains('vs-remove-option')) {
+                    const option = e.target.closest('.vs-option-item');
+                    option.remove();
                 }
 
                 // Agregar opción
-                if (e.target && e.target.classList.contains('vs-add-opcao')) {
-                    const perguntaIndex = e.target.getAttribute('data-pergunta-index');
-                    const opcoesContainer = e.target.closest('.vs-opcoes');
-                    const opcaoCount = opcoesContainer.querySelectorAll('.vs-opcao-item').length;
+                if (e.target && e.target.classList.contains('vs-add-option')) {
+                    const perguntaIndex = e.target.getAttribute('data-question-index');
+                    const optionsContainer = e.target.closest('.vs-options');
+                    const optionCount = optionsContainer.querySelectorAll('.vs-option-item').length;
                     const tipoCampo = e.target.closest('.vs-pergunta').querySelector('.vs-tipo-campo').value;
                     
-                    let newOpcaoHTML = `
-                        <div class='vs-opcao-item' style='margin-bottom: 5px;'>
+                    let newoptionHTML = `
+                        <div class='vs-option-item' style='margin-bottom: 5px;'>
                             <input type='text' 
-                                   name='vs_perguntas[${perguntaIndex}][opcoes][]' 
+                                   name='vs_questions[${perguntaIndex}][options][]' 
                                    style='width: 90%;'
-                                   placeholder='Opción ${opcaoCount + 1}'>`;
+                                   placeholder='Opción ${optionCount + 1}'>`;
 
-                    // Adiciona o input hidden apenas se for do tipo votacao_anterior
-                    if (tipoCampo === 'votacao_anterior') {
-                        newOpcaoHTML += `
+                    // Adiciona o input hidden apenas se for do tipo imported_vote
+                    if (tipoCampo === 'imported_vote') {
+                        newoptionHTML += `
                             <input type='hidden' 
-                                   name='vs_perguntas[${perguntaIndex}][valores_reais][]' 
+                                   name='vs_questions[${perguntaIndex}][valores_reais][]' 
                                    value='' 
                                    class='vs-valor-real'>`;
                     }
 
-                    newOpcaoHTML += `
-                            <button type='button' class='button button-small vs-remove-opcao'>Remover</button>
+                    newoptionHTML += `
+                            <button type='button' class='button button-small vs-remove-option'>Remover</button>
                         </div>
                     `;
                     
-                    e.target.insertAdjacentHTML('beforebegin', newOpcaoHTML);
+                    e.target.insertAdjacentHTML('beforebegin', newoptionHTML);
                 }
             });
 
@@ -234,7 +234,7 @@ function vs_render_metabox_questions_styles() {
             outline: none;
         }
         
-        .vs-opcoes-container {
+        .vs-options-container {
             margin-top: 10px;
             padding: 10px;
             background: #fff;
@@ -242,17 +242,17 @@ function vs_render_metabox_questions_styles() {
             border-radius: 3px;
         }
         
-        .vs-opcao-item {
+        .vs-option-item {
             display: flex;
             align-items: center;
             gap: 8px;
         }
         
-        .vs-opcao-item input {
+        .vs-option-item input {
             flex: 1;
         }
         
-        .vs-add-opcao {
+        .vs-add-option {
             margin-top: 8px;
         }
         
@@ -267,7 +267,7 @@ function vs_render_metabox_questions_styles() {
             border-color: #a00;
         }
         
-        .vs-remove-opcao {
+        .vs-remove-option {
             background: #f56565;
             border-color: #f56565;
             color: white;
@@ -275,7 +275,7 @@ function vs_render_metabox_questions_styles() {
             padding: 2px 8px;
         }
         
-        .vs-remove-opcao:hover {
+        .vs-remove-option:hover {
             background: #e53e3e;
             border-color: #e53e3e;
         }

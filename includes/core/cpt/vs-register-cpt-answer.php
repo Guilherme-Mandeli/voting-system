@@ -198,9 +198,9 @@ function vs_render_answer_metabox( $post ) {
     }
 
     $votacao_id = get_post_meta( $post->ID, 'vs_votacao_id', true );
-    $perguntas  = get_post_meta( $votacao_id, 'vs_perguntas', true );
-    if ( ! is_array( $perguntas ) ) {
-        $perguntas = array();
+    $questions  = get_post_meta( $votacao_id, 'vs_questions', true );
+    if ( ! is_array( $questions ) ) {
+        $questions = array();
     }
 
     $unifications = get_post_meta( $post->ID, 'vs_resposta_unificada', true );
@@ -217,8 +217,8 @@ function vs_render_answer_metabox( $post ) {
 
     foreach ( $respostas as $index => $resposta_value ) {
 
-        $label = isset( $perguntas[ $index ]['label'] )
-            ? $perguntas[ $index ]['label']
+        $label = isset( $questions[ $index ]['label'] )
+            ? $questions[ $index ]['label']
             : sprintf( 'Pergunta #%d', ( $index + 1 ) );
 
         if ( is_array( $resposta_value ) ) {

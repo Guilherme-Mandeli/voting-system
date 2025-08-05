@@ -24,7 +24,7 @@ function vs_votacao_shortcode($atts) {
 
     $data_fim = get_post_meta($votacao_id, '_vs_data_fim', true);
     $status_atual = get_post_meta($votacao_id, '_vs_status', true);
-    $perguntas = vs_get_voting_questions($votacao_id); // Usa função helper
+    $questions = vs_get_voting_questions($votacao_id); // Usa função helper
     $permitir_edicao = get_post_meta($votacao_id, 'vs_permitir_edicao', true);
 
     if (!is_user_logged_in()) {

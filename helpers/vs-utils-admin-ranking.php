@@ -15,9 +15,9 @@ if (!defined('ABSPATH')) {
  * Obtém o ranking de votação com filtros e agrupamentos
  */
 function vs_get_voting_ranking($votacao_id, $question_filter = 'all', $group_mode = 'by_answer') {
-    $perguntas = vs_get_voting_questions($votacao_id);
+    $questions = vs_get_voting_questions($votacao_id);
     
-    if (empty($perguntas)) {
+    if (empty($questions)) {
         return [];
     }
 
@@ -79,8 +79,8 @@ function vs_get_voting_ranking($votacao_id, $question_filter = 'all', $group_mod
             if (!isset($ranking[$key])) {
                 $ranking[$key] = [
                     'question_index' => $index,
-                    'question_label' => isset($perguntas[$index]['label']) 
-                        ? $perguntas[$index]['label'] 
+                    'question_label' => isset($questions[$index]['label']) 
+                        ? $questions[$index]['label'] 
                         : 'Pergunta #' . ($index + 1),
                     'answer' => $resposta_formatada,
                     'count' => 0,
@@ -136,36 +136,6 @@ function vs_get_voting_ranking($votacao_id, $question_filter = 'all', $group_mod
 }
 
 /**
- * Gera URL para exportação CSV do ranking
- */
-// function vs_get_ranking_export_url($votacao_id, $group_mode, $question_filter) {
-//     return admin_url('admin-post.php') . '?' . http_build_query([
-//         'action' => 'export_csv_ranking',
-//         'votacao_id' => $votacao_id,
-//         'group_mode' => $group_mode,
-//         'question_filter' => $question_filter
-//     ]);
-// }
-
-/**
- * Processa dados para paginação do ranking
- */
-// function vs_paginate_ranking($ranking, $page = 1, $per_page = 50) {
-//     $total_items = count($ranking);
-//     $total_pages = ceil($total_items / $per_page);
-//     $offset = ($page - 1) * $per_page;
-//     $paged_ranking = array_slice($ranking, $offset, $per_page);
-
-//     return [
-//         'items' => $paged_ranking,
-//         'total_items' => $total_items,
-//         'total_pages' => $total_pages,
-//         'current_page' => $page,
-//         'per_page' => $per_page
-//     ];
-// }
-
-/**
  * Handler AJAX para carregar todo o ranking com paginação
  */
 function vs_handle_get_all_ranking() {
@@ -190,7 +160,7 @@ function vs_handle_get_all_ranking() {
     $offset = ($page - 1) * $per_page;
     $paged_ranking = array_slice($ranking, $offset, $per_page);
 
-    $perguntas = vs_get_voting_questions($votacao_id);
+    $questions = vs_get_voting_questions($votacao_id);
 
     ob_start();
     ?>

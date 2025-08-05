@@ -5,13 +5,22 @@ defined('ABSPATH') || exit;
  * Handler AJAX para buscar votações
  */
 function vs_ajax_buscar_votacoes() {
-    check_ajax_referer('vs_admin_nonce', 'nonce');
+    check_ajax_referer(VS_Nonce_Actions::AJAX_ADMIN, 'nonce');
 
     if (!current_user_can('manage_options')) {
         wp_send_json_error('Permissão negada');
     }
 
-    $filtros = $_POST['filtros'] ?? [];
+    // Sanitizar filtros
+    $filtros_raw = $_POST['filtros'] ?? [];
+    $filtros = [];
+    
+    if (is_array($filtros_raw)) {
+        foreach ($filtros_raw as $key => $value) {
+            $key = sanitize_key($key);
+            $filtros[$key] = sanitize_text_field($value);
+        }
+    }
     
     $args = [
         'post_type' => 'votacoes',
@@ -80,7 +89,7 @@ add_action('wp_ajax_vs_buscar_votacoes', 'vs_ajax_buscar_votacoes');
 function vs_ajax_obter_perguntas_votacao() {
     
     try {
-        if (!check_ajax_referer('vs_admin_nonce', 'nonce', false)) {
+        if (!check_ajax_referer(VS_Nonce_Actions::AJAX_ADMIN, 'nonce', false)) {
             wp_send_json_error('Invalid nonce');
             return;
         }
@@ -97,9 +106,9 @@ function vs_ajax_obter_perguntas_votacao() {
             return;
         }
 
-        $perguntas = get_post_meta($votacao_id, 'vs_perguntas', true);
+        $questions = get_post_meta($votacao_id, 'vs_questions', true);
 
-        if (!$perguntas) {
+        if (!$questions) {
             wp_send_json_error('Perguntas não encontradas');
             return;
         }
@@ -167,14 +176,14 @@ function vs_ajax_obter_perguntas_votacao() {
         }
 
         // Adiciona contagem de respostas e respostas unificadas para cada pergunta
-        foreach ($perguntas as $index => &$pergunta) {
-            $pergunta['total_votos'] = $contagem_respostas[$index] ?? 0;
-            $pergunta['respostas_unificadas'] = !empty($respostas_por_pergunta[$index]) 
+        foreach ($questions as $index => &$question) {
+            $question['total_votos'] = $contagem_respostas[$index] ?? 0;
+            $question['respostas_unificadas'] = !empty($respostas_por_pergunta[$index]) 
                 ? array_values($respostas_por_pergunta[$index]) 
                 : [];
         }
 
-        wp_send_json_success($perguntas);
+        wp_send_json_success($questions);
     } catch (Exception $e) {
         error_log('DEBUG: Exception caught - ' . $e->getMessage());
         wp_send_json_error('Erro interno do servidor: ' . $e->getMessage());

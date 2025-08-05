@@ -3,8 +3,8 @@ defined( 'ABSPATH' ) || exit;
 
 
 function vs_get_voting_questions( $votacao_id ) {
-    $perguntas = get_post_meta( $votacao_id, 'vs_perguntas', true );
-    return is_array( $perguntas ) ? $perguntas : array();
+    $questions = get_post_meta( $votacao_id, 'vs_questions', true );
+    return is_array( $questions ) ? $questions : array();
 }
 
 function vs_format_unified_answer( $unificada_val ) {
@@ -35,9 +35,9 @@ function vs_parse_resposta_indices_map( $linhas_array ) {
         }
 
         $resposta_id   = isset( $linha['postId'] ) ? intval( $linha['postId'] ) : 0;
-        $pergunta_idx  = isset( $linha['perguntaIndex'] ) ? intval( $linha['perguntaIndex'] ) : -1;
+        $question_idx  = isset( $linha['perguntaIndex'] ) ? intval( $linha['perguntaIndex'] ) : -1;
 
-        if ( $resposta_id <= 0 || $pergunta_idx < 0 ) {
+        if ( $resposta_id <= 0 || $question_idx < 0 ) {
             continue;
         }
 
@@ -46,8 +46,8 @@ function vs_parse_resposta_indices_map( $linhas_array ) {
         }
 
         // Evita duplicados.
-        if ( ! in_array( $pergunta_idx, $resposta_to_indices[ $resposta_id ], true ) ) {
-            $resposta_to_indices[ $resposta_id ][] = $pergunta_idx;
+        if ( ! in_array( $question_idx, $resposta_to_indices[ $resposta_id ], true ) ) {
+            $resposta_to_indices[ $resposta_id ][] = $question_idx;
         }
     }
     return $resposta_to_indices;
@@ -74,13 +74,13 @@ function vs_update_resposta_unificada_indices( $resposta_id, $indices_list, $nov
     return update_post_meta( $resposta_id, $meta_key, $unifications );
 }
 
-function vs_format_user_answers( $respostas, $perguntas ) {
+function vs_format_user_answers( $respostas, $questions ) {
     $respostas_formatadas = [];
     foreach ( $respostas as $index => $resposta ) {
         // Verifica se a pergunta existe no array de perguntas
-        if (isset($perguntas[$index])) {
+        if (isset($questions[$index])) {
             // Obtemos o enunciado da pergunta, que estará na chave 'label'
-            $texto_pergunta = $perguntas[$index]['label'] ?? 'Pergunta #' . (intval($index) + 1);
+            $texto_pergunta = $questions[$index]['label'] ?? 'Pergunta #' . (intval($index) + 1);
 
             // Processa a resposta (verificando se é um array de opções, como no caso de checkboxes ou múltiplos selects)
             $respostas_formatadas[] = [
@@ -143,19 +143,23 @@ function vs_generate_thank_you_token($user_id, $votacao_id) {
 function vs_check_votacao_status($data_fim) {
     if (!$data_fim) return false;
     
-    $timestamp_fim = strtotime($data_fim . ' 00:00:00');
-    return $timestamp_fim <= time();
+    // Considera o timezone do WordPress
+    $wp_timezone = new DateTimeZone(get_option('timezone_string') ?: 'UTC');
+    $data_fim_obj = new DateTime($data_fim . ' 00:00:00', $wp_timezone);
+    $now = new DateTime('now', $wp_timezone);
+    
+    return $data_fim_obj <= $now;
 }
 
-function vs_get_votacao_anterior_data($votacao_id) {
+function vs_get_imported_vote_data($votacao_id, $question_index = null) {
     if (empty($votacao_id)) {
-        return wp_json_encode(['perguntas' => []]);
+        return wp_json_encode(['questions' => []]);
     }
 
     // Busca todas as respostas da votação
     $args = [
         'post_type' => 'votacao_resposta',
-        'posts_per_page' => -1,
+        'posts_per_page' => 1000, // Limite razoável
         'post_status' => ['publish', 'private'],
         'meta_query' => [
             [
@@ -178,7 +182,13 @@ function vs_get_votacao_anterior_data($votacao_id) {
         if (!is_array($respostas_detalhadas)) continue;
         if (!is_array($respostas_unificadas)) $respostas_unificadas = [];
 
-        foreach ($respostas_detalhadas as $index => $resposta_original) {
+        // Se question_index foi especificado, processa apenas aquela pergunta
+        $indices = $question_index !== null ? [$question_index] : array_keys($respostas_detalhadas);
+
+        foreach ($indices as $index) {
+            if (!isset($respostas_detalhadas[$index])) continue;
+            $resposta_original = $respostas_detalhadas[$index];
+
             // Ignora respostas vazias
             if (is_array($resposta_original)) {
                 if (empty($resposta_original)) continue;
@@ -213,19 +223,33 @@ function vs_get_votacao_anterior_data($votacao_id) {
     }
 
     // Busca as perguntas originais
-    $perguntas = get_post_meta($votacao_id, 'vs_perguntas', true);
-    if (!is_array($perguntas)) {
-        $perguntas = [];
+    $questions = get_post_meta($votacao_id, 'vs_questions', true);
+    if (!is_array($questions)) {
+        $questions = [];
     }
 
-    // Adiciona contagem de respostas e respostas unificadas para cada pergunta
-    foreach ($perguntas as $index => &$pergunta) {
-        $pergunta['total_votos'] = $contagem_respostas[$index] ?? 0;
-        $pergunta['respostas_importadas'] = !empty($respostas_por_pergunta[$index]) 
+    // Se question_index foi especificado, retorna apenas aquela pergunta
+    if ($question_index !== null && isset($questions[$question_index])) {
+        $question = $questions[$question_index];
+        $question['total_votos'] = $contagem_respostas[$question_index] ?? 0;
+        $question['imported_answers'] = !empty($respostas_por_pergunta[$question_index]) 
+            ? array_values($respostas_por_pergunta[$question_index]) 
+            : [];
+        $question['vote_id'] = $votacao_id;
+        $question['question_source'] = $question['label'] ?? '';
+        
+        return wp_json_encode(['questions' => [$question]]);
+    }
+
+    // Caso contrário, retorna todas as perguntas (comportamento atual)
+    foreach ($questions as $index => &$question) {
+        $question['total_votos'] = $contagem_respostas[$index] ?? 0;
+        $question['imported_answers'] = !empty($respostas_por_pergunta[$index]) 
             ? array_values($respostas_por_pergunta[$index]) 
             : [];
-        $pergunta['pergunta_origem'] = $pergunta['label'] ?? '';
+        $question['vote_id'] = $votacao_id;
+        $question['question_source'] = $question['label'] ?? '';
     }
 
-    return wp_json_encode(['perguntas' => $perguntas]);
+    return wp_json_encode(['questions' => $questions]);
 }

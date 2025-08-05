@@ -24,7 +24,7 @@
 }
 
 /* Grid de opções para votação anterior */
-.vs-opcoes-grid {
+.vs-options-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
@@ -47,7 +47,7 @@
     align-items: center;
 }
 
-.vs-busca-opcoes {
+.vs-busca-options {
     width: 100%;
     margin-bottom: 10px;
 }
@@ -64,27 +64,27 @@
     border: 1px solid #ddd;
 }
 
-.vs-tabela-opcoes {
+.vs-tabela-options {
     width: 100%;
     border-collapse: collapse;
     background: #fff;
 }
 
-.vs-tabela-opcoes th,
-.vs-tabela-opcoes td {
+.vs-tabela-options th,
+.vs-tabela-options td {
     padding: 8px;
     text-align: left;
     border-bottom: 1px solid #ddd;
 }
 
-.vs-tabela-opcoes th {
+.vs-tabela-options th {
     background: #f1f1f1;
     position: sticky;
     top: 0;
 }
 
 /* Coluna de opções */
-.vs-coluna-opcoes {
+.vs-options-column {
     background: #fff;
     padding: 15px;
     border: 1px solid #ddd;
@@ -910,7 +910,7 @@
 }
 
 /* Grid de opções para votação anterior */
-.vs-opcoes-grid {
+.vs-options-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
@@ -933,7 +933,7 @@
     align-items: center;
 }
 
-.vs-busca-opcoes {
+.vs-busca-options {
     width: 100%;
     margin-bottom: 10px;
 }
@@ -950,27 +950,27 @@
     border: 1px solid #ddd;
 }
 
-.vs-tabela-opcoes {
+.vs-tabela-options {
     width: 100%;
     border-collapse: collapse;
     background: #fff;
 }
 
-.vs-tabela-opcoes th,
-.vs-tabela-opcoes td {
+.vs-tabela-options th,
+.vs-tabela-options td {
     padding: 8px;
     text-align: left;
     border-bottom: 1px solid #ddd;
 }
 
-.vs-tabela-opcoes th {
+.vs-tabela-options th {
     background: #f1f1f1;
     position: sticky;
     top: 0;
 }
 
 /* Coluna de opções */
-.vs-coluna-opcoes {
+.vs-options-column {
     background: #fff;
     padding: 15px;
     border: 1px solid #ddd;

@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 /**
  * Template para exibição das respostas da votação
  * 
- * @param array $perguntas Array com as perguntas da votação
+ * @param array $questions Array com as perguntas da votação
  * @param array $respostas Array com as respostas do usuário
  */
 ?>
@@ -20,8 +20,8 @@ if (!defined('ABSPATH')) {
         </tr>
     </thead>
     <tbody>
-        <?php foreach ($perguntas as $index => $pergunta):
-            $label = esc_html($pergunta['label']);
+        <?php foreach ($questions as $index => $question):
+            $label = esc_html($question['label']);
             $resposta = isset($respostas['respostas'][$index]) ? $respostas['respostas'][$index] : '';
 
             if (is_array($resposta)) {
@@ -31,8 +31,8 @@ if (!defined('ABSPATH')) {
             }
         ?>
         <tr>
-            <td class="border-b p-2"><?php echo $label; ?></td>
-            <td class="border-b p-2"><?php echo $resposta; ?></td>
+            <td class="border-b p-2"><?php echo esc_html($label); ?></td>
+            <td class="border-b p-2"><?php echo wp_kses_post($resposta); ?></td>
         </tr>
         <?php endforeach; ?>
     </tbody>

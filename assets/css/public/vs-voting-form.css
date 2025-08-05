@@ -422,8 +422,8 @@
 }
 
 /* Modos de edição */
-#vs-modo-leitura,
-#vs-modo-edicao {
+#vs-read-mode,
+#vs-edit-mode {
     transition: opacity var(--vs-transition-normal);
 }
 
@@ -488,8 +488,8 @@
     .vs-form input,
     .vs-form select,
     .vs-button,
-    #vs-modo-leitura,
-    #vs-modo-edicao {
+    #vs-read-mode,
+    #vs-edit-mode {
         transition: none;
     }
 }

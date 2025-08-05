@@ -448,7 +448,7 @@ defined('ABSPATH') || exit;
  * vs_calculate_time_remaining($data_fim)
  * - Calcula tempo restante para encerramento
  * 
- * vs_generate_response_summary($respostas, $perguntas)
+ * vs_generate_response_summary($respostas, $questions)
  * - Gera resumo das respostas do usuário
  * 
  * vs_user_has_voted($user_id, $votacao_id)

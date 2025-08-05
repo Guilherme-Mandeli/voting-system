@@ -24,8 +24,8 @@ function vs_handle_trash_response() {
         wp_die( 'ID de resposta inválido.', 'Erro', [ 'response' => 400 ] );
     }
 
-    // Verifica nonce
-    $nonce_action = 'vs_trash_response_' . $post_id;
+    // Verifica nonce usando a constante
+    $nonce_action = VS_Nonce_Actions::ACTION_TRASH . '_' . $post_id;
     if ( ! wp_verify_nonce( $_GET['_wpnonce'], $nonce_action ) ) {
         wp_die( 'Ação não autorizada.', 'Erro de Segurança', [ 'response' => 403 ] );
     }
@@ -67,8 +67,8 @@ function vs_handle_restore_response() {
         wp_die( 'ID de resposta inválido.', 'Erro', [ 'response' => 400 ] );
     }
 
-    // Verifica nonce
-    $nonce_action = 'vs_restore_response_' . $post_id;
+    // Verifica nonce usando a constante
+    $nonce_action = VS_Nonce_Actions::ACTION_RESTORE . '_' . $post_id;
     if ( ! wp_verify_nonce( $_GET['_wpnonce'], $nonce_action ) ) {
         wp_die( 'Ação não autorizada.', 'Erro de Segurança', [ 'response' => 403 ] );
     }
@@ -110,8 +110,8 @@ function vs_handle_delete_response() {
         wp_die( 'ID de resposta inválido.', 'Erro', [ 'response' => 400 ] );
     }
 
-    // Verifica nonce
-    $nonce_action = 'vs_trash_response_' . $post_id;
+    // Verifica nonce usando a constante
+    $nonce_action = VS_Nonce_Actions::ACTION_DELETE . '_' . $post_id;
     if ( ! wp_verify_nonce( $_GET['_wpnonce'], $nonce_action ) ) {
         wp_die( 'Ação não autorizada.', 'Erro de Segurança', [ 'response' => 403 ] );
     }

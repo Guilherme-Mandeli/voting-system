@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 /**
  * Template para os campos do formulário de votação
  * 
- * @param array $perguntas Array com as perguntas da votação
+ * @param array $questions Array com as perguntas da votação
  * @param int $votacao_id ID da votação
  * @param array $respostas Array com as respostas do usuário (se existirem)
  */
@@ -18,12 +18,12 @@ if (!defined('ABSPATH')) {
     <input type="hidden" name="vs_votacao_id" value="<?php echo esc_attr($votacao_id); ?>">
     <input type="hidden" name="vs_votacao_nonce" value="<?php echo vs_create_nonce( VS_Nonce_Actions::FORM_VOTING ); ?>">
 
-    <?php foreach ($perguntas as $index => $pergunta): ?>
+    <?php foreach ($questions as $index => $question): ?>
         <?php
-        $label = esc_html($pergunta['label']);
-        $tipo  = esc_attr($pergunta['tipo']);
-        $opcoes = $pergunta['opcoes'] ?? [];
-        $obrigatoria = isset($pergunta['obrigatoria']) && $pergunta['obrigatoria'] ? true : false;
+        $label = esc_html($question['label']);
+        $tipo  = esc_attr($question['tipo']);
+        $options = $question['options'] ?? [];
+        $obrigatoria = isset($question['obrigatoria']) && $question['obrigatoria'] ? true : false;
 
         // Preenchimento das respostas anteriores
         $valor_anterior = isset($respostas['respostas'][$index]) ? $respostas['respostas'][$index] : '';
@@ -42,29 +42,29 @@ if (!defined('ABSPATH')) {
                 case 'select': ?>
                     <select name="respostas[<?php echo $index; ?>]" class="w-full border rounded p-2" <?php echo ($obrigatoria ? 'required' : ''); ?>>
                         <option value="">Selecionar...</option>
-                        <?php foreach ($opcoes as $opcao): 
-                            $selected = ($opcao === $valor_anterior) ? 'selected' : '';
+                        <?php foreach ($options as $option): 
+                            $selected = ($option === $valor_anterior) ? 'selected' : '';
                             ?>
-                            <option value="<?php echo esc_attr($opcao); ?>" <?php echo $selected; ?>><?php echo esc_html($opcao); ?></option>
+                            <option value="<?php echo esc_attr($option); ?>" <?php echo $selected; ?>><?php echo esc_html($option); ?></option>
                         <?php endforeach; ?>
                     </select>
                     <?php break;
 
                 case 'radio': 
-                    foreach ($opcoes as $i => $opcao):
-                        $checked = ($opcao === $valor_anterior) ? 'checked' : '';
+                    foreach ($options as $i => $option):
+                        $checked = ($option === $valor_anterior) ? 'checked' : '';
                         $required = ($obrigatoria && $i === 0) ? 'required' : '';
                         ?>
-                        <label class="block"><input type="radio" name="respostas[<?php echo $index; ?>]" value="<?php echo esc_attr($opcao); ?>" <?php echo $checked; ?> <?php echo $required; ?>> <?php echo esc_html($opcao); ?></label>
+                        <label class="block"><input type="radio" name="respostas[<?php echo $index; ?>]" value="<?php echo esc_attr($option); ?>" <?php echo $checked; ?> <?php echo $required; ?>> <?php echo esc_html($option); ?></label>
                     <?php endforeach;
                     break;
 
                 case 'checkbox': 
                     $valor_anterior = is_array($valor_anterior) ? $valor_anterior : [];
-                    foreach ($opcoes as $opcao):
-                        $checked = in_array($opcao, $valor_anterior) ? 'checked' : '';
+                    foreach ($options as $option):
+                        $checked = in_array($option, $valor_anterior) ? 'checked' : '';
                         ?>
-                        <label class="block"><input type="checkbox" name="respostas[<?php echo $index; ?>][]" value="<?php echo esc_attr($opcao); ?>" <?php echo $checked; ?>> <?php echo esc_html($opcao); ?></label>
+                        <label class="block"><input type="checkbox" name="respostas[<?php echo $index; ?>][]" value="<?php echo esc_attr($option); ?>" <?php echo $checked; ?>> <?php echo esc_html($option); ?></label>
                     <?php endforeach;
                     if ($obrigatoria): ?>
                         <p class="text-sm text-gray-500 italic">Essa pergunta é obrigatória.</p>

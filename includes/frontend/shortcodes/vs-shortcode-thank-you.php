@@ -50,7 +50,7 @@ function vs_shortcode_votacao_obrigado() {
     delete_transient($transient_key);
 
     // Recupera as perguntas da votação usando função helper
-    $perguntas = vs_get_voting_questions($votacao_id);
+    $questions = vs_get_voting_questions($votacao_id);
 
     // Carrega o template e retorna o conteúdo
     ob_start();

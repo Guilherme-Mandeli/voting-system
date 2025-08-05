@@ -15,22 +15,22 @@ defined( 'ABSPATH' ) || exit;
  *     // ... outros índices conforme a ordem das perguntas
  * ]
  *
- * - O índice de cada resposta corresponde à ordem da pergunta definida no array $perguntas.
+ * - O índice de cada resposta corresponde à ordem da pergunta definida no array $questions.
  * - O valor pode ser uma string (resposta única) ou array (ex: múltiplas opções de um checkbox).
  *
  *
  * ------------------------------------------------------------
- * $perguntas (array)
+ * $questions (array)
  * ------------------------------------------------------------
- * Estrutura salva no post_meta com a chave 'vs_perguntas'
+ * Estrutura salva no post_meta com a chave 'vs_questions'
  * Definida via metabox no editor do post tipo 'votacoes'
  *
- * @var array $perguntas Exemplo:
+ * @var array $questions Exemplo:
  * [
  *     0 => [
  *         'label' => 'Enunciado 1',        // Texto da pergunta
  *         'tipo' => 'texto',               // Tipo do campo: texto, select, radio, checkbox, etc.
- *         'opcoes' => [                    // Lista de opções (usado em tipos select, radio, checkbox)
+ *         'options' => [                    // Lista de opções (usado em tipos select, radio, checkbox)
  *             0 => ''                      // Pode ser vazio em perguntas do tipo texto
  *         ],
  *         'obrigatoria' => 1               // Booleano (1 ou 0) indicando se a pergunta é obrigatória
@@ -38,7 +38,7 @@ defined( 'ABSPATH' ) || exit;
  *     1 => [
  *         'label' => 'Enunciado 2',
  *         'tipo' => 'select',
- *         'opcoes' => [
+ *         'options' => [
  *             0 => 'A',
  *             1 => 'B',
  *             2 => 'C',
@@ -49,7 +49,7 @@ defined( 'ABSPATH' ) || exit;
  * ]
  *
  * - O índice de cada item reflete a ordem de exibição das perguntas.
- * - A chave 'opcoes' só é usada para campos que apresentam múltiplas opções (select, radio, checkbox).
+ * - A chave 'options' só é usada para campos que apresentam múltiplas opções (select, radio, checkbox).
  * - 'obrigatoria' define se o campo deve ser validado no momento do envio.
  */
 
@@ -113,8 +113,8 @@ function vs_ajax_get_user_votes() {
     }
 
     // Recupera as perguntas da votação
-    $perguntas = get_post_meta($votacao_id, 'vs_perguntas', true);
-    if (!$perguntas || !is_array($perguntas)) {
+    $questions = get_post_meta($votacao_id, 'vs_questions', true);
+    if (!$questions || !is_array($questions)) {
         wp_send_json_error('Nenhuma pergunta encontrada para esta votação.');
     }
 
@@ -125,7 +125,7 @@ function vs_ajax_get_user_votes() {
     }
 
     // Criação de array para formatar as respostas
-    $respostas_formatadas = vs_format_user_answers( $respostas, $perguntas );
+    $respostas_formatadas = vs_format_user_answers( $respostas, $questions );
     
     // Retorna as respostas formatadas em formato JSON
     wp_send_json_success([

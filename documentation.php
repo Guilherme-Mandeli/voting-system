@@ -72,7 +72,7 @@ defined('ABSPATH') || exit;
  * 
  * 1. 'votacoes':
  *    - Post principal que representa uma votação
- *    - Meta fields: vs_perguntas, _vs_ano, _vs_status, _vs_codigo, etc.
+ *    - Meta fields: vs_questions, _vs_ano, _vs_status, _vs_codigo, etc.
  *    - Suporta: title, editor, excerpt
  *    - Taxonomia: eventos
  * 
@@ -85,7 +85,7 @@ defined('ABSPATH') || exit;
  * ===================
  * 
  * Votação (votacoes):
- * - vs_perguntas: Array com as perguntas da votação
+ * - vs_questions: Array com as perguntas da votação
  * - _vs_ano: Ano da votação
  * - _vs_status: aberta|em-pausa|encerrada
  * - _vs_codigo: Código único da votação
@@ -287,18 +287,18 @@ defined('ABSPATH') || exit;
  * 
  * OBJETOS E ESTRUTURAS DE DADOS IMPORTANTES:
  * 
- * 1. PERGUNTA (vs_perguntas):
+ * 1. PERGUNTA (vs_questions):
  * [
  *     'label' => 'Texto da pergunta',
  *     'type' => 'text|select|radio|checkbox',
- *     'options' => ['opcao1', 'opcao2'], // para select/radio/checkbox
+ *     'options' => ['option1', 'option2'], // para select/radio/checkbox
  *     'required' => true|false
  * ]
  * 
  * 2. RESPOSTA DETALHADA (vs_respostas_detalhadas):
  * [
  *     0 => 'Resposta pergunta 1',
- *     1 => ['opcao1', 'opcao2'], // para checkbox
+ *     1 => ['option1', 'option2'], // para checkbox
  *     2 => 'Resposta pergunta 3'
  * ]
  * 
@@ -330,7 +330,7 @@ defined('ABSPATH') || exit;
  * - vs_format_unified_answer($value): Formata resposta unificada
  * - vs_update_resposta_unificada_indices($id, $indices, $value): Atualiza unificação
  * - vs_get_existing_response($user_id, $votacao_id): Verifica resposta existente
- * - vs_generate_response_summary($respostas, $perguntas): Gera resumo de respostas (NOVA)
+ * - vs_generate_response_summary($respostas, $questions): Gera resumo de respostas (NOVA)
  * - vs_user_already_voted($post_id, $user_id): Verifica se usuário já votou
  * - vs_check_votacao_status($data_fim): Verifica se votação está encerrada
  * 

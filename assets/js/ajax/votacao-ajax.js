@@ -1,6 +1,6 @@
 jQuery(document).ready(function($) {
     // Função que é chamada para carregar as respostas da votação via AJAX
-    function carregarRespostas(user_id, votacao_id) {
+    function loadResponses(user_id, votacao_id) {
         $.post(vsAjax.ajaxurl, {
             action: 'vs_get_user_votes',    // Ação no backend para recuperar as respostas do CPT votacao_resposta
             user_id: user_id,
@@ -75,7 +75,7 @@ jQuery(document).ready(function($) {
         var votacao_id = $(this).data('votacao-id');
 
         if (user_id && votacao_id) {
-            carregarRespostas(user_id, votacao_id);
+            loadResponses(user_id, votacao_id);
         } else {
             alert('Erro: IDs de usuário ou votação não encontrados.');
         }
@@ -86,6 +86,6 @@ jQuery(document).ready(function($) {
         var user_id = $(this).data('user-id');
         var votacao_id = $(this).data('votacao-id');
 
-        carregarRespostas(user_id, votacao_id);
+        loadResponses(user_id, votacao_id);
     });
 });

@@ -41,15 +41,15 @@ function vs_render_results_detail_page() {
  */
 function vs_render_todos_resultados_page($votacao_id) {
     // Define as opções válidas para itens por página
-    $opcoes_por_pagina = [30, 50, 100, 200, 500, 1000];
+    $options_por_pagina = [30, 50, 100, 200, 500, 1000];
 
     // Obtém a página atual e o número de itens por página com validação
     $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-    $usuarios_por_pagina = isset($_GET['per_page']) && in_array(intval($_GET['per_page']), $opcoes_por_pagina) ? intval($_GET['per_page']) : 30;
+    $usuarios_por_pagina = isset($_GET['per_page']) && in_array(intval($_GET['per_page']), $options_por_pagina) ? intval($_GET['per_page']) : 30;
 
     // Recebe os parâmetros de ordenação via URL
     $orderby = isset($_GET['orderby']) ? sanitize_text_field($_GET['orderby']) : 'user_id';
-    $order = isset($_GET['order']) && in_array($_GET['order'], ['asc', 'desc']) ? $_GET['order'] : 'asc';
+    $order = isset($_GET['order']) && in_array(sanitize_text_field($_GET['order']), ['asc', 'desc']) ? sanitize_text_field($_GET['order']) : 'asc';
 
     // Verifica o filtro de status das respostas
     $status_filter = isset($_GET['status_filter']) ? sanitize_text_field($_GET['status_filter']) : 'active';
@@ -114,7 +114,7 @@ function vs_render_todos_resultados_page($votacao_id) {
         <a href="<?php echo esc_url(admin_url('edit.php?post_type=votacoes&page=votacoes_resultados')); ?>" style="display: block; width: fit-content;" class="button button-secondary">← Voltar</a>
         <h1 style="display: inline-block;">
             Detalhe de Resultados da Votação #<?php echo esc_html($votacao_id); ?>
-            <a href="<?php echo admin_url('admin-post.php?action=export_csv_votacao&export_csv=true&votacao_id=' . $votacao_id); ?>" style="margin-left: 15px;" class="button button-primary">Exportar | CSV</a>
+            <a href="<?php echo esc_url(admin_url('admin-post.php?action=export_csv_votacao&export_csv=true&votacao_id=' . $votacao_id)); ?>" style="margin-left: 15px;" class="button button-primary">Exportar | CSV</a>
         </h1>
 
         <?php vs_render_subpage_navigation($votacao_id, 'todos'); ?>
@@ -294,8 +294,8 @@ function vs_render_todos_resultados_page($votacao_id) {
                 <div style="margin-top: 20px;">
                     <label for="per_page">Itens por página:</label>
                     <select id="per_page" name="per_page" onchange="location.href='<?php echo esc_url($base_url); ?>&per_page=' + this.value + '&orderby=<?php echo esc_attr($orderby); ?>&order=<?php echo esc_attr($order); ?>&s=<?php echo esc_attr($search_term); ?>&status_filter=<?php echo esc_attr($status_filter); ?>'">
-                        <?php foreach ($opcoes_por_pagina as $opcao) : ?>
-                            <option value="<?php echo $opcao; ?>" <?php selected($usuarios_por_pagina, $opcao); ?>><?php echo $opcao; ?></option>
+                        <?php foreach ($options_por_pagina as $option) : ?>
+                            <option value="<?php echo $option; ?>" <?php selected($usuarios_por_pagina, $option); ?>><?php echo $option; ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>

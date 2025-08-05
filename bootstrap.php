@@ -124,12 +124,16 @@ class VS_Bootstrap {
         wp_enqueue_style( 'vs-admin-style', VS_PLUGIN_URL . 'assets/css/admin.css', array(), VS_PLUGIN_VERSION );
         
         // JavaScript administrativo básico
-        wp_enqueue_script( 'vs-admin-script', VS_PLUGIN_URL . 'assets/js/admin.js', array( 'jquery' ), VS_PLUGIN_VERSION, true );
+        wp_enqueue_script( 'vs-admin-utils', VS_PLUGIN_URL . 'assets/js/admin/utils.js', array( 'jquery' ), VS_PLUGIN_VERSION, true );
+        wp_enqueue_script( 'vs-admin-imported-answers', VS_PLUGIN_URL . 'assets/js/admin/imported-answers.js', array( 'jquery', 'vs-admin-utils' ), VS_PLUGIN_VERSION, true );
+        wp_enqueue_script( 'vs-admin-field-type-handler', VS_PLUGIN_URL . 'assets/js/admin/field-type-handler.js', array( 'jquery', 'vs-admin-imported-answers' ), VS_PLUGIN_VERSION, true );
+        wp_enqueue_script( 'vs-admin-voting-modal', VS_PLUGIN_URL . 'assets/js/admin/voting-modal.js', array( 'jquery', 'vs-admin-utils' ), VS_PLUGIN_VERSION, true );
+        wp_enqueue_script( 'vs-admin-main', VS_PLUGIN_URL . 'assets/js/admin/main.js', array( 'jquery', 'vs-admin-utils', 'vs-admin-field-type-handler', 'vs-admin-imported-answers', 'vs-admin-voting-modal' ), VS_PLUGIN_VERSION, true );
         
         // Localizar script admin básico
-        wp_localize_script( 'vs-admin-script', 'vs_admin', array(
+        wp_localize_script( 'vs-admin-main', 'vs_admin', array(
             'ajaxurl' => admin_url( 'admin-ajax.php' ),
-            'nonce'   => wp_create_nonce( 'vs_admin_nonce' )
+            'nonce'   => wp_create_nonce( VS_Nonce_Actions::AJAX_ADMIN )
         ));
         
         // Obtém informações da tela atual

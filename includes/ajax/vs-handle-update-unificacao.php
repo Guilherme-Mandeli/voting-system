@@ -120,13 +120,13 @@ if ( ! function_exists( 'vs_ajax_update_unificacao' ) ) :
         }
 
         // ------------------------------------------------------------------
-        // (Opcional) Atualizar meta global vs_perguntas no post de votação?
+        // (Opcional) Atualizar meta global vs_questions no post de votação?
         // ------------------------------------------------------------------
         // Comportamento desativado por padrão para evitar sobrescrever globalmente.
         // Caso queira habilitar, descomente abaixo e forneça um array de índices global.
         /*
-        $perguntas = get_post_meta( $votacao_id_raw, 'vs_perguntas', true );
-        if ( is_array( $perguntas ) ) {
+        $questions = get_post_meta( $votacao_id_raw, 'vs_questions', true );
+        if ( is_array( $questions ) ) {
             // Colete todos os índices únicos atualizados (somando todos os usuários)
             $all_indices = array();
             foreach ( $updated_summary as $resposta_id => $idxs ) {
@@ -135,11 +135,11 @@ if ( ! function_exists( 'vs_ajax_update_unificacao' ) ) :
                 }
             }
             foreach ( array_keys( $all_indices ) as $i ) {
-                if ( isset( $perguntas[ $i ] ) && is_array( $perguntas[ $i ] ) ) {
-                    $perguntas[ $i ]['unificada'] = $nova_unificada;
+                if ( isset( $questions[ $i ] ) && is_array( $questions[ $i ] ) ) {
+                    $questions[ $i ]['unificada'] = $nova_unificada;
                 }
             }
-            update_post_meta( $votacao_id_raw, 'vs_perguntas', $perguntas );
+            update_post_meta( $votacao_id_raw, 'vs_questions', $questions );
         }
         */
 

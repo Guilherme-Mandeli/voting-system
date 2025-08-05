@@ -65,9 +65,9 @@ function vs_shortcode_votacoes_usuario_ativas($atts) {
         if (!$is_encerrada && $status === 'aberta') {
             // Obtém as respostas detalhadas
             $respostas_detalhadas = get_post_meta($resposta_post->ID, 'vs_respostas_detalhadas', true);
-            $perguntas = get_post_meta($votacao_id, 'vs_perguntas', true);
+            $questions = get_post_meta($votacao_id, 'vs_questions', true);
             
-            $resumo_respostas = vs_generate_response_summary($respostas_detalhadas, $perguntas);
+            $resumo_respostas = vs_generate_response_summary($respostas_detalhadas, $questions);
             
             $votacoes_ativas[] = [
                 'id' => $votacao_id,
@@ -137,9 +137,9 @@ function vs_shortcode_votacoes_usuario_encerradas($atts) {
         if ($is_encerrada) {
             // Obtém as respostas detalhadas
             $respostas_detalhadas = get_post_meta($resposta_post->ID, 'vs_respostas_detalhadas', true);
-            $perguntas = get_post_meta($votacao_id, 'vs_perguntas', true);
+            $questions = get_post_meta($votacao_id, 'vs_questions', true);
             
-            $resumo_respostas = vs_generate_response_summary($respostas_detalhadas, $perguntas);
+            $resumo_respostas = vs_generate_response_summary($respostas_detalhadas, $questions);
             
             $votacoes_encerradas[] = [
                 'id' => $votacao_id,
@@ -239,8 +239,8 @@ function vs_shortcode_votacoes_disponiveis($atts) {
 /**
  * Função helper para gerar resumo das respostas
  */
-function vs_generate_response_summary($respostas_detalhadas, $perguntas) {
-    if (!is_array($respostas_detalhadas) || !is_array($perguntas)) {
+function vs_generate_response_summary($respostas_detalhadas, $questions) {
+    if (!is_array($respostas_detalhadas) || !is_array($questions)) {
         return 'Respostas não disponíveis';
     }
     
@@ -254,8 +254,8 @@ function vs_generate_response_summary($respostas_detalhadas, $perguntas) {
     foreach ($respostas as $index => $resposta) {
         if ($count >= $max_items) break;
         
-        if (isset($perguntas[$index])) {
-            $pergunta_label = $perguntas[$index]['label'] ?? 'Pergunta ' . ($index + 1);
+        if (isset($questions[$index])) {
+            $question_label = $questions[$index]['label'] ?? 'Pergunta ' . ($index + 1);
             $resposta_texto = is_array($resposta) ? implode(', ', $resposta) : $resposta;
             
             // Limita o tamanho da resposta
@@ -263,7 +263,7 @@ function vs_generate_response_summary($respostas_detalhadas, $perguntas) {
                 $resposta_texto = substr($resposta_texto, 0, 50) . '...';
             }
             
-            $resumo[] = '<strong>' . esc_html($pergunta_label) . ':</strong> ' . esc_html($resposta_texto);
+            $resumo[] = '<strong>' . esc_html($question_label) . ':</strong> ' . esc_html($resposta_texto);
             $count++;
         }
     }

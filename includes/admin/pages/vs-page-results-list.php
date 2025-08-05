@@ -67,9 +67,9 @@ function vs_render_results_page() {
     echo 'Ano: <select name="filtro_ano">';
     echo '<option value="">Todos</option>';
     $anos = vs_get_votacoes_years();
-    foreach ($anos as $ano_opcao) {
-        $selected = ($ano == $ano_opcao) ? 'selected' : '';
-        echo "<option value='{$ano_opcao}' {$selected}>{$ano_opcao}</option>";
+    foreach ($anos as $ano_option) {
+        $selected = ($ano == $ano_option) ? 'selected' : '';
+        echo "<option value='{$ano_option}' {$selected}>{$ano_option}</option>";
     }
     echo '</select> ';
 

@@ -452,7 +452,7 @@ $export_data = apply_filters('vs_export_csv_data', $data, $votacao_id);
 #### Principais Helpers
 ```php
 // Recuperar perguntas da votação
-$perguntas = vs_get_voting_questions($votacao_id);
+$questions = vs_get_voting_questions($votacao_id);
 
 // Formatar resposta para exibição
 $resposta_formatada = vs_format_answer($resposta);

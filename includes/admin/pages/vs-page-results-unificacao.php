@@ -17,9 +17,9 @@ function vs_render_unificacao_page($votacao_id) {
     }
 
     // Carrega configuração das perguntas para esta votação
-    $perguntas = get_post_meta($votacao_id, 'vs_perguntas', true);
-    if (!is_array($perguntas)) {
-        $perguntas = array();
+    $questions = get_post_meta($votacao_id, 'vs_questions', true);
+    if (!is_array($questions)) {
+        $questions = array();
     }
 
     // Busca todos os posts de resposta vinculados a esta votação (excluindo lixeira)
@@ -182,8 +182,8 @@ function vs_render_unificacao_page($votacao_id) {
                                     foreach ($respostas_detalhadas as $idx => $resposta_individual) {
 
                                         // Label da pergunta da configuração da votação
-                                        $pergunta_label = isset($perguntas[$idx]['label'])
-                                            ? $perguntas[$idx]['label']
+                                        $question_label = isset($questions[$idx]['label'])
+                                            ? $questions[$idx]['label']
                                             : sprintf('Pergunta #%d', ($idx + 1));
 
                                         // Normaliza texto da resposta
@@ -200,7 +200,7 @@ function vs_render_unificacao_page($votacao_id) {
                                         ?>
                                         <tr class="unificacao-tr"
                                             data-post-id="<?php echo esc_attr($post_id); ?>"
-                                            data-pergunta-index="<?php echo esc_attr($idx); ?>"
+                                            data-question-index="<?php echo esc_attr($idx); ?>"
                                         >
                                             <td style="text-align:center;">
                                                 <input type="checkbox" name="respostas_ids[]" value="<?php echo esc_attr($post_id); ?>" />
@@ -213,9 +213,9 @@ function vs_render_unificacao_page($votacao_id) {
                                                 <?php endif; ?>
                                             </td>
                                             <td>
-                                                <div class="tooltip" title="<?php echo esc_attr($pergunta_label); ?>">
-                                                    <?php echo esc_html($pergunta_label); ?>
-                                                    <span class="tooltip-text"><?php echo esc_html($pergunta_label); ?></span>
+                                                <div class="tooltip" title="<?php echo esc_attr($question_label); ?>">
+                                                    <?php echo esc_html($question_label); ?>
+                                                    <span class="tooltip-text"><?php echo esc_html($question_label); ?></span>
                                                 </div>
                                             </td>
                                             <td class="unificacao-resposta-column">

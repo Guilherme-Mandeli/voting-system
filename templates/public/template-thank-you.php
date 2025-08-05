@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 /**
  * Template para a página de agradecimento após votação
  * 
- * @param array $perguntas Array com as perguntas da votação
+ * @param array $questions Array com as perguntas da votação
  * @param array $respostas Array com as respostas do usuário
  * @param int $votacao_id ID da votação
  */
@@ -26,8 +26,8 @@ if (!defined('ABSPATH')) {
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($perguntas as $index => $pergunta): 
-                $label = isset($pergunta['label']) ? esc_html($pergunta['label']) : 'Pergunta #' . ($index + 1);
+            <?php foreach ($questions as $index => $question): 
+                $label = isset($question['label']) ? esc_html($question['label']) : 'Pergunta #' . ($index + 1);
 
                 // Recupera a resposta pelo índice das respostas (array simples)
                 $resposta = isset($respostas['respostas'][$index]) ? $respostas['respostas'][$index] : null;
@@ -45,8 +45,8 @@ if (!defined('ABSPATH')) {
                 }
             ?>
             <tr>
-                <td class='px-4 py-2 border-b'><?php echo $label; ?></td>
-                <td class='px-4 py-2 border-b'><?php echo $resposta; ?></td>
+                <td class='px-4 py-2 border-b'><?php echo esc_html($label); ?></td>
+                <td class='px-4 py-2 border-b'><?php echo wp_kses_post($resposta); ?></td>
             </tr>
             <?php endforeach; ?>
         </tbody>

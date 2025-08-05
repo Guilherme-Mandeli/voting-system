@@ -14,11 +14,11 @@ if (!defined('ABSPATH')) {
 /**
  * Renderiza o modal de ranking completo
  * 
- * @param array $perguntas Lista de perguntas
+ * @param array $questions Lista de perguntas
  * @param string $question_filter Filtro atual de pergunta
  * @param string $group_mode Modo de agrupamento atual
  */
-function vs_render_ranking_modal($perguntas, $question_filter, $group_mode) {
+function vs_render_ranking_modal($questions, $question_filter, $group_mode) {
     ?>
     <!-- Modal para exibir todo o ranking -->
     <div id="vs-all-ranking-modal" class="vs-modal" style="display: none;">
@@ -31,7 +31,7 @@ function vs_render_ranking_modal($perguntas, $question_filter, $group_mode) {
             <!-- Seção de filtros do modal -->
             <div class="vs-modal-filters">
                 <div class="modal-filters-container">
-                    <?php vs_render_ranking_filters($perguntas, $question_filter, $group_mode, 'modal'); ?>
+                    <?php vs_render_ranking_filters($questions, $question_filter, $group_mode, 'modal'); ?>
 
                     <div>
                         <a href="#" id="modal-export-csv" class="button button-secondary modal-export-button">

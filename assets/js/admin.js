@@ -1,107 +1,194 @@
 (function($) {
     'use strict';
 
-    let currentPergunta = null;
+    let currentQuestion = null;
 
-    function atualizarTabelaRespostasImportadas() {
-        console.log('Iniciando atualizarTabelaRespostasImportadas');
-        
-        const jsonData = currentPergunta.find('.vs-respostas-importadas').val();
-        console.log('JSON Data encontrado:', jsonData);
-        
-        if (!jsonData) {
-            console.log('JSON Data está vazio, retornando...');
+    function updateImportedAnswersTable() {
+    if (!currentQuestion || !currentQuestion.length) return;
+
+    const jsonInput = currentQuestion.find('.vs-imported-answers');
+    if (!jsonInput.length) return;
+
+    const jsonData = jsonInput.val();
+    const tbody = currentQuestion.find('.vs-imported-column tbody');
+
+    if (!tbody.length) return;
+    tbody.empty();
+
+    try {
+        const data = JSON.parse(jsonData);
+        if (!data || typeof data !== 'object') throw new Error('JSON inválido');
+        if (!data.perguntas || !Array.isArray(data.perguntas)) {
+            tbody.append($('<tr>').append(
+                $('<td>', { colspan: 5, style: 'text-align: center; padding: 20px;' })
+                    .text('Nenhuma resposta foi importada.')
+            ));
             return;
         }
 
-        try {
-            const dados = JSON.parse(jsonData);
-            console.log('JSON parseado com sucesso:', dados);
-            
-            if (!dados.perguntas || !Array.isArray(dados.perguntas)) {
-                console.error('Formato de dados inválido:', dados);
-                return;
+        let rowNumber = 1;
+        let hasAnswers = false;
+
+        data.perguntas.forEach((pergunta) => {
+            if (pergunta.imported_answers && pergunta.imported_answers.length > 0) {
+                pergunta.imported_answers.forEach(resposta => {
+                    const valorExibir = resposta.value_unificada || resposta.value;
+                    if (!valorExibir) return;
+
+                    hasAnswers = true;
+                    const tr = $('<tr>');
+                    tr.append(
+                        $('<td>', { style: 'text-align: center; font-size: 12px;' }).text(rowNumber),
+                        $('<td>').append($('<input>', {
+                            type: 'checkbox',
+                            class: 'vs-select-answer',
+                            'data-valor': resposta.value,
+                            'data-valor-unificado': resposta.value_unificada
+                        })),
+                        $('<td>').text(valorExibir),
+                        $('<td>').text(resposta.qtd_votos || 0),
+                        $('<td>').text(pergunta.question_source)
+                    );
+                    tbody.append(tr);
+                    rowNumber++;
+                });
             }
-            
-            const tbody = currentPergunta.find('.vs-coluna-importadas tbody');
-            if (!tbody.length) {
-                console.error('Tbody não encontrado');
-                return;
-            }
-            
-            tbody.empty();
-            console.log('Tbody limpo');
-            
-            let numeroLinha = 1;
-            dados.perguntas.forEach((pergunta, indexPergunta) => {
-                console.log(`Processando pergunta ${indexPergunta + 1}:`, pergunta);
-                
-                if (pergunta.respostas_importadas && pergunta.respostas_importadas.length > 0) {
-                    pergunta.respostas_importadas.forEach(resposta => {
-                        const valorExibir = resposta.value_unificada || resposta.value;
-                        if (!valorExibir) {
-                            console.log('Resposta sem valor, pulando...');
-                            return;
-                        }
-                        
-                        console.log('Criando linha para resposta:', valorExibir);
-                        
-                        const tr = $('<tr>');
-                        tr.append(`
-                            <td style="text-align: center; font-size: 12px;">${numeroLinha}</td>
-                            <td><input type="checkbox" class="vs-selecionar-resposta" data-valor="${resposta.value}" data-valor-unificado="${resposta.value_unificada}"></td>
-                            <td>${valorExibir}</td>
-                            <td>${resposta.qtd_votos}</td>
-                            <td>${pergunta.pergunta_origem}</td>
-                        `);
-                        tbody.append(tr);
-                        console.log(`Linha ${numeroLinha} adicionada ao tbody`);
-                        numeroLinha++;
-                    });
-                } else {
-                    console.log(`Pergunta ${indexPergunta + 1} não tem respostas importadas`);
-                }
-            });
-        } catch (error) {
-            console.error('Erro ao processar JSON:', error);
+        });
+
+        if (!hasAnswers) {
+            tbody.append($('<tr>').append(
+                $('<td>', { colspan: 5, style: 'text-align: center; padding: 20px;' })
+                    .text('Nenhuma resposta foi importada.')
+            ));
         }
+    } catch (error) {
+        console.error('Erro ao processar JSON:', error);
+        tbody.append($('<tr>').append(
+            $('<td>', { colspan: 5, style: 'text-align: center; padding: 20px;' })
+                .text('Erro ao carregar respostas: ' + error.message)
+        ));
     }
+}
 
     $(document).ready(function() {
-        initTipoCampoHandler();
-        initVotacaoAnteriorModal();
+        initFieldTypeHandler();
+        initImportedVoteModal();
     });
 
-    function initTipoCampoHandler() {
+    function initFieldTypeHandler() {
+        function createTableStructure(container) {
+            // Criar estrutura de duas colunas
+            const colunasContainer = $('<div>', {
+                class: 'vs-columns-container',
+                css: {
+                    display: 'flex',
+                    gap: '20px',
+                    marginTop: '20px'
+                }
+            });
+
+            // Coluna 1: Tabela de Respostas Importadas
+            const colunaImportadas = $('<div>', { class: 'vs-imported-column', css: { flex: 1 } });
+            const tabelaHeader = $('<div>', { class: 'vs-tabela-header' })
+                .append($('<h4>').text('Respostas Importadas'))
+                .append($('<button>', {
+                    type: 'button',
+                    class: 'button button-primary vs-add-selected',
+                    text: 'Adicionar Selecionados'
+                }));
+
+            const tabela = $('<table>', { class: 'wp-list-table widefat fixed striped' })
+                .append($('<thead>').append($('<tr>')
+                    .append($('<th>', { style: 'width: 26px; text-align: center;' }).text('#'))
+                    .append($('<th>', { class: 'check-column' })
+                        .append($('<input>', { type: 'checkbox', class: 'vs-select-all-answers' })))
+                    .append($('<th>').text('Resposta'))
+                    .append($('<th>').text('Qtd. de Votos'))
+                    .append($('<th>').text('Pergunta'))
+                ));
+
+            const tbody = $('<tbody>');
+            const mensagemVazia = $('<tr>').append(
+                $('<td>', { colspan: 5, style: 'text-align: center; padding: 20px;' })
+                    .text('Nenhuma resposta foi importada.')
+            );
+            tbody.append(mensagemVazia);
+            tabela.append(tbody);
+
+            colunaImportadas.append(tabelaHeader, tabela);
+
+            // Coluna 2: Opções Selecionadas
+            const colunaOptions = $('<div>', { class: 'vs-options-column', css: { flex: 1 } });
+            const optionsContainer = $('<div>', { class: 'vs-options' });
+            
+            colunaOptions.append(
+                $('<label>').text('Opções:'),
+                $('<br>'),
+                optionsContainer,
+                $('<button>', {
+                    type: 'button',
+                    class: 'button vs-add-option',
+                    text: 'Adicionar Opção'
+                })
+            );
+
+            // Montar estrutura final
+            colunasContainer.append(colunaImportadas, colunaOptions);
+            return colunasContainer;
+        }
+
         $(document).on('change', '.vs-tipo-campo', function() {
             const container = $(this).closest('.vs-pergunta').find('.vs-votacao-anterior-container');
-            if ($(this).val() === 'votacao_anterior') {
+            const optionsContainer = $(this).closest('.vs-pergunta').find('.vs-options-container');
+
+            if ($(this).val() === 'imported_vote') {
                 container.show();
-                currentPergunta = $(this).closest('.vs-pergunta');
-                atualizarTabelaRespostasImportadas();
+                optionsContainer.show();
+                currentQuestion = $(this).closest('.vs-pergunta');
+
+                // Remover estrutura antiga se existir
+                currentQuestion.find('.vs-columns-container').remove();
+
+                // Criar e adicionar nova estrutura
+                const estruturaTabela = createTableStructure(container);
+                container.append(estruturaTabela);
+
+                // Atualizar tabela se já houver data
+                updateImportedAnswersTable();
             } else {
                 container.hide();
+                if (!$(this).val().match(/^(select|radio|checkbox)$/)) {
+                    optionsContainer.hide();
+                }
             }
         });
 
-        // Inicializar estado dos containers
+        // Inicializar estado dos containers existentes
         $('.vs-tipo-campo').each(function() {
-            if ($(this).val() === 'votacao_anterior') {
-                $(this).closest('.vs-pergunta').find('.vs-votacao-anterior-container').show();
-                currentPergunta = $(this).closest('.vs-pergunta');
-                atualizarTabelaRespostasImportadas();
+            if ($(this).val() === 'imported_vote') {
+                const container = $(this).closest('.vs-pergunta').find('.vs-votacao-anterior-container');
+                container.show();
+                currentQuestion = $(this).closest('.vs-pergunta');
+
+                // Criar e adicionar estrutura se não existir
+                if (!currentQuestion.find('.vs-columns-container').length) {
+                    const estruturaTabela = createTableStructure(container);
+                    container.append(estruturaTabela);
+                }
+
+                updateImportedAnswersTable();
             }
         });
     }
 
-    function initVotacaoAnteriorModal() {
+    function initImportedVoteModal() {
         // Abrir modal
         $(document).on('click', '.vs-selecionar-votacao', function() {
-            currentPergunta = $(this).closest('.vs-pergunta');
-            const perguntaIndex = currentPergunta.find('[name*="[label]"]').attr('name').match(/\[(\d+)\]/)[1];
+            currentQuestion = $(this).closest('.vs-pergunta');
+            const perguntaIndex = currentQuestion.find('[name*="[label]"]').attr('name').match(/\[(\d+)\]/)[1];
             const modal = $(`#vs-modal-votacao-anterior-${perguntaIndex}`);
             modal.show();
-            carregarVotacoes(modal);
+            loadVotings(modal);
         });
 
         // Fechar modal
@@ -114,27 +201,27 @@
 
         // Filtros
         $(document).on('change', '.vs-filtro-ano, .vs-filtro-evento, .vs-filtro-status', function() {
-            carregarVotacoes($(this).closest('.vs-modal'));
+            loadVotings($(this).closest('.vs-modal'));
         });
 
         $(document).on('input', '.vs-busca-votacao', debounce(function() {
-            carregarVotacoes($(this).closest('.vs-modal'));
+            loadVotings($(this).closest('.vs-modal'));
         }, 300));
 
         // Prevenir submit do form ao pressionar Enter no campo de busca
         $(document).on('keypress', '.vs-busca-votacao', function(e) {
             if (e.which === 13) { // tecla 'Enter' -> 13
                 e.preventDefault();
-                carregarVotacoes($(this).closest('.vs-modal'));
+                loadVotings($(this).closest('.vs-modal'));
             }
         });
 
         // Botão de busca
         $(document).on('click', '.vs-buscar-votacao', function() {
-            carregarVotacoes($(this).closest('.vs-modal'));
+            loadVotings($(this).closest('.vs-modal'));
         });
 
-        function carregarVotacoes(modal) {
+        function loadVotings(modal) {
             if (!modal) return;
             
             const filtros = {
@@ -157,11 +244,11 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        renderizarVotacoes(response.data, modal.find('#vs-lista-votacoes'));
+                        renderVotings(response.data, modal.find('#vs-votings-list'));
                     }
                 },
                 error: function() {
-                    modal.find('#vs-lista-votacoes').append('<div class="vs-error">Erro ao carregar votações</div>');
+                    modal.find('#vs-votings-list').append('<div class="vs-error">Erro ao carregar votações</div>');
                 },
                 complete: function() {
                     hideLoadingOverlay(modal);
@@ -169,11 +256,11 @@
             });
         }
 
-        function renderizarVotacoes(votacoes, container) {
+        function renderVotings(votacoes, container) {
             container.empty();
-            container.append('<button type="button" class="button vs-voltar-lista" style="display: none; margin-bottom: 15px;">← Voltar para lista de votações</button>');
+            container.append('<button type="button" class="button vs-back-to-list" style="display: none; margin-bottom: 15px;">← Voltar para lista de votações</button>');
             
-            const listaVotacoes = $('<div class="vs-lista-votacoes"></div>');
+            const listaVotacoes = $('<div class="vs-votings-list"></div>');
             container.append(listaVotacoes);
 
             // Criar tabela
@@ -198,7 +285,7 @@
                 const linha = $('<tr>')
                     .append(`
                         <td>
-                            <button type="button" class="button vs-carregar-perguntas" data-votacao-id="${votacao.id}">
+                            <button type="button" class="button vs-load-questions" data-votacao-id="${votacao.id}">
                                 Ver perguntas
                             </button>
                         </td>
@@ -216,7 +303,7 @@
         }
 
         // Carregar perguntas da votação
-        let isLoadingPerguntas = false;
+        let isLoadingQuestions = false;
 
         // Função para mostrar overlay de carregamento
         function showLoadingOverlay(container) {
@@ -233,14 +320,14 @@
             modal.find('.vs-loading-overlay').remove();
         }
 
-        $(document).on('click', '.vs-carregar-perguntas', function() {
-            if (isLoadingPerguntas) return;
-            isLoadingPerguntas = true;
+        $(document).on('click', '.vs-load-questions', function() {
+            if (isLoadingQuestions) return;
+            isLoadingQuestions = true;
             
             const votacaoId = $(this).data('votacao-id');
             const modal = $(this).closest('.vs-modal');
-            const listaVotacoes = modal.find('.vs-lista-votacoes');
-            const btnVoltar = modal.find('.vs-voltar-lista');
+            const listaVotacoes = modal.find('.vs-votings-list');
+            const btnVoltar = modal.find('.vs-back-to-list');
 
             // Adiciona overlay de carregamento
             showLoadingOverlay(modal);
@@ -259,20 +346,20 @@
                         showLoadingOverlay(modal).remove();
                         
                         // Reset da flag de carregamento
-                        isLoadingPerguntas = false;
+                        isLoadingQuestions = false;
                         
                         // Esconder lista de votações e mostrar botão voltar
                         listaVotacoes.hide();
                         btnVoltar.show();
 
                         // Criar container para perguntas
-                        const perguntasContainer = $('<div class="vs-perguntas-lista"></div>');
+                        const perguntasContainer = $('<div class="vs-questions-list"></div>');
                         
                         // Adicionar texto explicativo e botão de importação
                         perguntasContainer.append(`
                             <div class="vs-perguntas-header">
                                 <p class="vs-info-text">Ao importar, as respostas das perguntas selecionadas serão incorporadas como opções na nova pergunta, respeitando a unificação.</p>
-                                <button type="button" class="button button-primary vs-importar-selecionadas" disabled>Importar Selecionados</button>
+                                <button type="button" class="button button-primary vs-import-selected" disabled>Importar Selecionados</button>
                             </div>
                         `);
 
@@ -282,7 +369,7 @@
                                 <thead>
                                     <tr>
                                         <th class="check-column">
-                                            <input type="checkbox" class="vs-selecionar-todas-perguntas">
+                                            <input type="checkbox" class="vs-select-all-questions">
                                         </th>
                                         <th>Pergunta</th>
                                         <th>Votos</th>
@@ -297,9 +384,9 @@
                             const linha = $(`
                                 <tr>
                                     <td>
-                                        <input type="checkbox" class="vs-selecionar-pergunta" 
+                                        <input type="checkbox" class="vs-select-question" 
                                             data-votacao-id="${votacaoId}" 
-                                            data-pergunta-index="${index}"
+                                            data-question-index="${index}"
                                             data-status="${response.status}">
                                     </td>
                                     <td>#${index + 1} ${pergunta.label}</td>
@@ -311,18 +398,18 @@
                         });
 
                         perguntasContainer.append(tabela);
-                        modal.find('#vs-lista-votacoes').append(perguntasContainer);
+                        modal.find('#vs-votings-list').append(perguntasContainer);
 
                         // Handler para checkbox "Selecionar todas"
-                        modal.find('.vs-selecionar-todas-perguntas').on('change', function() {
+                        modal.find('.vs-select-all-questions').on('change', function() {
                             const isChecked = $(this).prop('checked');
-                            modal.find('.vs-selecionar-pergunta').prop('checked', isChecked);
-                            atualizarBotaoImportar(modal);
+                            modal.find('.vs-select-question').prop('checked', isChecked);
+                            updateImportButton(modal);
                         });
 
                         // Handler para checkboxes individuais
-                        modal.find('.vs-selecionar-pergunta').on('change', function() {
-                            atualizarBotaoImportar(modal);
+                        modal.find('.vs-select-question').on('change', function() {
+                            updateImportButton(modal);
                         });
                     }
                 }
@@ -330,10 +417,10 @@
         });
 
         // Voltar para lista de votações
-        $(document).on('click', '.vs-voltar-lista', function() {
+        $(document).on('click', '.vs-back-to-list', function() {
             const modal = $(this).closest('.vs-modal');
-            const listaVotacoes = modal.find('.vs-lista-votacoes');
-            const perguntasLista = modal.find('.vs-perguntas-lista');
+            const listaVotacoes = modal.find('.vs-votings-list');
+            const perguntasLista = modal.find('.vs-questions-list');
             
             // Remover lista de perguntas
             perguntasLista.remove();
@@ -349,11 +436,11 @@
 
         $('#vs-alerta-status .vs-continuar').on('click', function() {
             const votacaoId = $(this).data('votacao-id');
-            selecionarVotacao(votacaoId);
+            selectVoting(votacaoId);
             $('#vs-alerta-status').hide();
         });
 
-        function selecionarVotacao(votacaoId) {
+        function selectVoting(votacaoId) {
             $.ajax({
                 url: ajaxurl,
                 type: 'POST',
@@ -364,27 +451,27 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        mostrarSeletorPerguntas(response.data, votacaoId);
+                        showQuestionSelector(response.data, votacaoId);
                     }
                 }
             });
         }
 
-        function mostrarSeletorPerguntas(perguntas, votacaoId) {
-            const perguntaIndex = currentPergunta.find('[name*="[label]"]').attr('name').match(/\[(\d+)\]/)[1];
-            const modal = $(`#vs-modal-votacao-anterior-${perguntaIndex}`);
+        function showQuestionSelector(questions, votacaoId) {
+            const questionIndex = currentQuestion.find('[name*="[label]"]').attr('name').match(/\[(\d+)\]/)[1];
+            const modal = $(`#vs-modal-votacao-anterior-${questionIndex}`);
             const lista = modal.find('.vs-modal-list');
             
             lista.empty();
             
-            perguntas.forEach((pergunta, index) => {
+            questions.forEach((question, index) => {
                 const item = $('<div class="vs-pergunta-item">')
                     .append(`<h4>Pergunta ${index + 1}</h4>`)
-                    .append(`<p>${pergunta.label}</p>`)
+                    .append(`<p>${question.label}</p>`)
                     .append(`<button type="button" class="button vs-importar-pergunta" 
                         data-votacao-id="${votacaoId}" 
-                        data-pergunta-index="${index}" 
-                        data-pergunta-titulo="${pergunta.label}">
+                        data-question-index="${index}" 
+                        data-pergunta-titulo="${question.label}">
                         Importar Respostas
                     </button>`);
                 
@@ -395,36 +482,35 @@
         // Remover seleção
         $(document).on('click', '.vs-remover-selecao', function() {
             const container = $(this).closest('.vs-pergunta');
-            container.find('.vs-votacao-anterior-id').val('');
+            container.find('.vs-imported-answers')
+                .val('')
+                .attr('vote-id-list', '')
             container.find('.vs-votacao-selecionada').empty();
         });
 
         // Função para atualizar estado do botão de importar
-        function atualizarBotaoImportar(modal) {
-            const temSelecionados = modal.find('.vs-selecionar-pergunta:checked').length > 0;
-            modal.find('.vs-importar-selecionadas').prop('disabled', !temSelecionados);
+        function updateImportButton(modal) {
+            const temSelecionados = modal.find('.vs-select-question:checked').length > 0;
+            modal.find('.vs-import-selected').prop('disabled', !temSelecionados);
         }
 
         // Handler para importar perguntas selecionadas
-        $(document).on('click', '.vs-importar-selecionadas', function() {
+        $(document).on('click', '.vs-import-selected', function() {
             const modal = $(this).closest('.vs-modal');
-            const perguntasSelecionadas = modal.find('.vs-selecionar-pergunta:checked');
+            const perguntasSelecionadas = modal.find('.vs-select-question:checked');
             const votacaoId = perguntasSelecionadas.first().data('votacao-id');
             
-            // Obter o índice da pergunta do currentPergunta
-            const perguntaIndex = currentPergunta.find('[name*="[label]"]').attr('name').match(/\[(\d+)\]/)[1];
+            const questionIndex = currentQuestion.find('[name*="[label]"]').attr('name').match(/\[(\d+)\]/)[1];
             
-            // Array para armazenar todas as perguntas e índices selecionados
-            const perguntasParaImportar = [];
+            const questionsToImport = [];
             perguntasSelecionadas.each(function() {
-                perguntasParaImportar.push({
+                questionsToImport.push({
                     votacao_id: $(this).data('votacao-id'),
-                    pergunta_index: $(this).data('pergunta-index'),
+                    question_index: $(this).data('question-index'),
                     status: $(this).data('status')
                 });
             });
 
-            // Fazer uma única requisição para obter todas as perguntas
             $.ajax({
                 url: ajaxurl,
                 type: 'POST',
@@ -439,22 +525,22 @@
                             perguntas: []
                         };
 
-                        // Processar apenas as perguntas selecionadas
-                        perguntasParaImportar.forEach(perguntaInfo => {
-                            const perguntaData = response.data[perguntaInfo.pergunta_index];
-                            if (perguntaData) {
-                                const respostasUnificadas = perguntaData.respostas_unificadas || [];
+                        questionsToImport.forEach(questionInfo => {
+                            const questionData = response.data[questionInfo.question_index];
+                            if (questionData) {
+                                const respostasUnificadas = questionData.respostas_unificadas || [];
                                 
-                                const respostasImportadas = respostasUnificadas.map(resposta => ({
+                                const importedAnswers = respostasUnificadas.map(resposta => ({
                                     value: resposta.value || '',
                                     value_unificada: resposta.value_unificada || '',
                                     qtd_votos: parseInt(resposta.qtd_votos || 0)
                                 }));
 
                                 todasPerguntas.perguntas.push({
-                                    pergunta_origem: perguntaData.label || '',
-                                    pergunta_index: perguntaInfo.pergunta_index + 1,
-                                    respostas_importadas: respostasImportadas
+                                    vote_id: votacaoId,
+                                    question_source: questionData.label || '',
+                                    question_index: questionInfo.question_index + 1,
+                                    imported_answers: importedAnswers
                                 });
                             }
                         });
@@ -462,18 +548,18 @@
                         const respostasJson = JSON.stringify(todasPerguntas);
                 
                         // Atualizar campo oculto com o JSON
-                        currentPergunta.find('.vs-respostas-importadas').val(respostasJson);
-                        // Atualizar o campo votacao_anterior_id com o ID da votação
-                        currentPergunta.find('.vs-votacao-anterior-id').val(votacaoId);
+                        currentQuestion.find('.vs-imported-answers')
+                            .val(respostasJson)
+                            .attr('vote-id-list', votacaoId);
                         
                         // Fechar o modal após importação
                         modal.hide();
 
                         // Criar e atualizar a estrutura de duas colunas
-                        const container = currentPergunta.find('.vs-votacao-anterior-container');
+                        const container = currentQuestion.find('.vs-votacao-anterior-container');
                         // Criar elementos usando jQuery
                         const colunasContainer = $('<div>', {
-                            class: 'vs-colunas-container',
+                            class: 'vs-columns-container',
                             css: {
                                 display: 'flex',
                                 gap: '20px',
@@ -482,12 +568,12 @@
                         });
 
                         // Coluna 1: Tabela de Respostas Importadas
-                        const colunaImportadas = $('<div>', { class: 'vs-coluna-importadas', css: { flex: 1 } });
+                        const colunaImportadas = $('<div>', { class: 'vs-imported-column', css: { flex: 1 } });
                         const tabelaHeader = $('<div>', { class: 'vs-tabela-header' })
                             .append($('<h4>').text('Respostas importadas'))
                             .append($('<button>', {
                                 type: 'button',
-                                class: 'button button-primary vs-adicionar-selecionadas',
+                                class: 'button button-primary vs-add-selected',
                                 text: 'Adicionar Selecionados'
                             }));
 
@@ -495,7 +581,7 @@
                             .append($('<thead>').append($('<tr>')
                                 .append($('<th>', { style: 'width: 26px; text-align: center;' }).text('#'))
                                 .append($('<th>', { class: 'check-column' })
-                                    .append($('<input>', { type: 'checkbox', class: 'vs-selecionar-todas-respostas' })))
+                                    .append($('<input>', { type: 'checkbox', class: 'vs-select-all-answers' })))
                                 .append($('<th>').text('Resposta'))
                                 .append($('<th>').text('Qtd. de Votos'))
                                 .append($('<th>').text('Pergunta'))
@@ -506,36 +592,36 @@
 
                         // Coluna 2: Formulário de Adição
                         const colunaAdicao = $('<div>', { class: 'vs-coluna-adicao', css: { flex: 1 } });
-                        const opcoesContainer = $('<div>', { class: 'vs-opcoes' });
+                        const optionsContainer = $('<div>', { class: 'vs-options' });
 
-                        const opcaoItem = $('<div>', { class: 'vs-opcao-item', css: { marginBottom: '5px' } })
+                        const optionItem = $('<div>', { class: 'vs-option-item', css: { marginBottom: '5px' } })
                             .append($('<input>', {
                                 type: 'text',
-                                name: `vs_perguntas[${perguntaIndex}][opcoes][]`,
+                                name: `vs_questions[${perguntaIndex}][options][]`,
                                 css: { width: '90%' },
                                 placeholder: 'Opção 1'
                             }))
                             .append($('<input>', {
                                 type: 'hidden',
-                                name: `vs_perguntas[${perguntaIndex}][valores_reais][]`,
+                                name: `vs_questions[${perguntaIndex}][valores_reais][]`,
                                 class: 'vs-valor-real'
                             }))
                             .append($('<button>', {
                                 type: 'button',
-                                class: 'button button-small vs-remove-opcao',
+                                class: 'button button-small vs-remove-option',
                                 text: 'Remover'
                             }));
 
                         const addButton = $('<button>', {
                             type: 'button',
-                            class: 'button vs-add-opcao',
-                            id: `vs-add-opcao-${perguntaIndex}`, // ID único baseado no índice da pergunta
+                            class: 'button vs-add-option',
+                            id: `vs-add-option-${perguntaIndex}`, // ID único baseado no índice da pergunta
                             text: 'Adicionar Opção',
-                            'data-pergunta-index': perguntaIndex // Adicionar o índice como data attribute
+                            'data-question-index': perguntaIndex // Adicionar o índice como data attribute
                         });
 
-                        opcoesContainer.append(opcaoItem, addButton);
-                        colunaAdicao.append($('<label>').text('Opções:'), $('<br>'), opcoesContainer);
+                        optionsContainer.append(optionItem, addButton);
+                        colunaAdicao.append($('<label>').text('Opções:'), $('<br>'), optionsContainer);
 
                         // Montar a estrutura final
                         colunasContainer.append(colunaImportadas, colunaAdicao);
@@ -543,8 +629,8 @@
                         // Inserir as colunas após o botão "Abrir votações"
                         container.append(colunasContainer);
 
-                        // Atualizar a tabela usando os dados do input hidden
-                        atualizarTabelaRespostasImportadas();
+                        // Atualizar a tabela usando os data do input hidden
+                        updateImportedAnswersTable();
                     } else {
                         console.error('Erro ao importar respostas:', response);
                     }
@@ -556,76 +642,64 @@
         });
 
         // Função para importar uma pergunta específica
-        function importarPergunta(votacaoId, perguntaIndex) {
-            $.ajax({
-                url: ajaxurl,
-                type: 'POST',
-                data: {
-                    action: 'vs_obter_perguntas_votacao',
-                    votacao_id: votacaoId,
-                    pergunta_index: perguntaIndex,
-                    nonce: vs_admin.nonce
-                },
-                success: function(response) {
-                    if (response.success && response.data && response.data[perguntaIndex]) {
-                        const perguntaData = response.data[perguntaIndex];
-                        console.log('Dados da pergunta recebidos:', perguntaData);
-                        
-                        const respostasUnificadas = perguntaData.respostas_unificadas || [];
-                        console.log('Respostas unificadas:', respostasUnificadas);
-                        
-                        const respostasImportadas = respostasUnificadas.map(resposta => ({
-                            value: resposta.value || '',
-                            value_unificada: resposta.value_unificada || '',
-                            qtd_votos: parseInt(resposta.qtd_votos || 0)
-                        }));
-                        console.log('Respostas formatadas:', respostasImportadas);
+        function importQuestion(votacaoId, perguntaIndex) {
+    $.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: {
+            action: 'vs_obter_perguntas_votacao',
+            votacao_id: votacaoId,
+            question_index: perguntaIndex,
+            nonce: vs_admin.nonce
+        },
+        success: function(response) {
+            if (response.success && response.data && response.data[perguntaIndex]) {
+                const perguntaData = response.data[perguntaIndex];
+                const respostasUnificadas = perguntaData.respostas_unificadas || [];
+                
+                const respostasImportadas = respostasUnificadas.map(resposta => ({
+                    value: resposta.value || '',
+                    value_unificada: resposta.value_unificada || '',
+                    qtd_votos: parseInt(resposta.qtd_votos || 0)
+                }));
 
-                        const respostasJson = JSON.stringify({
-                            perguntas: [{
-                                pergunta_origem: perguntaData.label || '',
-                                pergunta_index: perguntaIndex + 1,
-                                respostas_importadas: respostasImportadas
-                            }]
-                        });
-                        
-                        currentPergunta.find('.vs-respostas-importadas').val(respostasJson);
-                        currentPergunta.find('.vs-votacao-anterior-id').val(votacaoId);
-                        console.log('JSON atualizado no campo hidden:', respostasJson);
-                        
-                        atualizarTabelaRespostasImportadas();
-                    } else {
-                        console.error('Erro ao importar respostas:', response);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Erro na requisição AJAX:', error);
-                }
-            });
+                const respostasJson = JSON.stringify({
+                    perguntas: [{
+                        question_source: perguntaData.label || '',
+                        question_index: perguntaIndex + 1,
+                        imported_answers: respostasImportadas
+                    }]
+                });
+                
+                // Atualizar campo oculto
+                currentQuestion.find('.vs-imported-answers')
+                    .val(respostasJson)
+                    .attr('vote-id-list', votacaoId);
+
+                // Atualizar tabela existente
+                updateImportedAnswersTable();
+
+                // Fechar modal após importação
+                currentQuestion.find('.vs-modal').hide();
+            }
         }
-
-        // Importar respostas
-        $(document).on('click', '.vs-importar-respostas', function() {
-            const votacaoId = $(this).data('votacao-id');
-            const perguntaIndex = $(this).data('pergunta-index');
-            importarPergunta(votacaoId, perguntaIndex);
-            $('#vs-modal-votacao-anterior').hide();
-        });
+    });
+}
 
         // Ordenação
         $(document).on('click', '.vs-ordenar-valor, .vs-ordenar-votos', function() {
             const isValor = $(this).hasClass('vs-ordenar-valor');
-            const tbody = $(this).closest('.vs-coluna-selecao').find('.vs-tabela-opcoes tbody');
+            const tbody = $(this).closest('.vs-imported-column').find('table tbody');
             const rows = tbody.find('tr').get();
-            const ordem = $(this).data('ordem');
+            const ordem = $(this).data('ordem') || 'asc';
 
             rows.sort((a, b) => {
                 const aVal = isValor ? 
-                    $(a).find('td:eq(1)').text() : 
-                    parseInt($(a).find('td:eq(2)').text());
+                    $(a).find('td:eq(2)').text() : 
+                    parseInt($(a).find('td:eq(3)').text());
                 const bVal = isValor ? 
-                    $(b).find('td:eq(1)').text() : 
-                    parseInt($(b).find('td:eq(2)').text());
+                    $(b).find('td:eq(2)').text() : 
+                    parseInt($(b).find('td:eq(3)').text());
 
                 return ordem === 'asc' ? 
                     (aVal > bVal ? 1 : -1) : 
@@ -639,67 +713,98 @@
         });
 
         // Handler para adicionar opção selecionada
-        $(document).on('click', '.vs-adicionar-selecionadas', function() {
-            const container = $(this).closest('.vs-colunas-container');
-            const opcoesContainer = container.find('.vs-coluna-adicao .vs-opcoes');
-            const respostasSelecionadas = container.find('.vs-selecionar-resposta:checked');
-
+        $(document).on('click', '.vs-add-selected', function() {
+            const container = $(this).closest('.vs-columns-container');
+            const perguntaContainer = container.closest('.vs-pergunta');
+            const perguntaIndex = perguntaContainer.find('[name*="[label]"]').attr('name').match(/\[(\d+)\]/)[1];
+            const optionsContainer = container.find('.vs-options-column .vs-options');
+            
+            // Obter respostas selecionadas da tabela
+            const respostasSelecionadas = container.find('.vs-select-answer:checked');
+            
             respostasSelecionadas.each(function() {
                 const tr = $(this).closest('tr');
-                const valorReal = $(this).val();
-                const valorVisual = tr.find('td:eq(1)').text().replace(/^\d+\.\s*/, '');
-                const perguntaOrigem = tr.find('td:eq(3)').text();
-
+                const valorReal = $(this).data('valor');
+                const valorVisual = tr.find('td:eq(2)').text();
+                const perguntaOrigem = tr.find('td:eq(4)').text();
+                
                 // Verificar se a opção já existe
-                const existe = opcoesContainer.find('.vs-valor-real').filter(function() {
+                const existe = optionsContainer.find('.vs-valor-real').filter(function() {
                     return $(this).val() === valorReal;
                 }).length > 0;
-
+                
                 if (!existe) {
-                    const opcaoHtml = `
-                        <div class="vs-opcao-item" style="margin-bottom: 5px;">
-                            <input type="text" name="vs_perguntas[${perguntaIndex}][opcoes][]" 
-                                value="${valorVisual}" style="width: 90%;">
-                            <input type="hidden" name="vs_perguntas[${perguntaIndex}][valores_reais][]" 
-                                value="${valorReal}" class="vs-valor-real">
-                            <button type="button" class="button button-small vs-remove-opcao">Remover</button>
-                            <span class="vs-pergunta-origem" style="color: #666; font-size: 0.9em; margin-left: 10px;">
-                                ${perguntaOrigem}
-                            </span>
-                        </div>
-                    `;
-                    opcoesContainer.find('.vs-add-opcao').before(opcaoHtml);
+                    // Estrutura HTML unificada para opções
+                    const $optionItem = $('<div>', { 
+                        class: 'vs-option-item', 
+                        css: { marginBottom: '5px' } 
+                    });
+                    
+                    const $textInput = $('<input>', {
+                        type: 'text',
+                        name: `vs_questions[${perguntaIndex}][options][]`,
+                        value: valorVisual,
+                        style: 'width: 90%;'
+                    });
+                    
+                    const $hiddenInput = $('<input>', {
+                        type: 'hidden',
+                        name: `vs_questions[${perguntaIndex}][valores_reais][]`,
+                        value: valorReal,
+                        class: 'vs-valor-real'
+                    });
+                    
+                    const $sourceSpan = $('<span>', {
+                        class: 'vs-source-question',
+                        style: 'color: #666; font-size: 0.9em; display: block; margin-top: 2px;'
+                    }).text(perguntaOrigem);
+                    
+                    const $removeButton = $('<button>', {
+                        type: 'button',
+                        class: 'button button-small vs-remove-option',
+                        text: 'Remover',
+                        style: 'margin-left: 5px;'
+                    });
+                    
+                    // Montar estrutura unificada
+                    $optionItem.append($textInput, $hiddenInput, $sourceSpan, $removeButton);
+                    
+                    // Inserir antes do botão "Adicionar Opção"
+                    optionsContainer.find('.vs-add-option').before($optionItem);
                 }
             });
+            
+            // Desmarcar checkboxes após adicionar
+            respostasSelecionadas.prop('checked', false);
         });
 
         // Handler para remover opção
-        $(document).on('click', '.vs-remove-opcao', function() {
-            $(this).closest('.vs-opcao-item').remove();
+        $(document).on('click', '.vs-remove-option', function() {
+            $(this).closest('.vs-option-item').remove();
         });
 
     }
 
-// Filtro de perguntas fora do modal
-    $('.vs-busca-pergunta').on('input', function() {
+    // Filtro de perguntas fora do modal
+    $('.vs-search-question').on('input', function() {
         const busca = $(this).val().toLowerCase();
-        $('.vs-opcao-item').each(function() {
-            const pergunta = $(this).find('.vs-pergunta-origem').text().toLowerCase();
+        $('.vs-option-item').each(function() {
+            const pergunta = $(this).find('.vs-source-question').text().toLowerCase();
             $(this).toggle(pergunta.includes(busca));
         });
     });
 
     // Handler para selecionar todas as respostas
-    $(document).on('change', '.vs-selecionar-todas-respostas', function() {
+    $(document).on('change', '.vs-select-all-answers', function() {
         const isChecked = $(this).prop('checked');
-        $(this).closest('table').find('.vs-selecionar-resposta').prop('checked', isChecked);
+        $(this).closest('table').find('.vs-select-answer').prop('checked', isChecked);
     });
 
     // Adicionar as chamadas aqui, depois da definição da função
     $('.vs-tipo-campo').each(function() {
-        if ($(this).val() === 'votacao_anterior') {
-            currentPergunta = $(this).closest('.vs-pergunta');
-            atualizarTabelaRespostasImportadas();
+        if ($(this).val() === 'imported_vote') {
+            currentQuestion = $(this).closest('.vs-pergunta');
+            updateImportedAnswersTable();
         }
     });
 

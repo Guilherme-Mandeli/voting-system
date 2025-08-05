@@ -45,37 +45,20 @@
     function initRankingFilters() {
         // Filtros do modal - usando event delegation para garantir que funcione
         $(document).on('change', '#modal_question_filter', function() {
-            console.log('Modal question filter changed to:', $(this).val()); // Debug
             updateModalGroupModeVisibility();
             updateModalFilterDescription();
             reloadModalRanking();
         });
 
         $(document).on('change', 'input[name="modal_group_mode"]', function() {
-            console.log('Modal group mode changed to:', $(this).val()); // Debug
             updateModalFilterDescription();
             reloadModalRanking();
-        });
-    }
-
-    // Nova função para filtros do card
-    function initCardFilters() {
-        // Filtro de pergunta do card
-        $('#question_filter').on('change', function() {
-            updateCardGroupModeVisibility();
-            redirectWithFilters();
-        });
-
-        // Filtros de modo de agrupamento do card
-        $('input[name="group_mode"]').on('change', function() {
-            redirectWithFilters();
         });
     }
 
     // Atualiza a visibilidade do agrupamento no card
     function updateCardGroupModeVisibility() {
         var questionFilter = $('#question_filter').val();
-        console.log('Card question filter:', questionFilter); // Debug
         if (questionFilter === 'all') {
             $('#group-mode-container').show();
         } else {
@@ -104,18 +87,14 @@
 
     function updateModalGroupModeVisibility() {
         var questionFilter = $('#modal_question_filter').val();
-        console.log('Updating modal visibility, question filter:', questionFilter); // Debug
         
         // CORREÇÃO: O ID correto é modal_group-mode-container (com underscore)
         var container = $('#modal_group-mode-container');
-        console.log('Container found:', container.length); // Debug
         
         if (questionFilter === 'all') {
             container.show();
-            console.log('Showing modal group mode container'); // Debug
         } else {
             container.hide();
-            console.log('Hiding modal group mode container'); // Debug
         }
     }
 
@@ -161,21 +140,6 @@
         }
     }
 
-    // Atualiza a visibilidade do agrupamento no card
-    function updateCardGroupModeVisibility() {
-        var questionFilter = $('#question_filter').val();
-        console.log('Card question filter:', questionFilter); // Debug
-        if (questionFilter === 'all') {
-            $('#group-mode-container').show();
-        } else {
-            $('#group-mode-container').hide();
-        }
-        
-        // Atualiza a descrição do card também
-        updateCardFilterDescription();
-    }
-
-    // Nova função para filtros do card
     function initCardFilters() {
         // Filtro de pergunta do card
         $('#question_filter').on('change', function() {

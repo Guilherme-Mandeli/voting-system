@@ -59,9 +59,9 @@ function vs_export_csv() {
         }
 
         // Recupere as perguntas da votação
-        $perguntas = get_post_meta($votacao_id, 'vs_perguntas', true);
-        if (!is_array($perguntas)) {
-            $perguntas = array();
+        $questions = get_post_meta($votacao_id, 'vs_questions', true);
+        if (!is_array($questions)) {
+            $questions = array();
         }
 
         // Recupere as respostas e informações relacionadas à votação
@@ -106,8 +106,8 @@ function vs_export_csv() {
             // Percorrer cada pergunta e resposta
             foreach ($user_respostas as $index => $resposta_usuario) {
                 // Usa o label da pergunta se disponível, senão usa um padrão
-                $pergunta_label = isset($perguntas[$index]['label']) 
-                    ? $perguntas[$index]['label'] 
+                $question_label = isset($questions[$index]['label']) 
+                    ? $questions[$index]['label'] 
                     : 'Pergunta #' . ($index + 1);
                 
                 // Formata a resposta (pode ser array ou string)
@@ -129,7 +129,7 @@ function vs_export_csv() {
                     date('Y', strtotime($data_envio)),  // Ano
                     '',  // Data de início (pode ser extraída de meta se necessário)
                     '',  // Data de fim (pode ser extraída de meta se necessário)
-                    $pergunta_label,
+                    $question_label,
                     $resposta_formatada,
                     $resposta_unificada,
                     $data_envio,
@@ -154,8 +154,8 @@ function get_respostas_votacao($votacao_id) {
     $respostas = [];
 
     // Recupera as perguntas da votação (armazenadas no post_meta)
-    $perguntas = get_post_meta($votacao_id, 'vs_perguntas', true);
-    if (empty($perguntas)) {
+    $questions = get_post_meta($votacao_id, 'vs_questions', true);
+    if (empty($questions)) {
         return $respostas; // Se não há perguntas, retorna um array vazio
     }
 

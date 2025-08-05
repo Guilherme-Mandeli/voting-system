@@ -20,7 +20,7 @@ require_once __DIR__ . '/partials/ranking-modal.php';
  * Renderiza o card de ranking dinâmico
  */
 function vs_render_ranking_card($votacao_id, $total_users) {
-    $perguntas = vs_get_voting_questions($votacao_id);
+    $questions = vs_get_voting_questions($votacao_id);
     $question_filter = isset($_GET['question_filter']) ? sanitize_text_field($_GET['question_filter']) : 'all';
     $group_mode = isset($_GET['group_mode']) ? sanitize_text_field($_GET['group_mode']) : 'by_answer';
     
@@ -55,7 +55,7 @@ function vs_render_ranking_card($votacao_id, $total_users) {
                 </div>
             </div>
 
-            <?php vs_render_ranking_filters($perguntas, $question_filter, $group_mode, 'card'); ?>
+            <?php vs_render_ranking_filters($questions, $question_filter, $group_mode, 'card'); ?>
         </div>
 
         <div class="card-body">
@@ -76,7 +76,7 @@ function vs_render_ranking_card($votacao_id, $total_users) {
         </div>
     </div>
 
-    <?php vs_render_ranking_modal($perguntas, $question_filter, $group_mode); ?>
+    <?php vs_render_ranking_modal($questions, $question_filter, $group_mode); ?>
     
     <script>
     // Inicializa a visibilidade do agrupamento no card quando a página carrega

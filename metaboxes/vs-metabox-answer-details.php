@@ -28,21 +28,25 @@ add_action('add_meta_boxes', 'vs_register_metabox_answer_details');
  * @param WP_Post $post Objeto del post actual
  */
 function vs_render_metabox_answer_details($post) {
+    if (!$post || !is_a($post, 'WP_Post')) {
+        return;
+    }
+
     // Obtener datos de la respuesta
-    $votacao_id = get_post_meta($post->ID, 'vs_votacao_id', true);
-    $usuario_id = get_post_meta($post->ID, 'vs_usuario_id', true);
+    $votacao_id = absint(get_post_meta($post->ID, 'vs_votacao_id', true));
+    $usuario_id = absint(get_post_meta($post->ID, 'vs_usuario_id', true));
     $respostas_detalhadas = get_post_meta($post->ID, 'vs_respostas_detalhadas', true);
     $resposta_unificada = get_post_meta($post->ID, 'vs_resposta_unificada', true);
     $data_submissao = get_post_meta($post->ID, 'vs_data_submissao', true);
 
     // Obtener información de la votación
     $votacao = null;
-    $perguntas = [];
+    $questions = [];
     if ($votacao_id) {
         $votacao = get_post($votacao_id);
-        $perguntas = get_post_meta($votacao_id, 'vs_perguntas', true);
-        if (!is_array($perguntas)) {
-            $perguntas = [];
+        $questions = get_post_meta($votacao_id, 'vs_questions', true);
+        if (!is_array($questions)) {
+            $questions = [];
         }
     }
 
@@ -52,7 +56,7 @@ function vs_render_metabox_answer_details($post) {
         $usuario = get_userdata($usuario_id);
     }
 
-    wp_nonce_field('vs_answer_details_nonce', 'vs_answer_details_nonce_field');
+    wp_nonce_field(VS_Nonce_Actions::FORM_ANSWER_DETAILS, 'vs_answer_details_nonce_field');
     ?>
 
     <div class="vs-answer-details-metabox">
@@ -103,10 +107,10 @@ function vs_render_metabox_answer_details($post) {
                     <div class="vs-answer-item">
                         <h4>
                             <?php 
-                            $pergunta_label = isset($perguntas[$index]['label']) 
-                                ? $perguntas[$index]['label'] 
+                            $question_label = isset($questions[$index]['label']) 
+                                ? $questions[$index]['label'] 
                                 : "Pergunta #" . ($index + 1);
-                            echo esc_html($pergunta_label);
+                            echo esc_html($question_label);
                             ?>
                         </h4>
                         <div class="vs-answer-content">

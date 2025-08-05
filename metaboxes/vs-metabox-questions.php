@@ -40,7 +40,7 @@ function vs_render_metabox_questions($post) {
  */
 function vs_save_metabox_questions($post_id) {
     // Verificaciones de seguridad
-    if (!isset($_POST['vs_nonce_perguntas']) || !wp_verify_nonce($_POST['vs_nonce_perguntas'], 'vs_salvar_perguntas')) {
+    if (!isset($_POST['vs_nonce_questions']) || !wp_verify_nonce($_POST['vs_nonce_questions'], 'vs_salvar_perguntas')) {
         return;
     }
 
@@ -55,42 +55,42 @@ function vs_save_metabox_questions($post_id) {
     }
 
     // Procesar y guardar preguntas
-    $perguntas = [];
+    $questions = [];
 
-    if (isset($_POST['vs_perguntas']) && is_array($_POST['vs_perguntas'])) {
-        foreach ($_POST['vs_perguntas'] as $pergunta_data) {
-            $label = sanitize_text_field($pergunta_data['label'] ?? '');
-            $tipo = sanitize_text_field($pergunta_data['tipo'] ?? 'texto');
-            $opcoes = isset($pergunta_data['opcoes']) && is_array($pergunta_data['opcoes']) 
-                        ? array_map('sanitize_text_field', array_filter($pergunta_data['opcoes'])) 
+    if (isset($_POST['vs_questions']) && is_array($_POST['vs_questions'])) {
+        foreach ($_POST['vs_questions'] as $index => $question_data) {
+            $label = sanitize_text_field($question_data['label'] ?? '');
+            $tipo = sanitize_text_field($question_data['tipo'] ?? 'texto');
+            $options = isset($question_data['options']) && is_array($question_data['options']) 
+                        ? array_map('sanitize_text_field', array_filter($question_data['options'])) 
                         : [];
-            $obrigatoria = isset($pergunta_data['obrigatoria']) && $pergunta_data['obrigatoria'] ? true : false;
-            $unificada = sanitize_text_field($pergunta_data['unificada'] ?? '');
-            $votacao_anterior_id = intval($pergunta_data['votacao_anterior_id'] ?? 0);
+            $obrigatoria = isset($question_data['obrigatoria']) && $question_data['obrigatoria'] ? true : false;
+            $unificada = sanitize_text_field($question_data['unificada'] ?? '');
+            $imported_vote_id = intval($question_data['imported_vote_id'] ?? 0);
 
-            // Busca dados da votação anterior se o tipo for 'votacao_anterior' e houver um ID válido
-            if ($tipo === 'votacao_anterior' && $votacao_anterior_id > 0) {
-                $respostas_importadas = vs_get_votacao_anterior_data($votacao_anterior_id);
+            // Busca dados da votação anterior se o tipo for 'imported_vote' e houver um ID válido
+            if ($tipo === 'imported_vote' && $imported_vote_id > 0) {
+                $imported_answers = vs_get_imported_vote_data($imported_vote_id, $index);
             } else {
-                $respostas_importadas = wp_json_encode(['perguntas' => []]);
+                $imported_answers = wp_json_encode(['perguntas' => []]);
             }
 
             // Solo agregar si tiene label
             if (!empty($label)) {
-                $perguntas[] = [
+                $questions[] = [
                     'label' => $label,
                     'tipo' => $tipo,
-                    'opcoes' => $opcoes,
+                    'options' => $options,
                     'obrigatoria' => $obrigatoria,
                     'unificada' => $unificada,
-                    'votacao_anterior_id' => $votacao_anterior_id,
-                    'respostas_importadas' => $respostas_importadas
+                    'imported_vote_id' => $imported_vote_id,
+                    'imported_answers' => $imported_answers
                 ];
             }
         }
     }
 
-    update_post_meta($post_id, 'vs_perguntas', $perguntas);
+    update_post_meta($post_id, 'vs_questions', $questions);
 }
 add_action('save_post', 'vs_save_metabox_questions');
 
@@ -99,7 +99,7 @@ add_action('save_post', 'vs_save_metabox_questions');
  */
 function vs_ajax_get_pergunta_template() {
     $index = intval($_GET['index'] ?? 0);
-    $pergunta = ['obrigatoria' => true]; // Valor por defecto
+    $question = ['obrigatoria' => true]; // Valor por defecto
     
     // Incluir el template
     include VS_PLUGIN_PATH . 'templates/admin/template-metabox-question-row.php';

@@ -53,7 +53,21 @@ function vs_handle_form_submit() {
     
     $user_id = get_current_user_id();
     $votacao_id = intval($_POST['vs_votacao_id']);
-    $respostas = $_POST['respostas'] ?? [];
+    
+    // Sanitizar todas as respostas
+    $respostas_raw = $_POST['respostas'] ?? [];
+    $respostas = [];
+    
+    if (is_array($respostas_raw)) {
+        foreach ($respostas_raw as $key => $value) {
+            $key = sanitize_key($key);
+            if (is_array($value)) {
+                $respostas[$key] = array_map('sanitize_text_field', $value);
+            } else {
+                $respostas[$key] = sanitize_textarea_field($value);
+            }
+        }
+    }
 
     // Verifica se já existe post 'votacao_resposta' para este usuário e votação
     $existing_posts = vs_get_existing_response($user_id, $votacao_id);

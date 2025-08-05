@@ -118,13 +118,13 @@ jQuery( document ).ready( function( $ ) {
      * Retorna array de objetos:
      * [ { postId: 123, perguntaIndex: 0, respostaTexto: "..." }, ... ]
      * ------------------------------------------------------------------ */
-    function coletarLinhasSelecionadas() {
+    function collectSelectedRows() {
         var linhas = [];
 
         $( 'input[name="respostas_ids[]"]:checked' ).each( function() {
             var $row = $( this ).closest( 'tr.unificacao-tr' );
             var postId = parseInt( $( this ).val(), 10 );
-            var perguntaIndex = parseInt( $row.data( 'pergunta-index' ), 10 );
+            var perguntaIndex = parseInt( $row.data( 'question-index' ), 10 );
 
             // Texto da resposta (coluna resposta)
             var resposta = $row.find( 'td.unificacao-resposta-column .tooltip' ).attr( 'title' ) ||
@@ -147,7 +147,7 @@ jQuery( document ).ready( function( $ ) {
         var ids = [];
         var map = {};
 
-        coletarLinhasSelecionadas().forEach( function( linha ) {
+        collectSelectedRows().forEach( function( linha ) {
             if ( linha.postId && ! map[ linha.postId ] ) {
                 map[ linha.postId ] = true;
                 ids.push( linha.postId );
@@ -164,7 +164,7 @@ jQuery( document ).ready( function( $ ) {
         var indices = [];
         var map = {};
 
-        coletarLinhasSelecionadas().forEach( function( linha ) {
+        collectSelectedRows().forEach( function( linha ) {
             if ( linha.perguntaIndex !== null && ! map[ linha.perguntaIndex ] ) {
                 map[ linha.perguntaIndex ] = true;
                 indices.push( linha.perguntaIndex );
@@ -262,7 +262,7 @@ jQuery( document ).ready( function( $ ) {
      *  - Select para aplicar unificação existente
      * ------------------------------------------------------------------ */
     function openUnificacaoModal() {
-        var linhasSelecionadas = coletarLinhasSelecionadas();
+        var linhasSelecionadas = collectSelectedRows();
 
         var contentHtml = '';
         if ( ! linhasSelecionadas.length ) {

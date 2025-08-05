@@ -41,7 +41,7 @@ defined('ABSPATH') || exit;
                     <div class="vs-resumo-respostas">
                         <h5>Resumo das suas respostas:</h5>
                         <div class="vs-resumo-content">
-                            <?php echo $votacao['resumo_respostas']; ?>
+                            <?php echo wp_kses_post($votacao['resumo_respostas']); ?>
                         </div>
                     </div>
                     
