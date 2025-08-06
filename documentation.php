@@ -25,12 +25,14 @@ defined('ABSPATH') || exit;
  * de votações personalizadas. O sistema permite:
  * 
  * - Criação de votações com perguntas dinâmicas
- * - Diferentes tipos de campos (texto, select, radio, checkbox)
+ * - Diferentes tipos de campos (texto, select, radio, checkbox, imported_vote)
  * - Sistema de unificação de respostas para análise
  * - Interface administrativa completa
  * - Feeds públicos para exibição das votações
  * - Sistema de agendamento automático
  * - Exportação de dados em CSV
+ * - Área do usuário para gerenciamento de participações
+ * - Sistema de importação de respostas de votações anteriores
  * 
  * ARQUITETURA DO SISTEMA
  * =====================
@@ -81,376 +83,649 @@ defined('ABSPATH') || exit;
  *    - Meta fields: vs_votacao_id, vs_usuario_id, vs_respostas_detalhadas, vs_resposta_unificada
  *    - Privado, apenas para administração
  * 
- * SISTEMA DE METADADOS
- * ===================
+ * TAXONOMIA
+ * =========
  * 
- * Votação (votacoes):
- * - vs_questions: Array com as perguntas da votação
- * - _vs_ano: Ano da votação
- * - _vs_status: aberta|em-pausa|encerrada
- * - _vs_codigo: Código único da votação
- * - _vs_data_inicio: Data de início
- * - _vs_data_fim: Data de encerramento
- * - _vs_qtd_votos: Quantidade de votos
+ * 'eventos':
+ *    - Taxonomia hierárquica para categorizar votações
+ *    - Permite agrupar votações por evento/categoria
+ *    - Suporte à API REST e interface administrativa
+ *    - Slug reescrito para 'eventos'
+ * 
+ * ===============================================================================
+ * SEÇÃO 2: ESTRUTURAS DE DADOS JSON E OBJETOS IMPORTANTES
+ * ===============================================================================
+ * 
+ * ESTRUTURA DE PERGUNTAS (vs_questions)
+ * =====================================
+ * 
+ * Localização: Metadado do CPT 'votacoes'
+ * Função de processamento: vs_format_user_answers() em vs-utils-data.php
+ * 
+ * Estrutura JSON completa:
+ * {
+ *   "0": {
+ *     "label": "Qual sua opinião sobre o projeto?",
+ *     "tipo": "radio",
+ *     "options": [
+ *       "Aprovo totalmente",
+ *       "Aprovo parcialmente", 
+ *       "Reprovo"
+ *     ],
+ *     "obrigatoria": true,
+ *     "unificada": "",
+ *     "imported_vote_id": null,
+ *     "imported_answers": "{\"perguntas\": []}",
+ *     "valores_reais": ["Aprovo totalmente", "Aprovo parcialmente", "Reprovo"],
+ *     "question_source": ""
+ *   },
+ *   "1": {
+ *     "label": "Comentários adicionais:",
+ *     "tipo": "textarea",
+ *     "options": [""],
+ *     "obrigatoria": false,
+ *     "unificada": "",
+ *     "imported_vote_id": null,
+ *     "imported_answers": "{\"perguntas\": []}"
+ *   },
+ *   "2": {
+ *     "label": "Avaliação baseada em votação anterior",
+ *     "tipo": "imported_vote",
+ *     "options": ["Excelente", "Bom", "Regular", "Ruim"],
+ *     "obrigatoria": true,
+ *     "unificada": "",
+ *     "imported_vote_id": 456,
+ *     "imported_answers": "{\"perguntas\": [{\"question_source\": \"Como avalia o evento?\", \"question_index\": 1, \"imported_answers\": [{\"value\": \"Muito bom evento\", \"value_unificada\": \"Positivo\", \"qtd_votos\": 15}]}]}",
+ *     "valores_reais": ["Muito bom evento", "Evento regular", "Evento fraco", "Evento ruim"],
+ *     "question_source": "Como avalia o evento?"
+ *   }
+ * }
+ * 
+ * CAMPOS DA ESTRUTURA DE PERGUNTAS:
+ * 
+ * - label (string): Texto da pergunta exibido ao usuário
+ * - tipo (string): Tipo do campo com valores possíveis:
+ *   * "texto": Campo de texto simples
+ *   * "textarea": Área de texto multilinha
+ *   * "radio": Seleção única (radio buttons)
+ *   * "checkbox": Seleção múltipla
+ *   * "select": Lista suspensa
+ *   * "imported_vote": Pergunta importada de votação anterior
+ * - options (array): Lista de opções para campos de seleção
+ * - obrigatoria (boolean): Define se a pergunta é obrigatória
+ * - unificada (string): Valor para unificação de respostas
+ * - imported_vote_id (int|null): ID da votação de origem (para perguntas importadas)
+ * - imported_answers (string JSON): Dados das respostas importadas (ver estrutura abaixo)
+ * - valores_reais (array): Valores originais das respostas (usado em imported_vote)
+ * - question_source (string): Texto original da pergunta importada
+ * 
+ * ESTRUTURA DE RESPOSTAS DETALHADAS (vs_respostas_detalhadas)
+ * ==========================================================
+ * 
+ * Localização: Metadado do CPT 'votacao_resposta'
+ * Função de processamento: vs_update_response_metadata() em vs-utils-data.php
+ * 
+ * Estrutura JSON:
+ * {
+ *   "0": "Aprovo totalmente",
+ *   "1": "O projeto está bem estruturado e atende às necessidades da comunidade.",
+ *   "2": ["Opção A", "Opção C"],
+ *   "3": "Resposta de texto livre detalhada",
+ *   "4": "Muito bom evento"
+ * }
+ * 
+ * DETALHES DA ESTRUTURA:
+ * - Chave: Índice numérico correspondente à ordem da pergunta (0, 1, 2, ...)
+ * - Valor: Resposta do usuário
+ *   * String simples: para campos texto, textarea, radio, select
+ *   * Array de strings: para campos checkbox (seleção múltipla)
+ *   * String: para campos imported_vote (valor original selecionado)
+ * 
+ * ESTRUTURA DE RESPOSTAS UNIFICADAS (vs_resposta_unificada)
+ * ========================================================
+ * 
+ * Localização: Metadado do CPT 'votacao_resposta'
+ * Função de processamento: vs_update_resposta_unificada_indices() em vs-utils-data.php
+ * 
+ * Estrutura JSON:
+ * {
+ *   "0": "Aprovação Total",
+ *   "1": "Comentário Positivo",
+ *   "2": "Múltiplas Seleções",
+ *   "3": "Feedback Detalhado",
+ *   "4": "Avaliação Positiva"
+ * }
+ * 
+ * PROPÓSITO E FUNCIONAMENTO:
+ * - Permite agrupar respostas similares para análise estatística
+ * - Mantém as respostas originais intactas em vs_respostas_detalhadas
+ * - Cada índice corresponde exatamente ao índice da pergunta
+ * - Administradores podem unificar manualmente via interface
+ * - Usado para gerar relatórios e estatísticas agrupadas
+ * 
+ * ESTRUTURA DE RESPOSTAS IMPORTADAS (imported_answers)
+ * ===================================================
+ * 
+ * Localização: Campo JSON nas perguntas do tipo 'imported_vote'
+ * Função de processamento: vs_get_imported_vote_data() em vs-utils-data.php
+ * 
+ * Estrutura JSON completa:
+ * {
+ *   "perguntas": [
+ *     {
+ *       "question_source": "Como você avalia o evento anterior?",
+ *       "question_index": 1,
+ *       "vote_id": 456,
+ *       "total_votos": 26,
+ *       "imported_answers": [
+ *         {
+ *           "value": "Excelente evento, muito bem organizado e informativo",
+ *           "value_unificada": "Avaliação Muito Positiva",
+ *           "qtd_votos": 15
+ *         },
+ *         {
+ *           "value": "Bom evento, mas alguns aspectos podem melhorar",
+ *           "value_unificada": "Avaliação Positiva com Ressalvas", 
+ *           "qtd_votos": 8
+ *         },
+ *         {
+ *           "value": "Evento regular, atendeu expectativas básicas",
+ *           "value_unificada": "Avaliação Neutra",
+ *           "qtd_votos": 2
+ *         },
+ *         {
+ *           "value": "Evento mal organizado, não recomendo",
+ *           "value_unificada": "Avaliação Negativa",
+ *           "qtd_votos": 1
+ *         }
+ *       ]
+ *     }
+ *   ]
+ * }
+ * 
+ * CAMPOS DA ESTRUTURA DE RESPOSTAS IMPORTADAS:
+ * - perguntas (array): Lista de perguntas importadas
+ *   * question_source (string): Texto original da pergunta na votação anterior
+ *   * question_index (int): Índice da pergunta na votação original (1-based)
+ *   * vote_id (int): ID da votação de origem
+ *   * total_votos (int): Total de respostas para esta pergunta
+ *   * imported_answers (array): Lista de respostas com estatísticas
+ *     - value (string): Resposta original exata do usuário
+ *     - value_unificada (string): Versão unificada/agrupada da resposta
+ *     - qtd_votos (int): Quantidade de usuários que deram essa resposta específica
+ * 
+ * ESTRUTURA DE RESPOSTA AJAX PADRÃO
+ * =================================
+ * 
+ * Todas as operações AJAX seguem este padrão de resposta:
+ * 
+ * SUCESSO:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "user_name": "João Silva",
+ *     "data_envio": "15/12/2024 14:30",
+ *     "respostas": [
+ *       {
+ *         "question": "Qual sua opinião sobre o projeto?",
+ *         "answer": "Aprovo totalmente"
+ *       },
+ *       {
+ *         "question": "Comentários adicionais:",
+ *         "answer": "Projeto muito bem estruturado"
+ *       }
+ *     ]
+ *   }
+ * }
+ * 
+ * ERRO:
+ * {
+ *   "success": false,
+ *   "data": "Mensagem de erro detalhada"
+ * }
+ * 
+ * ESTRUTURA DE DADOS DE UNIFICAÇÃO
+ * ================================
+ * 
+ * Dados enviados via AJAX para unificação:
+ * {
+ *   "votacao_id": 123,
+ *   "question_index": 0,
+ *   "linhas": "[{\"resposta_id\": 456, \"question_index\": 0}, {\"resposta_id\": 789, \"question_index\": 0}]",
+ *   "nova_unificada": "Categoria Unificada",
+ *   "vs_nonce": "abc123def456"
+ * }
+ * 
+ * SISTEMA DE METADADOS COMPLETO
+ * =============================
+ * 
+ * VOTAÇÃO (CPT: votacoes):
+ * - vs_questions: Array JSON com estrutura de perguntas (ver acima)
+ * - _vs_ano: Ano da votação (int)
+ * - _vs_status: Status atual (string: "aberta"|"em-pausa"|"encerrada")
+ * - _vs_codigo: Código único da votação (string)
+ * - _vs_data_inicio: Data de início (Y-m-d)
+ * - _vs_data_fim: Data de encerramento (Y-m-d)
+ * - _vs_qtd_votos: Quantidade total de votos (int)
  * - _vs_votantes: Array com IDs dos usuários que votaram
- * - _vs_permitir_edicao: Permite edição de votos
+ * - _vs_permitir_edicao: Permite edição de votos (boolean)
  * 
- * Resposta (votacao_resposta):
- * - vs_votacao_id: ID da votação relacionada
- * - vs_usuario_id: ID do usuário que respondeu
- * - vs_respostas_detalhadas: Array com respostas por pergunta
- * - vs_resposta_unificada: Array com respostas unificadas por índice
- * - vs_data_envio: Data/hora do envio
+ * RESPOSTA (CPT: votacao_resposta):
+ * - vs_votacao_id: ID da votação relacionada (int)
+ * - vs_usuario_id: ID do usuário que respondeu (int)
+ * - vs_respostas_detalhadas: Array JSON com respostas originais (ver acima)
+ * - vs_resposta_unificada: Array JSON com respostas unificadas (ver acima)
+ * - vs_data_envio: Data/hora do envio (Y-m-d H:i:s)
  * 
- * SHORTCODES DISPONÍVEIS
- * =====================
+ * ===============================================================================
+ * SEÇÃO 3: FLUXO DE DADOS E PROCESSAMENTO
+ * ===============================================================================
  * 
- * SHORTCODES PRINCIPAIS:
+ * FLUXO DE CRIAÇÃO DE VOTAÇÃO
+ * ===========================
  * 
- * 1. [vs_voting_form id="123"]
- *    - Exibe formulário de votação
- *    - Parâmetros: id (obrigatório)
+ * 1. INTERFACE ADMIN:
+ *    - Arquivo: metaboxes/vs-metabox-questions.php
+ *    - Template: templates/admin/template-metabox-question-row.php
+ *    - JavaScript: assets/js/admin.js, assets/js/admin/imported-answers.js
+ * 
+ * 2. SALVAMENTO:
+ *    - Perguntas são serializadas em JSON no metadado 'vs_questions'
+ *    - Validação de campos obrigatórios e tipos
+ *    - Processamento de respostas importadas via vs_get_imported_vote_data()
+ * 
+ * 3. TIPOS DE PERGUNTA SUPORTADOS:
+ *    - texto: Campo input simples
+ *    - textarea: Área de texto multilinha
+ *    - radio: Seleção única com botões radio
+ *    - checkbox: Seleção múltipla com checkboxes
+ *    - select: Lista suspensa
+ *    - imported_vote: Importa respostas de votação anterior
+ * 
+ * FLUXO DE SUBMISSÃO DE RESPOSTA
+ * ==============================
+ * 
+ * 1. RECEPÇÃO:
+ *    - Arquivo: includes/core/submission/vs-process-voting.php
+ *    - Dados recebidos via POST do formulário
+ *    - Validação de nonces e permissões
+ * 
+ * 2. PROCESSAMENTO:
+ *    - Função: vs_format_user_answers() em helpers/vs-utils-data.php
+ *    - Sanitização de dados de entrada
+ *    - Formatação baseada no tipo de pergunta
+ *    - Validação de campos obrigatórios
+ * 
+ * 3. SALVAMENTO:
+ *    - Criação do CPT 'votacao_resposta'
+ *    - Função: vs_update_response_metadata()
+ *    - Atualização de contadores: vs_update_votantes()
+ *    - Geração de token para página de agradecimento
+ * 
+ * FLUXO DE UNIFICAÇÃO DE RESPOSTAS
+ * ================================
+ * 
+ * 1. COLETA DE DADOS:
+ *    - AJAX Handler: includes/ajax/vs-handle-get-unificacao-group.php
+ *    - Busca respostas por votação e pergunta específica
+ *    - Agrupa respostas similares para apresentação
+ * 
+ * 2. INTERFACE DE UNIFICAÇÃO:
+ *    - Template: templates/admin/template-results-unificacao.php
+ *    - JavaScript: assets/js/ajax/vs-handle-get-unificacao-group.js
+ *    - Duas colunas: respostas individuais e grupos unificados
+ * 
+ * 3. PROCESSAMENTO DE UNIFICAÇÃO:
+ *    - AJAX Handler: includes/ajax/vs-handle-update-unificacao.php
+ *    - Função: vs_update_resposta_unificada_indices()
+ *    - Atualiza metadado 'vs_resposta_unificada' em lote
+ *    - Mantém respostas originais intactas
+ * 
+ * FLUXO DE IMPORTAÇÃO DE RESPOSTAS
+ * ================================
+ * 
+ * 1. SELEÇÃO DE VOTAÇÃO ANTERIOR:
+ *    - Modal: templates/admin/template-metabox-question-row.php
+ *    - AJAX Handler: includes/ajax/vs-handle-votacao-anterior.php
+ *    - Filtros por ano, evento e status
+ * 
+ * 2. PROCESSAMENTO DE DADOS:
+ *    - Função: vs_get_imported_vote_data() em helpers/vs-utils-data.php
+ *    - Coleta respostas detalhadas e unificadas
+ *    - Gera estatísticas por resposta
+ *    - Formata dados para interface
+ * 
+ * 3. INTEGRAÇÃO NA PERGUNTA:
+ *    - Campo 'imported_answers' armazena JSON com dados
+ *    - Campo 'valores_reais' mantém respostas originais
+ *    - Interface permite seleção de respostas específicas
+ * 
+ * ===============================================================================
+ * SEÇÃO 4: SHORTCODES E TEMPLATES
+ * ===============================================================================
+ * 
+ * SHORTCODES PRINCIPAIS
+ * ====================
+ * 
+ * 1. [votacao_formulario id="123"]
+ *    - Arquivo: includes/frontend/shortcodes/vs-shortcode-votacao-formulario.php
+ *    - Template: templates/public/template-voting-form.php
  *    - Funcionalidades: validação, edição, submissão
  * 
- * 2. [vs_thank_you]
- *    - Página de agradecimento pós-votação
- *    - Exibe resumo das respostas
+ * 2. [votacao_obrigado]
+ *    - Arquivo: includes/frontend/shortcodes/vs-shortcode-thank-you.php
+ *    - Template: templates/public/template-thank-you.php
  *    - Validação por token temporário
  * 
- * 3. [vs_votacoes_feed]
- *    - Feed filtrado de votações
+ * 3. [votacoes_feed]
+ *    - Arquivo: includes/frontend/shortcodes/vs-shortcode-votacoes-generic.php
+ *    - Template: templates/public/template-votacoes-feed.php
  *    - Filtros: ano, status, código, evento
- *    - Paginação automática
  * 
- * 4. [vs_votacoes_home_feed]
- *    - Feed principal com cards visuais
- *    - Agrupamento por ano e evento
- *    - Interface responsiva
+ * 4. [votacoes_home_feed]
+ *    - Arquivo: includes/frontend/shortcodes/vs-shortcode-votacoes-home-feed.php
+ *    - Template: templates/public/template-home-feed.php
+ *    - Cards visuais agrupados por ano/evento
  * 
- * SHORTCODES DA ÁREA DO USUÁRIO (NOVOS):
+ * SHORTCODES DA ÁREA DO USUÁRIO
+ * =============================
  * 
  * 5. [votacoes_usuario_ativas]
  *    - Lista votações que o usuário respondeu e ainda podem ser editadas
  *    - Restrição: apenas usuários logados
- *    - Exibe: título, data, resumo das respostas, botão "Editar Voto"
- *    - Filtro: apenas votações com status "aberta" ou não encerradas por data
- *    - Template: template-votacoes-usuario-ativas.php
+ *    - Template: templates/public/template-votacoes-usuario-ativas.php
+ *    - CSS: assets/css/public/vs-user-votacoes.css
  * 
  * 6. [votacoes_usuario_encerradas]
  *    - Lista votações que o usuário participou e já estão encerradas
- *    - Restrição: apenas usuários logados
- *    - Exibe: título, status "Encerrada", resumo das respostas, botão "Ver Respostas"
- *    - Filtro: votações com status "encerrada" ou encerradas por data
- *    - Template: template-votacoes-usuario-encerradas.php
+ *    - Template: templates/public/template-votacoes-usuario-encerradas.php
+ *    - Funcionalidade: visualização de respostas via modal
  * 
  * 7. [votacoes_disponiveis]
  *    - Lista votações em aberto que o usuário ainda não participou
- *    - Restrição: apenas usuários logados
- *    - Exibe: título, prazo, descrição, botão "Participar"
- *    - Filtro: votações abertas onde o usuário ainda não votou
- *    - Template: template-votacoes-disponiveis.php
+ *    - Template: templates/public/template-votacoes-disponiveis.php
+ *    - Filtro: votações abertas sem participação do usuário
  * 
- * FUNCIONALIDADES DOS SHORTCODES DA ÁREA DO USUÁRIO:
+ * 8. [votacoes_display]
+ *    - Exibe lista genérica de votações com filtros
+ *    - Suporte a múltiplos layouts (lista, cards)
+ *    - Parâmetros configuráveis via shortcode
  * 
- * - Verificação automática de login (exibe mensagem se não logado)
- * - Uso de get_current_user_id() para identificar usuário
- * - Consultas otimizadas com WP_Query e meta_query
- * - HTML puro compatível com Divi Builder
- * - CSS responsivo integrado (vs-user-votacoes.css)
- * - Função helper vs_generate_response_summary() para resumos
- * - Verificação de status das votações (ativa/encerrada)
- * - Templates separados para melhor organização
+ * ===============================================================================
+ * SEÇÃO 5: SISTEMA AJAX E HANDLERS
+ * ===============================================================================
  * 
- * SISTEMA DE UNIFICAÇÃO
- * ====================
+ * HANDLERS AJAX PRINCIPAIS
+ * =======================
  * 
- * O sistema de unificação permite agrupar respostas similares para análise:
+ * 1. vs_get_user_votes
+ *    - Arquivo: includes/ajax/get-user-votes.php
+ *    - Função: Recupera votos de usuário específico
+ *    - Retorna: dados formatados para modal de visualização
  * 
- * FUNCIONAMENTO:
- * 1. Respostas são armazenadas individualmente em vs_respostas_detalhadas
- * 2. Administrador pode unificar respostas similares via interface
- * 3. Unificações são salvas em vs_resposta_unificada como array indexado
- * 4. Cada índice corresponde a uma pergunta específica
+ * 2. vs_get_unificacao_group
+ *    - Arquivo: includes/ajax/vs-handle-get-unificacao-group.php
+ *    - Função: Busca grupos para unificação de respostas
+ *    - Retorna: respostas agrupadas por similaridade
  * 
- * PROCESSO DE UNIFICAÇÃO:
- * 1. Seleção de respostas na interface administrativa
- * 2. Criação de novo valor unificado OU seleção de existente
- * 3. AJAX atualiza vs_resposta_unificada para as respostas selecionadas
- * 4. Interface mostra contadores e agrupamentos
+ * 3. vs_update_unificacao
+ *    - Arquivo: includes/ajax/vs-handle-update-unificacao.php
+ *    - Função: Atualiza unificações em lote
+ *    - Processa: múltiplas respostas simultaneamente
  * 
- * ESTRUTURA DE DADOS:
- * vs_resposta_unificada = [
- *     0 => "Resposta Unificada Pergunta 1",
- *     1 => "Resposta Unificada Pergunta 2",
- *     // índice = posição da pergunta
- * ]
+ * 4. vs_handle_votacao_anterior
+ *    - Arquivo: includes/ajax/vs-handle-votacao-anterior.php
+ *    - Função: Busca votações anteriores para importação
+ *    - Filtros: ano, evento, status, busca textual
  * 
- * FLUXO DE TRABALHO
+ * ESTRUTURAS DE DADOS AJAX
+ * ========================
+ * 
+ * Requisição de busca de votações:
+ * {
+ *   "action": "vs_handle_votacao_anterior",
+ *   "vs_nonce": "abc123",
+ *   "ano": "2024",
+ *   "evento": "evento-slug",
+ *   "status": "encerrada",
+ *   "busca": "termo de busca"
+ * }
+ * 
+ * Resposta de votações encontradas:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "votacoes": [
+ *       {
+ *         "id": 123,
+ *         "title": "Título da Votação",
+ *         "codigo": "VOT-2024-001",
+ *         "status": "encerrada",
+ *         "data_fim": "2024-01-31",
+ *         "evento": "Nome do Evento",
+ *         "qtd_votos": 45
+ *       }
+ *     ]
+ *   }
+ * }
+ * 
+ * ===============================================================================
+ * SEÇÃO 6: SEGURANÇA E VALIDAÇÃO
+ * ===============================================================================
+ * 
+ * SISTEMA DE NONCES
  * ================
  * 
- * 1. CRIAÇÃO DE VOTAÇÃO:
- *    - Admin cria post tipo 'votacoes'
- *    - Define perguntas via metabox
- *    - Configura datas e status
- *    - Publica votação
+ * Arquivo: includes/core/security/vs-nonce-actions.php
  * 
- * 2. PARTICIPAÇÃO DO USUÁRIO:
- *    - Usuário acessa via shortcode
- *    - Preenche formulário dinâmico
- *    - Sistema valida e salva resposta
- *    - Redirecionamento para página de agradecimento
+ * Ações protegidas:
+ * - VS_Nonce_Actions::AJAX_GENERAL: Operações AJAX gerais
+ * - VS_Nonce_Actions::VOTING_SUBMISSION: Submissão de votos
+ * - VS_Nonce_Actions::ADMIN_OPERATIONS: Operações administrativas
  * 
- * 3. GERENCIAMENTO PELO USUÁRIO (NOVO):
- *    - Usuário acessa página /votacoes (ou similar)
- *    - Visualiza votações ativas, encerradas e disponíveis
- *    - Pode editar votações ativas
- *    - Pode participar de novas votações
- *    - Visualiza histórico completo
+ * Validação:
+ * - Função: vs_verify_ajax_nonce_or_die()
+ * - Todas as operações críticas verificam nonces
+ * - Prevenção contra ataques CSRF
  * 
- * 4. ANÁLISE DE RESULTADOS:
- *    - Admin acessa página de resultados
- *    - Visualiza respostas individuais
- *    - Realiza unificação de respostas
- *    - Exporta dados em CSV
+ * SANITIZAÇÃO DE DADOS
+ * ===================
  * 
- * SEGURANÇA
- * =========
+ * ENTRADA:
+ * - sanitize_text_field(): Campos de texto simples
+ * - wp_kses_post(): Conteúdo HTML permitido
+ * - absint(): Números inteiros
+ * - sanitize_email(): Endereços de email
  * 
- * - Nonces em todas as operações AJAX
- * - Sanitização de dados de entrada
- * - Verificação de capabilities
- * - Validação de tokens temporários
- * - Escape de saída de dados
- * - Verificação de login nos shortcodes da área do usuário
+ * SAÍDA:
+ * - esc_html(): Texto para HTML
+ * - esc_attr(): Atributos HTML
+ * - wp_json_encode(): Dados JSON seguros
+ * - esc_url(): URLs
  * 
- * PERFORMANCE
- * ===========
+ * VERIFICAÇÃO DE PERMISSÕES
+ * ========================
  * 
- * - Carregamento condicional de assets
- * - Cache de consultas pesadas
- * - Paginação em listagens
- * - Otimização de queries
- * - CSS específico para área do usuário carregado apenas quando necessário
+ * CAPABILITIES UTILIZADAS:
+ * - manage_options: Administração completa
+ * - read: Usuários logados (votação)
+ * - edit_posts: Edição de conteúdo
  * 
- * HOOKS E FILTROS
- * ==============
+ * VERIFICAÇÕES:
+ * - current_user_can(): Verifica capabilities
+ * - is_user_logged_in(): Status de login
+ * - get_current_user_id(): ID do usuário atual
  * 
- * Actions:
- * - vs_after_vote_submission: Após submissão de voto
- * - vs_before_vote_update: Antes de atualizar voto
- * - vs_voting_closed: Quando votação é encerrada
- * 
- * Filters:
- * - vs_voting_form_fields: Modifica campos do formulário
- * - vs_export_data: Modifica dados de exportação
- * - vs_unification_groups: Modifica grupos de unificação
- */
-
-/**
  * ===============================================================================
- * SEÇÃO 2: CONTEXTO PARA IA - ASSISTENTE DE DESENVOLVIMENTO
+ * SEÇÃO 7: PERFORMANCE E OTIMIZAÇÃO
  * ===============================================================================
- */
-
-/**
- * CONTEXTO PARA ASSISTENTE IA
- * ===========================
  * 
- * Este projeto é um sistema completo de votações para WordPress. Aqui estão
- * as informações essenciais para continuar o desenvolvimento:
+ * ESTRATÉGIAS DE CACHE
+ * ===================
  * 
- * ESTRUTURA DE ARQUIVOS PRINCIPAIS:
+ * 1. METADADOS:
+ *    - Cache automático do WordPress para post_meta
+ *    - Uso de get_post_meta() com single=true
+ *    - Evita consultas desnecessárias
  * 
- * 1. BOOTSTRAP (bootstrap.php):
- *    - Ponto de entrada principal
- *    - Carrega todos os componentes
- *    - Gerencia assets CSS/JS
- *    - Classe VS_Bootstrap controla inicialização
+ * 2. CONSULTAS OTIMIZADAS:
+ *    - WP_Query com parâmetros específicos
+ *    - meta_query otimizada para relacionamentos
+ *    - fields='ids' quando apenas IDs são necessários
  * 
- * 2. CUSTOM POST TYPES:
- *    - includes/core/cpt/vs-register-cpt-voting.php (votacoes)
- *    - includes/core/cpt/vs-register-cpt-answer.php (votacao_resposta)
+ * 3. TRANSIENTS:
+ *    - vs_generate_thank_you_token(): Token temporário (5 min)
+ *    - Cache de consultas pesadas quando aplicável
  * 
- * 3. SHORTCODES IMPLEMENTADOS:
- *    - vs_voting_form: Formulário de votação principal
- *    - vs_thank_you: Página de agradecimento
- *    - vs_votacoes_feed: Feed filtrado de votações
- *    - vs_votacoes_home_feed: Feed principal com cards
- *    - votacoes_usuario_ativas: Votações ativas do usuário (NOVO)
- *    - votacoes_usuario_encerradas: Votações encerradas do usuário (NOVO)
- *    - votacoes_disponiveis: Votações disponíveis para o usuário (NOVO)
- * 
- * 4. SISTEMA AJAX:
- *    - get-user-votes.php: Carrega respostas de usuário
- *    - vs-handle-get-unificacao-group.php: Gerencia grupos de unificação
- *    - vs-handle-update-unificacao.php: Atualiza unificações
- * 
- * OBJETOS E ESTRUTURAS DE DADOS IMPORTANTES:
- * 
- * 1. PERGUNTA (vs_questions):
- * [
- *     'label' => 'Texto da pergunta',
- *     'type' => 'text|select|radio|checkbox',
- *     'options' => ['option1', 'option2'], // para select/radio/checkbox
- *     'required' => true|false
- * ]
- * 
- * 2. RESPOSTA DETALHADA (vs_respostas_detalhadas):
- * [
- *     0 => 'Resposta pergunta 1',
- *     1 => ['option1', 'option2'], // para checkbox
- *     2 => 'Resposta pergunta 3'
- * ]
- * 
- * 3. RESPOSTA UNIFICADA (vs_resposta_unificada):
- * [
- *     0 => 'Grupo A',
- *     1 => 'Categoria X',
- *     2 => 'Tipo Y'
- * ]
- * 
- * SISTEMA DE UNIFICAÇÃO - DETALHES TÉCNICOS:
- * 
- * A unificação funciona em duas etapas:
- * 
- * 1. COLETA DE DADOS:
- *    - Interface mostra duas colunas
- *    - Coluna 1: Respostas individuais com checkboxes
- *    - Coluna 2: Grupos unificados com contadores
- * 
- * 2. PROCESSO DE UNIFICAÇÃO:
- *    - Usuário seleciona respostas similares
- *    - Pode criar novo grupo OU usar existente
- *    - AJAX envia dados para vs-handle-update-unificacao.php
- *    - Sistema atualiza meta vs_resposta_unificada
- * 
- * FUNÇÕES HELPER IMPORTANTES:
- * 
- * - vs_get_voting_questions($votacao_id): Obtém perguntas
- * - vs_format_unified_answer($value): Formata resposta unificada
- * - vs_update_resposta_unificada_indices($id, $indices, $value): Atualiza unificação
- * - vs_get_existing_response($user_id, $votacao_id): Verifica resposta existente
- * - vs_generate_response_summary($respostas, $questions): Gera resumo de respostas (NOVA)
- * - vs_user_already_voted($post_id, $user_id): Verifica se usuário já votou
- * - vs_check_votacao_status($data_fim): Verifica se votação está encerrada
- * 
- * TEMPLATES PRINCIPAIS:
- * 
- * - template-voting-form.php: Formulário principal
- * - template-voting-form-fields.php: Campos dinâmicos
- * - template-results-unificacao.php: Interface de unificação
- * - template-home-feed.php: Feed principal
- * - template-votacoes-usuario-ativas.php: Votações ativas do usuário (NOVO)
- * - template-votacoes-usuario-encerradas.php: Votações encerradas do usuário (NOVO)
- * - template-votacoes-disponiveis.php: Votações disponíveis (NOVO)
+ * CARREGAMENTO CONDICIONAL
+ * =======================
  * 
  * ASSETS CSS/JS:
+ * - Carregamento apenas nas páginas necessárias
+ * - Função: vs_enqueue_conditional_assets()
+ * - Detecção de shortcodes na página
+ * - Minificação em produção
  * 
- * - vs-votacoes-feed.css: Estilos para feeds
- * - vs-votacoes-home.css: Estilos para home
- * - vs-user-votacoes.css: Estilos para área do usuário (NOVO)
- * - votacao-ajax.js: Modal de respostas
- * - vs-handle-get-unificacao-group.js: Interface de unificação
+ * PAGINAÇÃO
+ * =========
  * 
- * PÁGINAS ADMINISTRATIVAS:
+ * IMPLEMENTAÇÃO:
+ * - posts_per_page: Limite configurável
+ * - Navegação com prev/next
+ * - Contadores de total de itens
+ * - URLs amigáveis para SEO
  * 
- * - vs-page-results-list.php: Lista de resultados
- * - vs-page-results-details.php: Detalhes com usuários
- * - vs-page-results-unificacao.php: Interface de unificação
+ * ===============================================================================
+ * SEÇÃO 8: HOOKS, FILTROS E EXTENSIBILIDADE
+ * ===============================================================================
  * 
- * METABOXES:
+ * ACTIONS DISPONÍVEIS
+ * ==================
  * 
- * - vs-metabox-voting-info.php: Informações da votação
- * - vs-metabox-questions.php: Gerenciamento de perguntas
- * - vs-metabox-answer-details.php: Detalhes de resposta
+ * - vs_after_vote_submission: Executado após submissão bem-sucedida
+ *   Parâmetros: $votacao_id, $user_id, $respostas_formatadas
  * 
- * SISTEMA CRON:
+ * - vs_before_vote_update: Executado antes de atualizar voto existente
+ *   Parâmetros: $resposta_id, $votacao_id, $user_id
  * 
- * - vs-voting-scheduler.php: Encerramento automático
- * - Executa diariamente às 00:00
- * - Atualiza status para 'encerrada' baseado em data_fim
+ * - vs_voting_closed: Executado quando votação é encerrada automaticamente
+ *   Parâmetros: $votacao_id, $data_encerramento
  * 
- * ÁREA DO USUÁRIO - DETALHES TÉCNICOS (NOVO):
+ * FILTERS DISPONÍVEIS
+ * ==================
  * 
- * ARQUIVOS CRIADOS:
- * - includes/frontend/shortcodes/vs-shortcode-user-votacoes.php
- * - templates/public/template-votacoes-usuario-ativas.php
- * - templates/public/template-votacoes-usuario-encerradas.php
- * - templates/public/template-votacoes-disponiveis.php
- * - assets/css/vs-user-votacoes.css
+ * - vs_voting_form_fields: Modifica campos do formulário antes da renderização
+ *   Parâmetros: $fields_html, $questions, $votacao_id
+ * 
+ * - vs_export_data: Modifica dados antes da exportação CSV
+ *   Parâmetros: $export_data, $votacao_id, $format
+ * 
+ * - vs_unification_groups: Modifica grupos de unificação
+ *   Parâmetros: $groups, $votacao_id, $question_index
+ * 
+ * EXEMPLO DE USO:
+ * 
+ * // Adicionar ação personalizada após votação
+ * add_action('vs_after_vote_submission', function($votacao_id, $user_id, $respostas) {
+ *     // Enviar email de confirmação
+ *     // Integrar com sistema externo
+ *     // Log personalizado
+ * }, 10, 3);
+ * 
+ * // Modificar dados de exportação
+ * add_filter('vs_export_data', function($data, $votacao_id) {
+ *     // Adicionar colunas personalizadas
+ *     // Formatar dados específicos
+ *     return $data;
+ * }, 10, 2);
+ * 
+ * ===============================================================================
+ * SEÇÃO 9: CONSIDERAÇÕES PARA DESENVOLVIMENTO
+ * ===============================================================================
+ * 
+ * EXTENSIBILIDADE
+ * ==============
+ * 
+ * O sistema foi projetado para ser extensível através de:
+ * - Hooks e filtros em pontos estratégicos
+ * - Classes modulares com responsabilidades específicas
+ * - Templates customizáveis via tema
+ * - Estrutura de dados flexível em JSON
+ * 
+ * COMPATIBILIDADE
+ * ==============
+ * 
+ * REQUISITOS MÍNIMOS:
+ * - WordPress 5.0+
+ * - PHP 7.4+
+ * - MySQL 5.6+
+ * - 128MB PHP Memory Limit
+ * 
+ * TEMAS TESTADOS:
+ * - Divi Builder (compatibilidade total)
+ * - Twenty Twenty-Three
+ * - Astra
+ * - GeneratePress
+ * 
+ * DEBUGGING E LOGS
+ * ===============
+ * 
+ * ATIVAÇÃO:
+ * - WP_DEBUG = true em wp-config.php
+ * - Logs em wp-content/debug.log
+ * - Console do navegador para AJAX
+ * 
+ * PONTOS DE LOG:
+ * - Submissão de votações
+ * - Operações de unificação
+ * - Erros de validação
+ * - Falhas de AJAX
+ * 
+ * TESTES RECOMENDADOS
+ * ==================
+ * 
+ * FUNCIONALIDADES CRÍTICAS:
+ * - Criação e edição de votações
+ * - Submissão de respostas (todos os tipos de campo)
+ * - Sistema de unificação
+ * - Exportação CSV
+ * - Área do usuário (shortcodes novos)
+ * - Importação de respostas anteriores
+ * 
+ * CENÁRIOS DE TESTE:
+ * - Usuários não logados
+ * - Votações encerradas
+ * - Campos obrigatórios
+ * - Respostas duplicadas
+ * - Performance com muitos dados
+ * - Responsividade mobile
+ * 
+ * PRÓXIMOS DESENVOLVIMENTOS SUGERIDOS
+ * ==================================
  * 
  * FUNCIONALIDADES:
- * 1. Verificação automática de login
- * 2. Consultas otimizadas por usuário
- * 3. Filtros por status de votação
- * 4. Interface responsiva com cards
- * 5. Resumo inteligente de respostas
- * 6. Botões contextuais (Editar/Ver/Participar)
- * 
- * LÓGICA DE FILTROS:
- * - Ativas: status != 'encerrada' AND data_fim não passou
- * - Encerradas: status == 'encerrada' OR data_fim passou
- * - Disponíveis: status == 'aberta' AND usuário não votou AND não encerrada
- * 
- * FLUXO DE UNIFICAÇÃO DETALHADO:
- * 
- * 1. Admin acessa página de unificação
- * 2. Sistema carrega respostas via AJAX
- * 3. Interface mostra duas colunas:
- *    - Esquerda: Respostas individuais
- *    - Direita: Grupos unificados
- * 4. Admin seleciona respostas similares
- * 5. Cria novo grupo OU seleciona existente
- * 6. AJAX atualiza banco de dados
- * 7. Interface recarrega com novos agrupamentos
- * 
- * CONSIDERAÇÕES PARA DESENVOLVIMENTO:
- * 
- * - Sempre usar nonces para segurança
- * - Sanitizar dados de entrada
- * - Escapar dados de saída
- * - Verificar capabilities do usuário
- * - Usar transients para cache quando necessário
- * - Manter compatibilidade com versões anteriores
- * - Documentar mudanças significativas
- * - Testar responsividade em dispositivos móveis
- * - Verificar performance com muitos dados
- * 
- * PRÓXIMOS DESENVOLVIMENTOS SUGERIDOS:
- * 
  * - Sistema de notificações por email
  * - Relatórios avançados com gráficos
  * - API REST para integração externa
  * - Sistema de templates personalizáveis
  * - Backup automático de dados
- * - Logs de auditoria
- * - Integração com outros plugins
+ * - Logs de auditoria detalhados
  * - Dashboard personalizado para usuários
  * - Sistema de favoritos/bookmarks
  * - Filtros avançados na área do usuário
+ * - Integração com outros plugins populares
  * 
- * DEBUGGING E TROUBLESHOOTING:
+ * MELHORIAS TÉCNICAS:
+ * - Cache avançado com Redis/Memcached
+ * - Otimização de queries complexas
+ * - Lazy loading para listas grandes
+ * - Compressão de dados JSON
+ * - Indexação de banco de dados
+ * - Monitoramento de performance
  * 
- * - Ativar WP_DEBUG para desenvolvimento
- * - Verificar logs do WordPress
- * - Usar browser dev tools para AJAX
- * - Verificar permissões de arquivo
- * - Confirmar estrutura de banco de dados
- * - Testar com diferentes temas
- * - Verificar compatibilidade com Divi
- * 
- * TESTES RECOMENDADOS:
- * 
- * - Criação e edição de votações
- * - Submissão de respostas
- * - Processo de unificação
- * - Exportação de dados
- * - Funcionalidade de feeds
- * - Área do usuário (novos shortcodes)
- * - Responsividade mobile
- * - Performance com muitos dados
- * - Compatibilidade com diferentes temas
- * - Funcionalidade com usuários não logados
+ * ===============================================================================
+ * FIM DA DOCUMENTAÇÃO TÉCNICA
+ * ===============================================================================
  */
 
 // Fim da documentação
