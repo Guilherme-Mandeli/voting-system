@@ -18,6 +18,7 @@ class VS_Bootstrap {
         $this->load_frontend();
         $this->load_admin();
         $this->load_ajax();
+        $this->load_sample_data();
     }
     
     private function load_core() {
@@ -119,6 +120,15 @@ class VS_Bootstrap {
         require_once VS_PLUGIN_PATH . 'includes/ajax/vs-handle-votacao-anterior.php';
     }
     
+    /**
+     * Carrega o sistema de população de dados
+     */
+    private function load_sample_data() {
+        if ( is_admin() ) {
+            require_once VS_PLUGIN_PATH . 'sample-data/dashboard/vs-dashboard-widget.php';
+        }
+    }
+    
     public function enqueue_admin_assets() {
         // CSS administrativo - SEMPRE carregado nas páginas admin
         wp_enqueue_style( 'vs-admin-style', VS_PLUGIN_URL . 'assets/css/admin.css', array(), VS_PLUGIN_VERSION );
@@ -201,4 +211,5 @@ class VS_Bootstrap {
     }
 }
 
+// Inicializa o bootstrap
 new VS_Bootstrap();

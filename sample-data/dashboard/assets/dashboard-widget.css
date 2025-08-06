@@ -1,0 +1,237 @@
+#vs_population_widget .postbox-header .hndle{
+    justify-content: flex-start;
+    gap: 12px;
+}
+
+/* Estilos do Widget de População de Dados */
+.vs-population-widget {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.vs-stats-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e1e1e1;
+}
+
+.vs-stats-section h4 {
+    margin: 0 0 10px 0;
+    color: #1d2327;
+    font-size: 14px;
+}
+
+.vs-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.vs-stat-card {
+    text-align: center;
+    padding: 8px;
+    background: #f6f7f7;
+    border-radius: 6px;
+    border: 1px solid #e1e1e1;
+}
+
+.vs-stat-number {
+    display: block;
+    font-size: 18px;
+    font-weight: bold;
+    color: #0073aa;
+    line-height: 1;
+}
+
+.vs-stat-label {
+    display: block;
+    font-size: 11px;
+    color: #646970;
+    margin-top: 4px;
+}
+
+.vs-actions-section h4 {
+    margin: 0 0 15px 0;
+    color: #1d2327;
+    font-size: 14px;
+}
+
+.vs-action-card {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 24px;
+    background: #fff9e6;
+    border: 1px solid #f0d000;
+}
+
+.vs-action-populate {
+    background: #e7f3ff;
+    border: 1px solid #b8daff;
+}
+
+.vs-action-clear {
+    background: #fff2e7;
+    border: 1px solid #ffcc99;
+}
+
+table.vs-users-list {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid #e1e1e1;
+    border-radius: 6px;
+    overflow: hidden; /* para aplicar o border-radius */
+    font-family: sans-serif;
+    font-size: 14px;
+}
+
+table.vs-users-list th,
+table.vs-users-list td {
+    padding: 6px 12px 5px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e1e1e1;
+}
+table.vs-users-list thead tr {
+    font-size: 13px;
+
+table.vs-user-list tbody tr {
+    font-size: 13px;
+}
+table.vs-users-list thead th {
+    background-color: #f7f7f7;
+    font-weight: bold;
+    border-bottom: 1px solid #dcdcdc;
+}
+table.vs-users-list tbody tr:last-child td {
+    border-bottom: none;
+}
+.vs-user-meta code {
+    background-color: #f3f3f3;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.vs-action-icon {
+    font-size: 24px;
+    line-height: 1;
+}
+
+.vs-action-content {
+    flex: 1;
+}
+
+.vs-action-content h5 {
+    margin: 0 0 5px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.vs-action-content p {
+    margin: 0 0 10px 0;
+    font-size: 12px;
+    color: #646970;
+    line-height: 1.4;
+}
+
+.vs-details-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e1e1e1;
+}
+
+.vs-details-section h4 {
+    margin: 0 0 10px 0;
+    color: #1d2327;
+    font-size: 14px;
+}
+
+.vs-details-list {
+    font-size: 12px;
+}
+
+.vs-detail-item {
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f1;
+    color: #646970;
+}
+
+.vs-detail-item:last-child {
+    border-bottom: none;
+}
+
+.vs-detail-item strong {
+    color: #1d2327;
+}
+
+.vs-loading {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 12px;
+    left: 12px;
+    background: rgba(255, 255, 255, .5);
+    margin-bottom: 24px;
+    padding: 20px;
+    text-align: center;
+    border-radius: 6px;
+}
+
+.vs-loading-content {
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    align-items: center;
+    top: 50%;
+    left: 50%;
+    width: fit-content;
+    padding: 12px 24px;
+    background-color: #ffffff;
+    border: 1px solid #e1e1e1;
+    border-radius: 6px;
+    transform: translate(-50%, -50%);
+}
+
+.vs-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e1e1e1;
+    border-top: 2px solid #0073aa;
+    border-radius: 50%;
+    animation: vs-spin 1s linear infinite;
+}
+.vs-loading-content p {
+    width: fit-content;
+}
+
+.vs-auto-responses-section {
+    margin-bottom: 24px;
+}
+
+@keyframes vs-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.vs-loading p {
+    margin: 0;
+    font-size: 12px;
+    color: #646970;
+}
+
+/* Responsividade */
+@media (max-width: 782px) {
+    .vs-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .vs-action-card {
+        flex-direction: column;
+        text-align: center;
+    }
+}
