@@ -208,7 +208,7 @@ function vs_render_answer_metabox( $post ) {
         $unifications = array();
     }
 
-    echo '<table style="width: 100%; border-collapse: collapse;">';
+    echo '<table id="votacao_resposta_detalhes" style="width: 100%; border-collapse: collapse;">';
     echo '<thead><tr>';
     echo '<th style="border: 1px solid #ccc; padding: 8px; background: #f9f9f9;">' . esc_html__( 'Pergunta', 'voting-system' ) . '</th>';
     echo '<th style="border: 1px solid #ccc; padding: 8px; background: #f9f9f9;">' . esc_html__( 'Resposta', 'voting-system' ) . '</th>';
@@ -237,11 +237,23 @@ function vs_render_answer_metabox( $post ) {
         echo '<td style="border: 1px solid #ccc; padding: 8px;">' . esc_html( $resp ) . '</td>';
         echo '<td style="border: 1px solid #ccc; padding: 8px; text-align:center;">';
 
+        // Container principal com identificador da pergunta
+        echo '<span class="vs-unified-response" data-question-index="' . esc_attr( $index ) . '" data-post-id="' . esc_attr( $post->ID ) . '" data-votacao-id="' . esc_attr( $votacao_id ) . '">';
+        
         if ( '' !== $resp_unificada ) {
-            echo esc_html( $resp_unificada );
+            // Span com classe para conteúdo preenchido + botão limpar
+            echo '<div class="vs-unified-wrapper">';
+            echo '<span class="vs-unified-content vs-has-content">' . esc_html( $resp_unificada ) . '</span>';
+            echo '<button type="button" class="vs-clear-unified-table-btn" title="Limpar resposta unificada">';
+            echo '<span class="dashicons dashicons-trash"></span>';
+            echo '</button>';
+            echo '</div>';
         } else {
-            echo '<em>—</em>';
+            // Span com classe para conteúdo vazio
+            echo '<span class="vs-unified-content vs-empty-content"><em>—</em></span>';
         }
+        
+        echo '</span>';
 
         echo '</td>';
         echo '</tr>';
@@ -249,4 +261,177 @@ function vs_render_answer_metabox( $post ) {
 
     echo '</tbody></table>';
     echo '</div>';
+    
+    // Adicionar CSS e JavaScript
+    ?>
+    <style>
+    .vs-unified-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .vs-unified-content {
+        flex: 1;
+    }
+    
+    .vs-clear-unified-table-btn {
+        background: transparent;
+        border: 1px solid #dc3232;
+        color: #dc3232;
+        padding: 2px 4px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 11px;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+    
+    .vs-clear-unified-table-btn:hover {
+        background: #dc3232;
+        color: white;
+        border-color: #dc3232;
+    }
+    
+    .vs-clear-unified-table-btn .dashicons {
+        font-size: 12px;
+        width: 12px;
+        height: 12px;
+    }
+    
+    .vs-clear-unified-table-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .vs-unified-content.vs-has-content {
+        color: #0073aa;
+        font-weight: 500;
+    }
+    
+    .vs-unified-content.vs-empty-content {
+        color: #666;
+        font-style: italic;
+    }
+    </style>
+    
+    <script>
+    jQuery(document).ready(function($) {
+        // Função para sincronizar limpeza entre tabela e metabox
+        function syncClearUnifiedResponse(questionIndex, isFromTable = true) {
+            if (isFromTable) {
+                // Limpar no metabox quando limpo na tabela
+                var $metaboxContainer = $('.vs-unified-answer[data-question-index="' + questionIndex + '"]');
+                if ($metaboxContainer.length) {
+                    $metaboxContainer.fadeOut(300, function() {
+                        $(this).remove();
+                    });
+                }
+            } else {
+                // Limpar na tabela quando limpo no metabox
+                var $tableContainer = $('#votacao_resposta_detalhes .vs-unified-response[data-question-index="' + questionIndex + '"]');
+                if ($tableContainer.length) {
+                    var $wrapper = $tableContainer.find('.vs-unified-wrapper');
+                    if ($wrapper.length) {
+                        $wrapper.replaceWith('<span class="vs-unified-content vs-empty-content"><em>—</em></span>');
+                    }
+                }
+            }
+        }
+
+        // Handler para botões de limpar na tabela
+        $(document).on('click', '.vs-clear-unified-table-btn', function(e) {
+            e.preventDefault();
+            
+            var $btn = $(this);
+            var $container = $btn.closest('.vs-unified-response');
+            var questionIndex = $container.data('question-index');
+            var postId = $container.data('post-id');
+            var votacaoId = $container.data('votacao-id');
+            
+            if (!confirm('Tem certeza que deseja limpar esta resposta unificada?')) {
+                return;
+            }
+            
+            // Feedback visual
+            var originalHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="dashicons dashicons-update-alt"></span>');
+            
+            // AJAX request
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'vs_update_resposta_unificada',
+                    nonce: '<?php echo wp_create_nonce("vs_unificacao_nonce"); ?>',
+                    votacao_id: votacaoId,
+                    nova_resposta_unificada: '',
+                    clear_operation: 'true',
+                    linhas: JSON.stringify([{
+                        postId: parseInt(postId),
+                        perguntaIndex: parseInt(questionIndex)
+                    }])
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Atualizar visualmente a tabela
+                        var $wrapper = $btn.closest('.vs-unified-wrapper');
+                        $wrapper.replaceWith('<span class="vs-unified-content vs-empty-content"><em>—</em></span>');
+                        
+                        // Sincronizar com o metabox
+                        syncClearUnifiedResponse(questionIndex, true);
+                        
+                        // Disparar evento customizado para outras sincronizações
+                        $(document).trigger('vs:unified-response-cleared', {
+                            questionIndex: questionIndex,
+                            source: 'table'
+                        });
+                        
+                        // Mostrar mensagem de sucesso (se disponível)
+                        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+                            wp.data.dispatch('core/notices').createNotice(
+                                'success',
+                                'Resposta unificada removida com sucesso!',
+                                { isDismissible: true }
+                            );
+                        }
+                    } else {
+                        alert('Erro ao limpar: ' + (response.data || 'Erro desconhecido'));
+                        $btn.prop('disabled', false).html(originalHtml);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erro AJAX:', error);
+                    alert('Erro de conexão ao tentar limpar a resposta unificada.');
+                    $btn.prop('disabled', false).html(originalHtml);
+                }
+            });
+        });
+
+        // Event listener para sincronização vinda do metabox
+        $(document).on('vs:unified-response-cleared', function(e, data) {
+            if (data.source === 'metabox') {
+                syncClearUnifiedResponse(data.questionIndex, false);
+            }
+        });
+        
+        // Função auxiliar para limpar todas as respostas unificadas (se necessário)
+        window.vsClearAllUnifiedResponses = function() {
+            $('.vs-unified-content.vs-has-content').each(function() {
+                var $content = $(this);
+                $content.removeClass('vs-has-content').addClass('vs-empty-content');
+                $content.html('<em>—</em>');
+            });
+            
+            // Também limpar no metabox
+            $('.vs-unified-answer').fadeOut(300, function() {
+                $(this).remove();
+            });
+        };
+    });
+    </script>
+    <?php
 }

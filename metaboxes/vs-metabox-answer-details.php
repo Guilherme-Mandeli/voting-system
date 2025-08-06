@@ -126,9 +126,21 @@ function vs_render_metabox_answer_details($post) {
                         </div>
                         
                         <?php if (isset($resposta_unificada[$index]) && !empty($resposta_unificada[$index])) : ?>
-                            <div class="vs-unified-answer">
-                                <strong>Resposta Unificada:</strong> 
-                                <span class="vs-unified-value"><?php echo esc_html($resposta_unificada[$index]); ?></span>
+                            <div class="vs-unified-answer" data-question-index="<?php echo esc_attr($index); ?>">
+                                <div class="vs-unified-content">
+                                    <strong>Resposta Unificada:</strong> 
+                                    <span class="vs-unified-value"><?php echo esc_html($resposta_unificada[$index]); ?></span>
+                                </div>
+                                <div class="vs-unified-actions">
+                                    <button type="button" 
+                                            class="button button-small vs-clear-unified-btn" 
+                                            data-resposta-id="<?php echo esc_attr($post->ID); ?>"
+                                            data-question-index="<?php echo esc_attr($index); ?>"
+                                            data-votacao-id="<?php echo esc_attr($votacao_id); ?>"
+                                            title="Limpar resposta unificada">
+                                        <span class="dashicons dashicons-trash"></span> Limpar
+                                    </button>
+                                </div>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -181,6 +193,9 @@ function vs_render_metabox_answer_details($post) {
     }
     
     .vs-unified-answer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         padding: 8px;
         background: #e7f3ff;
         border: 1px solid #b3d9ff;
@@ -188,10 +203,142 @@ function vs_render_metabox_answer_details($post) {
         font-size: 13px;
     }
     
+    .vs-unified-content {
+        flex: 1;
+    }
+    
+    .vs-unified-actions {
+        margin-left: 10px;
+        flex-shrink: 0;
+    }
+    
+    .vs-clear-unified-btn {
+        font-size: 11px;
+        padding: 2px 6px;
+        height: auto;
+        line-height: 1.2;
+        border-color: #dc3232;
+        color: #dc3232;
+        background: transparent;
+    }
+    
+    .vs-clear-unified-btn:hover {
+        background: #dc3232;
+        color: white;
+        border-color: #dc3232;
+    }
+    
+    .vs-clear-unified-btn .dashicons {
+        font-size: 12px;
+        width: 12px;
+        height: 12px;
+        margin-right: 2px;
+        vertical-align: middle;
+    }
+    
     .vs-unified-value {
         font-weight: 600;
         color: #0073aa;
     }
     </style>
+    <script>
+    jQuery(document).ready(function($) {
+        // Função para sincronizar limpeza entre metabox e tabela
+        function syncClearUnifiedResponse(questionIndex, isFromMetabox = true) {
+            if (isFromMetabox) {
+                // Limpar na tabela quando limpo no metabox
+                var $tableContainer = $('#votacao_resposta_detalhes .vs-unified-response[data-question-index="' + questionIndex + '"]');
+                if ($tableContainer.length) {
+                    var $wrapper = $tableContainer.find('.vs-unified-wrapper');
+                    if ($wrapper.length) {
+                        $wrapper.replaceWith('<span class="vs-unified-content vs-empty-content"><em>—</em></span>');
+                    }
+                }
+            } else {
+                // Limpar no metabox quando limpo na tabela
+                var $metaboxContainer = $('.vs-unified-answer[data-question-index="' + questionIndex + '"]');
+                if ($metaboxContainer.length) {
+                    $metaboxContainer.fadeOut(300, function() {
+                        $(this).remove();
+                    });
+                }
+            }
+        }
+
+        // Event listener para limpeza no metabox
+        $(document).on('click', '.vs-clear-unified-btn', function(e) {
+            e.preventDefault();
+            
+            var $btn = $(this);
+            var respostaId = $btn.data('resposta-id');
+            var questionIndex = $btn.data('question-index');
+            var votacaoId = $btn.data('votacao-id');
+            
+            if (!confirm('Tem certeza que deseja limpar esta resposta unificada?')) {
+                return;
+            }
+            
+            var originalHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="dashicons dashicons-update-alt"></span> Limpando...');
+            
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'vs_update_resposta_unificada',
+                    nonce: '<?php echo wp_create_nonce("vs_unificacao_nonce"); ?>',
+                    votacao_id: votacaoId,
+                    nova_resposta_unificada: '',
+                    clear_operation: 'true',
+                    linhas: JSON.stringify([{
+                        postId: parseInt(respostaId),
+                        perguntaIndex: parseInt(questionIndex)
+                    }])
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Remover do metabox
+                        $btn.closest('.vs-unified-answer').fadeOut(300, function() {
+                            $(this).remove();
+                        });
+                        
+                        // Sincronizar com a tabela
+                        syncClearUnifiedResponse(questionIndex, true);
+                        
+                        // Disparar evento customizado para outras sincronizações
+                        $(document).trigger('vs:unified-response-cleared', {
+                            questionIndex: questionIndex,
+                            source: 'metabox'
+                        });
+                        
+                        // Mostrar mensagem de sucesso
+                        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+                            wp.data.dispatch('core/notices').createNotice(
+                                'success',
+                                'Resposta unificada removida com sucesso!',
+                                { isDismissible: true }
+                            );
+                        }
+                    } else {
+                        alert('Erro ao limpar: ' + (response.data || 'Erro desconhecido'));
+                        $btn.prop('disabled', false).html(originalHtml);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erro AJAX:', error);
+                    alert('Erro de conexão ao tentar limpar a resposta unificada.');
+                    $btn.prop('disabled', false).html(originalHtml);
+                }
+            });
+        });
+
+        // Event listener para sincronização vinda da tabela
+        $(document).on('vs:unified-response-cleared', function(e, data) {
+            if (data.source === 'table') {
+                syncClearUnifiedResponse(data.questionIndex, false);
+            }
+        });
+    });
+    </script>
     <?php
 }

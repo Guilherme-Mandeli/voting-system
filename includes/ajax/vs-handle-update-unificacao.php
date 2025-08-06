@@ -50,12 +50,14 @@ if ( ! function_exists( 'vs_ajax_update_unificacao' ) ) :
         $votacao_id_raw     = isset( $_POST['votacao_id'] ) ? intval( $_POST['votacao_id'] ) : 0;
         $nova_unificada_raw = isset( $_POST['nova_resposta_unificada'] ) ? wp_unslash( $_POST['nova_resposta_unificada'] ) : '';
         $linhas_json_raw    = isset( $_POST['linhas'] ) ? wp_unslash( $_POST['linhas'] ) : '[]';
+        $clear_operation    = isset( $_POST['clear_operation'] ) && $_POST['clear_operation'] === 'true';
 
         $nova_unificada = sanitize_text_field( $nova_unificada_raw );
         $linhas_array   = json_decode( $linhas_json_raw, true );
 
         error_log( 'Unificacao POST votacao_id=' . $votacao_id_raw );
         error_log( 'Unificacao POST valor=' . $nova_unificada );
+        error_log( 'Unificacao POST clear_operation=' . ($clear_operation ? 'true' : 'false') );
         error_log( 'Unificacao POST linhas=' . $linhas_json_raw );
 
         // ------------------------------------------------------------------
@@ -65,10 +67,13 @@ if ( ! function_exists( 'vs_ajax_update_unificacao' ) ) :
             error_log( 'Unificacao: invalid voting ID.' );
             wp_send_json_error( 'ID de votação inválido.' );
         }
-        if ( '' === $nova_unificada ) {
+        
+        // Permite valor vazio apenas para operações de limpeza
+        if ( '' === $nova_unificada && ! $clear_operation ) {
             error_log( 'Unificacao: empty value.' );
             wp_send_json_error( 'O valor unificado não pode ser vazio.' );
         }
+        
         if ( empty( $linhas_array ) || ! is_array( $linhas_array ) ) {
             error_log( 'Unificacao: linhas array missing/invalid.' );
             wp_send_json_error( 'Nenhuma linha válida recebida.' );
