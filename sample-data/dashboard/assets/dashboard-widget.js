@@ -1,158 +1,158 @@
-/**
- * JavaScript do Widget de População de Dados
- */
-(function($) {
-    'use strict';
-
-    $(document).ready(function() {
-        const $widget = $('.vs-population-widget');
-        const $loading = $('.vs-loading');
-        
-        // Botão Popular Dados
-        $('.vs-populate-data').on('click', function() {
-            if (confirm(vsPopulateData.strings.confirm_populate)) {
-                populateData();
-            }
-        });
-        
-        // Botão Limpar Dados
-        $('.vs-clear-data').on('click', function() {
-            if (confirm(vsPopulateData.strings.confirm_clear)) {
-                clearData();
-            }
-        });
-        
-        // Botão Criar Respostas Automáticas
-        $('.vs-create-responses').on('click', function() {
-            if (confirm(vsPopulateData.strings.confirm_create_responses)) {
-                createResponses();
-            }
-        });
-        
-        function populateData() {
-            showLoading();
-            
-            $.ajax({
-                url: vsPopulateData.ajaxurl,
-                type: 'POST',
-                data: {
-                    action: 'vs_populate_data',
-                    nonce: vsPopulateData.nonce
-                },
-                success: function(response) {
-                    hideLoading();
-                    
-                    if (response.success) {
-                        showMessage('success', response.data.message);
-                        setTimeout(function() {
-                            location.reload();
-                        }, 2000);
-                    } else {
-                        showMessage('error', response.data.message || vsPopulateData.strings.error);
-                    }
-                },
-                error: function() {
-                    hideLoading();
-                    showMessage('error', vsPopulateData.strings.error);
-                }
-            });
-        }
-        
-        function clearData() {
-            showLoading();
-            
-            $.ajax({
-                url: vsPopulateData.ajaxurl,
-                type: 'POST',
-                data: {
-                    action: 'vs_clear_sample_data',
-                    nonce: vsPopulateData.nonce
-                },
-                success: function(response) {
-                    hideLoading();
-                    
-                    if (response.success) {
-                        showMessage('success', response.data.message);
-                        setTimeout(function() {
-                            location.reload();
-                        }, 2000);
-                    } else {
-                        showMessage('error', response.data.message || vsPopulateData.strings.error);
-                    }
-                },
-                error: function() {
-                    hideLoading();
-                    showMessage('error', vsPopulateData.strings.error);
-                }
-            });
-        }
-        
-        function showLoading() {
-            $loading.show();
-            $widget.find('button').prop('disabled', true);
-        }
-        
-        function hideLoading() {
-            $loading.hide();
-            $widget.find('button').prop('disabled', false);
-        }
-        
-        function createResponses() {
-            showLoading();
-            
-            $.ajax({
-                url: vsPopulateData.ajaxurl,
-                type: 'POST',
-                data: {
-                    action: 'vs_create_responses',
-                    nonce: vsPopulateData.nonce
-                },
-                success: function(response) {
-                    hideLoading();
-                    
-                    if (response.success) {
-                        showMessage('success', response.data.message);
-                        
-                        // Mostra estatísticas detalhadas se disponíveis
-                        if (response.data.stats_by_votacao) {
-                            let detailsHtml = '<div class="vs-response-stats"><h4>📊 Estatísticas das Respostas Criadas:</h4><ul>';
-                            
-                            Object.values(response.data.stats_by_votacao).forEach(function(votacao) {
-                                if (votacao.responses_created > 0) {
-                                    detailsHtml += '<li><strong>' + votacao.title + '</strong>: ' + votacao.responses_created + ' respostas</li>';
-                                }
-                            });
-                            
-                            detailsHtml += '</ul></div>';
-                            showMessage('info', detailsHtml);
-                        }
-                        
-                        setTimeout(function() {
-                            location.reload();
-                        }, 4000);
-                    } else {
-                        showMessage('error', response.data.message || vsPopulateData.strings.error);
-                    }
-                },
-                error: function() {
-                    hideLoading();
-                    showMessage('error', vsPopulateData.strings.error);
-                }
-            });
-        }
-        
-        function showMessage(type, message) {
-            const $message = $('<div class="notice notice-' + type + ' is-dismissible"><p>' + message + '</p></div>');
-            $widget.prepend($message);
-            
-            // Auto remove após 5 segundos (ou 8 para info)
-            const timeout = type === 'info' ? 8000 : 5000;
-            setTimeout(function() {
-                $message.fadeOut(function() {
-                    $(this).remove();
-                });
-            }, timeout);
+jQuery(document).ready(function($) {
+    // Botão Popular Dados
+    $('.vs-populate-data').on('click', function() {
+        if (confirm(vsPopulateData.strings.confirm_populate)) {
+            populateData();
         }
     });
-
-})(jQuery);
+    
+    // Botão Limpar Dados
+    $('.vs-clear-data').on('click', function() {
+        if (confirm(vsPopulateData.strings.confirm_clear)) {
+            clearData();
+        }
+    });
+    
+    // Botão Criar Respostas
+    $('.vs-create-responses').on('click', function() {
+        if (confirm(vsPopulateData.strings.confirm_create_responses)) {
+            createResponses();
+        }
+    });
+    
+    // Botão Limpar Respostas
+    $('.vs-clear-responses').on('click', function() {
+        if (confirm(vsPopulateData.strings.confirm_clear_responses)) {
+            clearResponses();
+        }
+    });
+    
+    function populateData() {
+        const button = $('.vs-populate-data');
+        const originalText = button.text();
+        
+        button.prop('disabled', true).text(vsPopulateData.strings.processing);
+        
+        $.ajax({
+            url: vsPopulateData.ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'vs_populate_data',
+                nonce: vsPopulateData.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showMessage(response.data.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showMessage(response.data.message || vsPopulateData.strings.error, 'error');
+                }
+            },
+            error: function() {
+                showMessage(vsPopulateData.strings.error, 'error');
+            },
+            complete: function() {
+                button.prop('disabled', false).text(originalText);
+            }
+        });
+    }
+    
+    function clearData() {
+        const button = $('.vs-clear-data');
+        const originalText = button.text();
+        
+        button.prop('disabled', true).text(vsPopulateData.strings.processing);
+        
+        $.ajax({
+            url: vsPopulateData.ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'vs_clear_sample_data',
+                nonce: vsPopulateData.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showMessage(response.data.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showMessage(response.data.message || vsPopulateData.strings.error, 'error');
+                }
+            },
+            error: function() {
+                showMessage(vsPopulateData.strings.error, 'error');
+            },
+            complete: function() {
+                button.prop('disabled', false).text(originalText);
+            }
+        });
+    }
+    
+    function createResponses() {
+        const button = $('.vs-create-responses');
+        const originalText = button.text();
+        
+        button.prop('disabled', true).text(vsPopulateData.strings.processing);
+        
+        $.ajax({
+            url: vsPopulateData.ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'vs_create_responses',
+                nonce: vsPopulateData.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showMessage(response.data.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showMessage(response.data.message || vsPopulateData.strings.error, 'error');
+                }
+            },
+            error: function() {
+                showMessage(vsPopulateData.strings.error, 'error');
+            },
+            complete: function() {
+                button.prop('disabled', false).text(originalText);
+            }
+        });
+    }
+    
+    function clearResponses() {
+        const button = $('.vs-clear-responses');
+        const originalText = button.text();
+        
+        button.prop('disabled', true).text(vsPopulateData.strings.processing);
+        
+        $.ajax({
+            url: vsPopulateData.ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'vs_clear_responses',
+                nonce: vsPopulateData.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showMessage(response.data.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showMessage(response.data.message || vsPopulateData.strings.error, 'error');
+                }
+            },
+            error: function() {
+                showMessage(vsPopulateData.strings.error, 'error');
+            },
+            complete: function() {
+                button.prop('disabled', false).text(originalText);
+            }
+        });
+    }
+    
+    function showMessage(message, type) {
+        const messageDiv = $('<div class="notice notice-' + type + ' is-dismissible"><p>' + message + '</p></div>');
+        $('.vs-population-widget').prepend(messageDiv);
+        
+        setTimeout(() => {
+            messageDiv.fadeOut(() => messageDiv.remove());
+        }, 5000);
+    }
+});

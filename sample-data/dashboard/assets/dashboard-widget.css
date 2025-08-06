@@ -224,6 +224,23 @@ table.vs-users-list tbody tr:last-child td {
     color: #646970;
 }
 
+.vs-clear-responses {
+    background-color: #f0f0f1 !important;
+    border-color: #c3c4c7 !important;
+    color: #50575e !important;
+}
+
+.vs-clear-responses:hover {
+    background-color: #e9e9ea !important;
+    border-color: #8c8f94 !important;
+    color: #1d2327 !important;
+}
+
+.vs-clear-responses:focus {
+    border-color: #2271b1 !important;
+    box-shadow: 0 0 0 1px #2271b1 !important;
+}
+
 /* Responsividade */
 @media (max-width: 782px) {
     .vs-stats-grid {

@@ -153,6 +153,10 @@ class VS_DatabaseSeeder {
         require_once VS_PLUGIN_PATH . 'sample-data/seeders/UsersSeeder.php';
         $users_stats = VS_UsersSeeder::get_stats();
         
+        // Estatísticas de respostas automáticas
+        require_once VS_PLUGIN_PATH . 'sample-data/seeders/ResponsesSeeder.php';
+        $responses_stats = VS_ResponsesSeeder::get_stats();
+        
         // Total de votações
         $total_votacoes = wp_count_posts('votacoes');
         
@@ -160,8 +164,10 @@ class VS_DatabaseSeeder {
             'votacoes_exemplo' => count($votacoes_exemplo),
             'eventos_exemplo' => count($eventos_exemplo),
             'usuarios_exemplo' => $users_stats['total_sample_users'],
+            'respostas_automaticas' => $responses_stats['total_sample_responses'],
             'total_votacoes' => $total_votacoes->publish + $total_votacoes->draft,
             'has_sample_data' => count($votacoes_exemplo) > 0 || count($eventos_exemplo) > 0 || $users_stats['total_sample_users'] > 0,
+            'has_sample_responses' => $responses_stats['total_sample_responses'] > 0,
             'users_details' => $users_stats['users_list']
         ];
     }

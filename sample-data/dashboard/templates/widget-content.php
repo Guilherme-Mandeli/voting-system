@@ -42,23 +42,40 @@ $stats = VS_Dashboard_Population_Widget::get_stats();
         </div>
     </div>
 
-    <!-- Botão Criar Respostas Automáticas (só aparece se há dados populados) -->
+    <!-- Botão Criar/Limpar Respostas Automáticas (só aparece se há dados populados) -->
     <?php if ($stats['has_sample_data']): ?>
     <div class="vs-auto-responses-section">
         <div class="vs-auto-responses-card">
             <div class="vs-auto-responses-content">
-                <h3>🤖 Criar Respostas Automáticas</h3>
-                <p>Gera respostas automáticas para todas as votações marcadas como "exemplo", simulando participação dos usuários de teste.</p>
-                <ul class="vs-action-list">
-                    <li>✓ Respostas apenas para votações de exemplo</li>
-                    <li>✓ Utiliza os usuários de teste criados</li>
-                    <li>✓ Simula participação realista (70-85%)</li>
-                    <li>✓ 25% das respostas serão unificadas</li>
-                </ul>
+                <?php if (!$stats['has_sample_responses']): ?>
+                    <h3>🤖 Criar Respostas Automáticas</h3>
+                    <p>Gera respostas automáticas para todas as votações marcadas como "exemplo", simulando participação dos usuários de teste.</p>
+                    <ul class="vs-action-list">
+                        <li>✓ Respostas apenas para votações de exemplo</li>
+                        <li>✓ Utiliza os usuários de teste criados</li>
+                        <li>✓ Simula participação realista (70-85%)</li>
+                        <li>✓ 25% das respostas serão unificadas</li>
+                    </ul>
+                <?php else: ?>
+                    <h3>🗑️ Limpar Respostas Automáticas</h3>
+                    <p>Remove todas as respostas automáticas geradas anteriormente. As votações e usuários de exemplo permanecerão intactos.</p>
+                    <ul class="vs-action-list">
+                        <li>✓ Remove apenas respostas automáticas</li>
+                        <li>✓ Preserva votações e usuários de exemplo</li>
+                        <li>✓ Total de respostas: <?php echo $stats['respostas_automaticas']; ?></li>
+                        <li>✓ Permite recriar novas respostas depois</li>
+                    </ul>
+                <?php endif; ?>
             </div>
-            <button type="button" class="button button-primary vs-create-responses">
-                Criar Respostas Automáticas
-            </button>
+            <?php if (!$stats['has_sample_responses']): ?>
+                <button type="button" class="button button-primary vs-create-responses">
+                    Criar Respostas Automáticas
+                </button>
+            <?php else: ?>
+                <button type="button" class="button button-secondary vs-clear-responses">
+                    Limpar Respostas
+                </button>
+            <?php endif; ?>
         </div>
     </div>
     <?php endif; ?>

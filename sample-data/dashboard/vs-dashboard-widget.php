@@ -14,6 +14,7 @@ class VS_Dashboard_Population_Widget {
         add_action('wp_ajax_vs_populate_data', [$this, 'handle_populate_data']);
         add_action('wp_ajax_vs_clear_sample_data', [$this, 'handle_clear_data']);
         add_action('wp_ajax_vs_create_responses', [$this, 'handle_create_responses']);
+        add_action('wp_ajax_vs_clear_responses', [$this, 'handle_clear_responses']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
         
         // Carrega a interface visual para dados de exemplo
@@ -65,6 +66,7 @@ class VS_Dashboard_Population_Widget {
                     'confirm_populate' => "Tem certeza que deseja popular os dados de exemplo?\n\nEsta ação criará:\n• 5 usuários de teste\n• 4 eventos\n• 5 votações com 4 perguntas cada",
                     'confirm_clear' => "Tem certeza que deseja remover todos os dados de exemplo?\n\nEsta ação removerá:\n• Usuários de teste (sem posts)\n• Eventos de exemplo\n• Votações de exemplo\n\nEsta ação não pode ser desfeita.",
                     'confirm_create_responses' => "Tem certeza que deseja criar respostas automáticas?\n\nEsta ação criará:\n• Respostas para todas as votações de exemplo\n• Participação realista (70-85% dos usuários)\n• 25% das respostas serão unificadas\n• Datas distribuídas no período das votações",
+                    'confirm_clear_responses' => "Tem certeza que deseja limpar as respostas automáticas?\n\nEsta ação removerá:\n• Todas as respostas automáticas geradas\n• Preservará votações e usuários de exemplo\n• Permitirá recriar novas respostas depois",
                     'processing' => 'Processando...',
                     'success' => 'Operação realizada com sucesso!',
                     'error' => 'Erro ao processar a solicitação.'
