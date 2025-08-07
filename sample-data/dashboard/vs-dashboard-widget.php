@@ -145,6 +145,28 @@ class VS_Dashboard_Population_Widget {
             ]);
         }
     }
+
+    public function handle_clear_responses() {
+        check_ajax_referer('vs_populate_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die('Permissão negada');
+        }
+        
+        try {
+            require_once VS_PLUGIN_PATH . 'sample-data/seeders/ResponsesSeeder.php';
+            
+            $seeder = new VS_ResponsesSeeder();
+            $result = $seeder->rollback();
+            
+            wp_send_json_success($result);
+            
+        } catch (Exception $e) {
+            wp_send_json_error([
+                'message' => 'Erro ao limpar respostas: ' . $e->getMessage()
+            ]);
+        }
+    }
     
     /**
      * Obtém estatísticas dos dados atuais (método atualizado)

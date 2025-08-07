@@ -162,6 +162,8 @@ class VS_ResponsesSeeder {
         }
         
         return [
+            'success' => true,
+            'message' => sprintf('Removidas %d respostas automáticas com sucesso!', $removed_count),
             'removed_responses' => $removed_count
         ];
     }

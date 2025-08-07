@@ -20,6 +20,9 @@ class VS_Sample_Data_UI {
         // Hooks para taxonomia eventos de exemplo
         add_action( 'admin_head', [$this, 'add_sample_events_styles'] );
         
+        // Hooks para respostas de exemplo
+        add_action( 'admin_head', [$this, 'add_sample_responses_styles'] );
+        
         // Hooks para o post individual
         add_action( 'edit_form_after_title', [$this, 'add_sample_data_alert'] );
         add_action( 'admin_head', [$this, 'add_sample_alert_styles'] );
@@ -266,6 +269,55 @@ class VS_Sample_Data_UI {
         }
     }
     
+    /* ------------------------------------------------------------------------- *
+     * Tag "Exemplo" na listagem de respostas
+     * ------------------------------------------------------------------------- */
+    
+    /**
+     * Adiciona CSS para a tag de exemplo na listagem de respostas usando ::before
+     */
+    public function add_sample_responses_styles() {
+        $screen = get_current_screen();
+        
+        if ( $screen && $screen->post_type === 'votacao_resposta' && $screen->base === 'edit' ) {
+            // Obter IDs das respostas de exemplo para aplicar CSS específico
+            $sample_responses = get_posts([
+                'post_type' => 'votacao_resposta',
+                'meta_key' => '_vs_sample_data',
+                'meta_value' => '1',
+                'posts_per_page' => -1,
+                'fields' => 'ids'
+            ]);
+            
+            if (!empty($sample_responses)) {
+                $selectors = array_map(function($id) {
+                    return "#post-{$id} .row-title::before";
+                }, $sample_responses);
+                
+                $css_selector = implode(', ', $selectors);
+                ?>
+            <style>
+                
+            <?php echo $css_selector; ?> {
+                content: "Exemplo";
+                background:rgba(255, 107, 53, 0.5);
+                color: #454545;
+                padding: 2px 5px 2px 6px;
+                border-radius: 30px;
+                font-size: 11px;
+                font-weight: normal;
+                margin-right: 8px;
+                display: inline-block;
+                line-height: initial;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            }
+            </style>
+
+            <?php
+            }
+        }
+    }
+
     /**
      * Adiciona CSS adicional para o alert
      */
