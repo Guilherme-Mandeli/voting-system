@@ -229,6 +229,16 @@ function vs_render_unificacao_page($votacao_id) {
                                                     <?php echo esc_html($unificada_texto); ?>
                                                     <span class="tooltip-text"><?php echo esc_html($unificada_texto); ?></span>
                                                 </div>
+                                                <?php if ($unificada_texto !== '—') : ?>
+                                                    <button type="button" class="vs-edit-unified-btn" 
+                                                            title="Editar resposta unificada" 
+                                                            data-post-id="<?php echo esc_attr($post_id); ?>"
+                                                            data-question-index="<?php echo esc_attr($idx); ?>"
+                                                            data-votacao-id="<?php echo esc_attr($votacao_id); ?>"
+                                                            style="margin-left: 8px; background: transparent; border: 1px solid #0073aa; color: #0073aa; padding: 2px 4px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                                                        <span class="dashicons dashicons-edit" style="font-size: 12px; width: 12px; height: 12px;"></span>
+                                                    </button>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                         <?php
@@ -303,6 +313,100 @@ function vs_render_unificacao_page($votacao_id) {
         absint($votacao_id)
     );
     ?>
+
+    <script>
+    jQuery(document).ready(function($) {
+        // Event listener para botão de editar na tabela de unificação
+        $(document).on('click', '.vs-edit-unified-btn', function(e) {
+            e.preventDefault();
+            
+            var postId = $(this).data('post-id');
+            var questionIndex = $(this).data('question-index');
+            var votacaoId = $(this).data('votacao-id');
+            var currentValue = $(this).closest('td').find('.tooltip').attr('title');
+            
+            // Criar modal de edição
+            var modalContent = '<div style="padding: 20px;">';
+            modalContent += '<h3>Editar Resposta Unificada</h3>';
+            modalContent += '<label for="edit-unified-input">Nova resposta unificada:</label>';
+            modalContent += '<input type="text" id="edit-unified-input" value="' + currentValue + '" style="width: 100%; padding: 8px; margin: 10px 0;" />';
+            modalContent += '<div style="margin-top: 20px; text-align: right;">';
+            modalContent += '<button type="button" class="button" onclick="closeEditModal()">Cancelar</button>';
+            modalContent += '<button type="button" class="button-primary" id="save-edit-unified" style="margin-left: 10px;">Salvar</button>';
+            modalContent += '</div>';
+            modalContent += '</div>';
+            
+            // Mostrar modal
+            showEditModal(modalContent, postId, questionIndex, votacaoId);
+        });
+        
+        // Função para mostrar modal de edição
+        function showEditModal(content, postId, questionIndex, votacaoId) {
+            var modal = '<div id="edit-unified-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;">';
+            modal += '<div style="background: white; border-radius: 8px; max-width: 500px; width: 90%;">';
+            modal += content;
+            modal += '</div>';
+            modal += '</div>';
+            
+            $('body').append(modal);
+            
+            // Event listener para salvar
+            $('#save-edit-unified').on('click', function() {
+                var newValue = $('#edit-unified-input').val().trim();
+                
+                if (!newValue) {
+                    alert('Por favor, digite uma resposta unificada.');
+                    return;
+                }
+                
+                var $btn = $(this);
+                var originalText = $btn.text();
+                $btn.prop('disabled', true).text('Salvando...');
+                
+                // AJAX para salvar
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'vs_update_resposta_unificada',
+                        nonce: <?php echo json_encode(wp_create_nonce("vs_unificacao_nonce")); ?>,
+                        votacao_id: votacaoId,
+                        nova_resposta_unificada: newValue,
+                        linhas: JSON.stringify([{
+                            postId: parseInt(postId),
+                            perguntaIndex: parseInt(questionIndex)
+                        }])
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Recarregar página para mostrar mudanças
+                            location.reload();
+                        } else {
+                            alert('Erro ao salvar: ' + (response.data || 'Erro desconhecido'));
+                            $btn.prop('disabled', false).text(originalText);
+                        }
+                    },
+                    error: function() {
+                        alert('Erro de conexão ao tentar salvar.');
+                        $btn.prop('disabled', false).text(originalText);
+                    }
+                });
+            });
+        }
+        
+        // Função para fechar modal
+        window.closeEditModal = function() {
+            $('#edit-unified-modal').remove();
+        };
+        
+        // Fechar modal ao clicar fora
+        $(document).on('click', '#edit-unified-modal', function(e) {
+            if (e.target === this) {
+                closeEditModal();
+            }
+        });
+    });
+    </script>
 
     <?php
 }

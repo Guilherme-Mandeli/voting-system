@@ -241,7 +241,7 @@ function vs_render_answer_metabox( $post ) {
         echo '<span class="vs-unified-response" data-question-index="' . esc_attr( $index ) . '" data-post-id="' . esc_attr( $post->ID ) . '" data-votacao-id="' . esc_attr( $votacao_id ) . '">';
         
         if ( '' !== $resp_unificada ) {
-            // Span com classe para conteúdo preenchido + botão limpar
+            // Span com classe para conteúdo preenchido + botão limpar (removido botão editar)
             echo '<div class="vs-unified-wrapper">';
             echo '<span class="vs-unified-content vs-has-content">' . esc_html( $resp_unificada ) . '</span>';
             echo '<button type="button" class="vs-clear-unified-table-btn" title="Limpar resposta unificada">';
@@ -249,8 +249,13 @@ function vs_render_answer_metabox( $post ) {
             echo '</button>';
             echo '</div>';
         } else {
-            // Span com classe para conteúdo vazio
+            // Span com classe para conteúdo vazio + botão adicionar
+            echo '<div class="vs-unified-wrapper">';
             echo '<span class="vs-unified-content vs-empty-content"><em>—</em></span>';
+            echo '<button type="button" class="vs-add-unified-table-btn" title="Adicionar resposta unificada" data-question-index="' . esc_attr( $index ) . '" data-post-id="' . esc_attr( $post->ID ) . '" data-votacao-id="' . esc_attr( $votacao_id ) . '">';
+            echo '<span class="dashicons dashicons-plus-alt"></span>';
+            echo '</button>';
+            echo '</div>';
         }
         
         echo '</span>';
@@ -262,6 +267,20 @@ function vs_render_answer_metabox( $post ) {
     echo '</tbody></table>';
     echo '</div>';
     
+    // Adicionar modal de unificação
+    ?>
+    <div id="modal-overlay" style="display: none;"></div>
+    <div id="modal-unificacao" style="display: none;">
+        <div class="modal-header">
+            <h3 id="modal-title">Unificar Respostas</h3>
+            <button type="button" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-content" id="modal-content">
+            <!-- Conteúdo será inserido dinamicamente -->
+        </div>
+    </div>
+    
+    <?php
     // Adicionar CSS e JavaScript
     ?>
     <style>
@@ -269,17 +288,16 @@ function vs_render_answer_metabox( $post ) {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        gap: 4px;
     }
-    
     .vs-unified-content {
         flex: 1;
     }
-    
-    .vs-clear-unified-table-btn {
+    .vs-clear-unified-table-btn,
+    .vs-add-unified-table-btn {
         background: transparent;
-        border: 1px solid #dc3232;
-        color: #dc3232;
+        border: 1px solid #0073aa;
+        color: #0073aa;
         padding: 2px 4px;
         border-radius: 3px;
         cursor: pointer;
@@ -289,37 +307,536 @@ function vs_render_answer_metabox( $post ) {
         align-items: center;
         transition: all 0.2s ease;
     }
-    
+    .vs-clear-unified-table-btn {
+        border-color: #dc3232;
+        color: #dc3232;
+    }
     .vs-clear-unified-table-btn:hover {
         background: #dc3232;
         color: white;
         border-color: #dc3232;
     }
-    
-    .vs-clear-unified-table-btn .dashicons {
+    .vs-add-unified-table-btn:hover {
+        background: #0073aa;
+        color: white;
+        border-color: #0073aa;
+    }
+    .vs-clear-unified-table-btn .dashicons,
+    .vs-add-unified-table-btn .dashicons {
         font-size: 12px;
         width: 12px;
         height: 12px;
     }
-    
-    .vs-clear-unified-table-btn:disabled {
+    .vs-clear-unified-table-btn:disabled,
+    .vs-add-unified-table-btn:disabled {
         opacity: 0.6;
         cursor: not-allowed;
     }
-    
     .vs-unified-content.vs-has-content {
         color: #0073aa;
         font-weight: 500;
     }
-    
     .vs-unified-content.vs-empty-content {
         color: #666;
         font-style: italic;
+    }
+    /* Modal Styles */
+    #modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 9998;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    #modal-overlay.show {
+        opacity: 1;
+    }
+    #modal-unificacao {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.8);
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        z-index: 9999;
+        max-width: 90%;
+        max-height: 90%;
+        overflow: hidden;
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+    #modal-unificacao.show {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    .modal-header {
+        background: #f1f1f1;
+        padding: 15px 20px;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+        color: #333;
+    }
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #666;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+    }
+    .modal-close:hover {
+        background: #ddd;
+        color: #333;
+    }
+    .modal-content {
+        padding: 20px;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    /* Estilos para o conteúdo do modal */
+    .unificacao-form {
+        margin-bottom: 20px;
+    }
+    .unificacao-form label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    .unificacao-form textarea {
+        width: 100%;
+        min-height: 100px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: inherit;
+        resize: vertical;
+    }
+    .unificacao-existing {
+        margin-top: 20px;
+    }
+    .unificacao-existing h4 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+    .unificacao-option {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .unificacao-option:hover {
+        background: #f9f9f9;
+        border-color: #0073aa;
+    }
+    .unificacao-option.selected {
+        background: #e7f3ff;
+        border-color: #0073aa;
+    }
+    .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #ddd;
+    }
+    .modal-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    .modal-btn-primary {
+        background: #0073aa;
+        color: white;
+    }
+    .modal-btn-primary:hover {
+        background: #005a87;
+    }
+    .modal-btn-secondary {
+        background: #f1f1f1;
+        color: #333;
+        border: 1px solid #ddd;
+    }
+    .modal-btn-secondary:hover {
+        background: #e1e1e1;
     }
     </style>
     
     <script>
     jQuery(document).ready(function($) {
+        // Variáveis globais para o modal
+        var $modal = $('#modal-unificacao');
+        var $overlay = $('#modal-overlay');
+        var currentQuestionIndex = null;
+        var currentPostId = null;
+        var currentVotacaoId = null;
+        
+        // Função para abrir o modal
+        function openModal(title, content) {
+            $('#modal-title').text(title);
+            $('#modal-content').html(content);
+            
+            $overlay.show().addClass('show');
+            $modal.show().addClass('show');
+            
+            // Focar no primeiro campo editável
+            setTimeout(function() {
+                $modal.find('textarea, input').first().focus();
+            }, 300);
+        }
+        
+        // Função para fechar o modal
+        function closeModal() {
+            $modal.removeClass('show');
+            $overlay.removeClass('show');
+            
+            setTimeout(function() {
+                $modal.hide();
+                $overlay.hide();
+                $('#modal-content').empty();
+            }, 300);
+        }
+        
+        // Event listeners para fechar modal
+        $(document).on('click', '.modal-close', closeModal);
+        $(document).on('click', '#modal-overlay', closeModal);
+        
+        // Fechar modal com ESC
+        $(document).on('keydown', function(e) {
+            if (e.keyCode === 27 && $modal.hasClass('show')) {
+                closeModal();
+            }
+        });
+        
+        // Função para carregar unificações existentes
+        function loadExistingUnifications(votacaoId, questionIndex, callback) {
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'vs_get_unificacao_group',
+                    nonce: '<?php echo wp_create_nonce("vs_unificacao_nonce"); ?>',
+                    votacao_id: votacaoId,
+                    question_index: questionIndex
+                },
+                success: function(response) {
+                    if (response.success && response.data) {
+                        callback(response.data);
+                    } else {
+                        callback([]);
+                    }
+                },
+                error: function() {
+                    callback([]);
+                }
+            });
+        }
+
+        // Nova função para carregar unificações existentes no contexto do post
+        function loadExistingUnificationsForPost(votacaoId, questionIndex, postId, callback) {
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'vs_get_unificacao_group_by_post_context',
+                    nonce: '<?php echo wp_create_nonce("vs_unificacao_nonce"); ?>',
+                    votacao_id: votacaoId,
+                    question_index: questionIndex,
+                    current_post_id: postId
+                },
+                success: function(response) {
+                    if (response.success && response.data) {
+                        callback(response.data);
+                    } else {
+                        callback([]);
+                    }
+                },
+                error: function() {
+                    callback([]);
+                }
+            });
+        }
+        
+        // Função para mostrar notificação no post
+        function showPostNotification(message, type = 'success') {
+            // Remover notificações existentes
+            $('.vs-post-notification').remove();
+            
+            // Criar nova notificação
+            var notificationClass = 'vs-post-notification notice notice-' + type + ' is-dismissible';
+            var notification = '<div class="' + notificationClass + '" style="margin: 10px 0; position: relative;">';
+            notification += '<p>' + message + '</p>';
+            notification += '<button type="button" class="notice-dismiss" onclick="$(this).parent().fadeOut();"><span class="screen-reader-text">Dispensar este aviso.</span></button>';
+            notification += '</div>';
+            
+            // Inserir no topo do post
+            if ($('#post').length) {
+                $('#post').prepend(notification);
+            } else if ($('.wrap').length) {
+                $('.wrap').prepend(notification);
+            }
+            
+            // Auto-remover após 5 segundos
+            setTimeout(function() {
+                $('.vs-post-notification').fadeOut();
+            }, 5000);
+        }
+
+        // Função para abrir modal de unificação
+        function openUnificationModal(questionIndex, postId, votacaoId, isEdit = false) {
+            currentQuestionIndex = questionIndex;
+            currentPostId = postId;
+            currentVotacaoId = votacaoId;
+            
+            var title = isEdit ? 'Editar Resposta Unificada' : 'Adicionar Resposta Unificada';
+            
+            // Buscar a resposta original que está sendo unificada
+            var originalResponse = '';
+            var questionLabel = 'Pergunta ' + (parseInt(questionIndex) + 1);
+            
+            // Tentar encontrar a resposta original na tabela
+            var $responseCell = $('tr[data-post-id="' + postId + '"] td').eq(parseInt(questionIndex) + 2);
+            if ($responseCell.length) {
+                originalResponse = $responseCell.text().trim();
+                // Limitar o tamanho da resposta exibida
+                if (originalResponse.length > 100) {
+                    originalResponse = originalResponse.substring(0, 100) + '...';
+                }
+            }
+            
+            // Carregar unificações existentes usando a nova função específica para posts
+            loadExistingUnificationsForPost(votacaoId, questionIndex, postId, function(existingUnifications) {
+                var content = '<div class="unificacao-info" style="background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #0073aa;">';
+                content += '<h4 style="margin: 0 0 10px 0; color: #333; font-size: 14px;">Unificando resposta:</h4>';
+                content += '<p style="margin: 0 0 5px 0; font-weight: bold; color: #0073aa; font-size: 13px;">' + questionLabel + '</p>';
+                if (originalResponse) {
+                    content += '<p style="margin: 0; font-style: italic; color: #666; font-size: 13px;""' + escapeHtml(originalResponse) + '"</p>';
+                }
+                content += '</div>';
+                
+                // Select para unificações existentes
+                if (existingUnifications.length > 0) {
+                    content += '<div class="unificacao-existing" style="margin-bottom: 15px;">';
+                    content += '<label for="select-unificacao-existente">Selecionar unificação existente:</label>';
+                    content += '<select id="select-unificacao-existente" style="width: 100%; padding: 8px; margin-top: 5px;">';
+                    content += '<option value="">Unificação existente...</option>';
+                    
+                    existingUnifications.forEach(function(unif, index) {
+                        var displayText = unif.resposta_unificada;
+                        if (unif.count > 1) {
+                            displayText += ' (usada em ' + unif.count + ' respostas)';
+                        }
+                        content += '<option value="' + escapeHtml(unif.resposta_unificada) + '">' + escapeHtml(displayText) + '</option>';
+                    });
+                    
+                    content += '</select>';
+                    content += '</div>';
+                }
+                
+                // Input para nova resposta
+                content += '<div class="unificacao-form">';
+                content += '<label for="nova-resposta-unificada">Ou digite uma nova resposta unificada:</label>';
+                content += '<input type="text" id="nova-resposta-unificada" placeholder="Digite a nova resposta unificada..." style="width: 100%; padding: 8px; margin-top: 5px;" />';
+                content += '</div>';
+                
+                content += '<div class="modal-actions" style="margin-top: 20px;">';
+                content += '<button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal()">Cancelar</button>';
+                content += '<button type="button" class="modal-btn modal-btn-primary" id="save-unification">Salvar</button>';
+                content += '</div>';
+                
+                openModal(title, content);
+            });
+        }
+        
+        // Função auxiliar para escapar HTML
+        function escapeHtml(text) {
+            var map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+        
+        // Event listener para mudança no select de unificações existentes
+        $(document).on('change', '#select-unificacao-existente', function() {
+            var selectedValue = $(this).val();
+            $('#nova-resposta-unificada').val(selectedValue);
+        });
+        
+        // Event listener para salvar unificação
+        $(document).on('click', '#save-unification', function() {
+            var novaResposta = $('#nova-resposta-unificada').val().trim();
+            
+            if (!novaResposta) {
+                alert('Por favor, digite uma resposta unificada ou selecione uma existente.');
+                return;
+            }
+            
+            var $btn = $(this);
+            var originalText = $btn.text();
+            $btn.prop('disabled', true).text('Salvando...');
+            
+            // Preparar dados para envio
+            var linhas = [{
+                postId: parseInt(currentPostId),
+                perguntaIndex: parseInt(currentQuestionIndex)
+            }];
+            
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'vs_update_resposta_unificada',
+                    nonce: '<?php echo wp_create_nonce("vs_unificacao_nonce"); ?>',
+                    votacao_id: currentVotacaoId,
+                    nova_resposta_unificada: novaResposta,
+                    linhas: JSON.stringify(linhas)
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Atualizar a interface
+                        updateUnifiedResponseDisplay(currentQuestionIndex, currentPostId, novaResposta);
+                        
+                        // Fechar modal
+                        closeModal();
+                        
+                        // Mostrar notificação no post
+                        showPostNotification('Resposta unificada atualizada com sucesso!', 'success');
+                        
+                        // Fallback para notificação do WordPress se disponível
+                        if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
+                            wp.data.dispatch('core/notices').createNotice(
+                                'success',
+                                'Resposta unificada salva com sucesso!',
+                                { isDismissible: true }
+                            );
+                        }
+                    } else {
+                        alert('Erro ao salvar: ' + (response.data || 'Erro desconhecido'));
+                        $btn.prop('disabled', false).text(originalText);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erro AJAX:', error);
+                    alert('Erro de conexão ao tentar salvar a resposta unificada.');
+                    $btn.prop('disabled', false).text(originalText);
+                }
+            });
+        });
+        
+        // Função para atualizar a exibição da resposta unificada
+        function updateUnifiedResponseDisplay(questionIndex, postId, newValue) {
+            var $container = $('.vs-unified-response[data-question-index="' + questionIndex + '"][data-post-id="' + postId + '"]');
+            
+            if ($container.length) {
+                var newHtml = '<div class="vs-unified-wrapper">';
+                newHtml += '<span class="vs-unified-content vs-has-content">' + escapeHtml(newValue) + '</span>';
+                newHtml += '<button type="button" class="vs-clear-unified-table-btn" title="Limpar resposta unificada">';
+                newHtml += '<span class="dashicons dashicons-trash"></span>';
+                newHtml += '</button>';
+                newHtml += '</div>';
+                
+                $container.html(newHtml);
+                
+                // Sincronizar com o metabox se existir
+                syncWithMetabox(questionIndex, newValue);
+            }
+        }
+        
+        // Função para sincronizar com o metabox
+        function syncWithMetabox(questionIndex, value) {
+            // Verificar se existe um metabox de resposta unificada
+            var $metaboxContainer = $('.vs-unified-answer[data-question-index="' + questionIndex + '"]');
+            
+            if ($metaboxContainer.length) {
+                // Atualizar valor existente
+                $metaboxContainer.find('.vs-unified-value').text(value);
+            } else {
+                // Criar novo item no metabox se não existir
+                var $answerItem = $('.vs-answer-item').eq(questionIndex);
+                var $noUnified = $answerItem.find('.vs-no-unified-answer');
+                
+                if ($answerItem.length) {
+                    // Obter dados do botão existente ou usar valores padrão
+                    var postId = $noUnified.find('.vs-add-unified-metabox-btn').data('resposta-id') || '';
+                    var votacaoId = $noUnified.find('.vs-add-unified-metabox-btn').data('votacao-id') || '';
+                    
+                    // Se não conseguir obter os dados, tentar da tabela
+                    if (!postId || !votacaoId) {
+                        var $tableContainer = $('.vs-unified-response[data-question-index="' + questionIndex + '"]');
+                        if ($tableContainer.length) {
+                            postId = $tableContainer.data('post-id');
+                            votacaoId = $tableContainer.data('votacao-id');
+                        }
+                    }
+                    
+                    // Remover o botão "Adicionar" se existir
+                    if ($noUnified.length) {
+                        $noUnified.fadeOut(300, function() {
+                            $(this).remove();
+                        });
+                    }
+                    
+                    // Criar o novo elemento vs-unified-answer
+                    var newItem = '<div class="vs-unified-answer" data-question-index="' + questionIndex + '">';
+                    newItem += '<div class="vs-unified-content">';
+                    newItem += '<strong>Resposta Unificada:</strong> ';
+                    newItem += '<span class="vs-unified-value">' + escapeHtml(value) + '</span>';
+                    newItem += '</div>';
+                    newItem += '<div class="vs-unified-actions">';
+                    newItem += '<button type="button" class="button button-small vs-clear-unified-btn" ';
+                    newItem += 'data-resposta-id="' + postId + '" ';
+                    newItem += 'data-question-index="' + questionIndex + '" ';
+                    newItem += 'data-votacao-id="' + votacaoId + '" ';
+                    newItem += 'title="Limpar resposta unificada">';
+                    newItem += '<span class="dashicons dashicons-trash"></span> Limpar';
+                    newItem += '</button>';
+                    newItem += '</div>';
+                    newItem += '</div>';
+                    
+                    // Adicionar o novo elemento ao answer-item
+                    $answerItem.append(newItem);
+                }
+            }
+        }
+        
+        // Event listeners para os botões da tabela
+        $(document).on('click', '.vs-add-unified-table-btn', function(e) {
+            e.preventDefault();
+            
+            var questionIndex = $(this).data('question-index');
+            var postId = $(this).data('post-id');
+            var votacaoId = $(this).data('votacao-id');
+            
+            openUnificationModal(questionIndex, postId, votacaoId, false);
+        });
+        
         // Função para sincronizar limpeza entre tabela e metabox
         function syncClearUnifiedResponse(questionIndex, isFromTable = true) {
             if (isFromTable) {
@@ -336,9 +853,35 @@ function vs_render_answer_metabox( $post ) {
                 if ($tableContainer.length) {
                     var $wrapper = $tableContainer.find('.vs-unified-wrapper');
                     if ($wrapper.length) {
-                        $wrapper.replaceWith('<span class="vs-unified-content vs-empty-content"><em>—</em></span>');
+                        var postId = $tableContainer.data('post-id');
+                        var votacaoId = $tableContainer.data('votacao-id');
+                        
+                        var newHtml = '<div class="vs-unified-wrapper">';
+                        newHtml += '<span class="vs-unified-content vs-empty-content"><em>—</em></span>';
+                        newHtml += '<button type="button" class="vs-add-unified-table-btn" title="Adicionar resposta unificada" data-question-index="' + questionIndex + '" data-post-id="' + postId + '" data-votacao-id="' + votacaoId + '">';
+                        newHtml += '<span class="dashicons dashicons-plus-alt"></span>';
+                        newHtml += '</button>';
+                        newHtml += '</div>';
+                        
+                        $wrapper.replaceWith(newHtml);
                     }
                 }
+            }
+        }
+
+        // Função para atualizar o metabox com resposta unificada
+        function updateMetaboxUnifiedResponse(questionIndex, value, postId, votacaoId) {
+            if (!value || value.trim() === '') {
+                // Se valor está vazio, remover do metabox
+                var $metaboxContainer = $('.vs-unified-answer[data-question-index="' + questionIndex + '"]');
+                if ($metaboxContainer.length) {
+                    $metaboxContainer.fadeOut(300, function() {
+                        $(this).remove();
+                    });
+                }
+            } else {
+                // Se valor não está vazio, atualizar ou criar no metabox
+                syncWithMetabox(questionIndex, value);
             }
         }
 
@@ -379,18 +922,27 @@ function vs_render_answer_metabox( $post ) {
                     if (response.success) {
                         // Atualizar visualmente a tabela
                         var $wrapper = $btn.closest('.vs-unified-wrapper');
-                        $wrapper.replaceWith('<span class="vs-unified-content vs-empty-content"><em>—</em></span>');
+                        var newHtml = '<div class="vs-unified-wrapper">';
+                        newHtml += '<span class="vs-unified-content vs-empty-content"><em>—</em></span>';
+                        newHtml += '<button type="button" class="vs-add-unified-table-btn" title="Adicionar resposta unificada" data-question-index="' + questionIndex + '" data-post-id="' + postId + '" data-votacao-id="' + votacaoId + '">';
+                        newHtml += '<span class="dashicons dashicons-plus-alt"></span>';
+                        newHtml += '</button>';
+                        newHtml += '</div>';
                         
-                        // Sincronizar com o metabox
-                        syncClearUnifiedResponse(questionIndex, true);
+                        $wrapper.replaceWith(newHtml);
                         
-                        // Disparar evento customizado para outras sincronizações
+                        // Sincronizar com o metabox (valor vazio para limpar)
+                        updateMetaboxUnifiedResponse(questionIndex, '', postId, votacaoId);
+                        
+                        // Disparar evento customizado para sincronização
                         $(document).trigger('vs:unified-response-cleared', {
                             questionIndex: questionIndex,
+                            postId: postId,
+                            votacaoId: votacaoId,
                             source: 'table'
                         });
                         
-                        // Mostrar mensagem de sucesso (se disponível)
+                        // Mostrar mensagem de sucesso
                         if (typeof wp !== 'undefined' && wp.data && wp.data.dispatch) {
                             wp.data.dispatch('core/notices').createNotice(
                                 'success',
@@ -431,6 +983,9 @@ function vs_render_answer_metabox( $post ) {
                 $(this).remove();
             });
         };
+        
+        // Tornar closeModal disponível globalmente
+        window.closeModal = closeModal;
     });
     </script>
     <?php
