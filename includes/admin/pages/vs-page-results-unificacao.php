@@ -22,8 +22,16 @@ function vs_render_unificacao_page($votacao_id) {
         $questions = array();
     }
 
-    // Busca todos os posts de resposta vinculados a esta votação (excluindo lixeira)
-    $args = array(
+    // Configuração de paginação e busca
+    $options_por_pagina = [20, 50, 100, 200];
+    $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+    $per_page = isset($_GET['per_page']) && in_array(intval($_GET['per_page']), $options_por_pagina) ? intval($_GET['per_page']) : 50;
+    
+    // Parâmetro de busca
+    $search_term = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
+
+    // Query para agregação (todos os registros) - mantém funcionalidade da Coluna 2
+    $args_all = array(
         'post_type'      => 'votacao_resposta',
         'posts_per_page' => -1,
         'post_status'    => array('publish', 'private'),
@@ -37,7 +45,109 @@ function vs_render_unificacao_page($votacao_id) {
         'orderby' => 'ID',
         'order'   => 'ASC',
     );
-    $query = new WP_Query($args);
+    $query_all = new WP_Query($args_all);
+
+    // Query paginada para a tabela com busca
+    $args_paged = array(
+        'post_type'      => 'votacao_resposta',
+        'posts_per_page' => $per_page,
+        'paged'          => $paged,
+        'post_status'    => array('publish', 'private'),
+        'meta_query'     => array(
+            array(
+                'key'     => 'vs_votacao_id',
+                'value'   => $votacao_id,
+                'compare' => '=',
+            ),
+        ),
+        'orderby' => 'ID',
+        'order'   => 'ASC',
+    );
+    
+    // Adiciona busca se houver termo
+    if (!empty($search_term)) {
+        $args_paged['meta_query'][] = array(
+            'relation' => 'OR',
+            array(
+                'key'     => 'vs_respostas_detalhadas',
+                'value'   => $search_term,
+                'compare' => 'LIKE'
+            ),
+            array(
+                'key'     => 'vs_resposta_unificada',
+                'value'   => $search_term,
+                'compare' => 'LIKE'
+            )
+        );
+    }
+    
+    $query_paged = new WP_Query($args_paged);
+
+    // Variáveis de paginação
+    $total_posts = $query_paged->found_posts;
+    $total_pages = $query_paged->max_num_pages;
+    $base_url = admin_url('edit.php?post_type=votacoes&page=votacoes_resultados_visualizar&votacao_id=' . $votacao_id . '&subpage=unificacao');
+
+    // Calcular usuários únicos e total de respostas
+    $unique_users = array();
+    $total_responses = 0;
+    
+    if ($query_all->have_posts()) {
+        while ($query_all->have_posts()) {
+            $query_all->the_post();
+            $resp_post_id = get_the_ID();
+            
+            // Verificação adicional de segurança: pula posts que estão na lixeira
+            $post_status = get_post_status($resp_post_id);
+            if ($post_status === 'trash') {
+                continue;
+            }
+            
+            // Coleta usuário único
+            $user_id = get_post_meta($resp_post_id, 'vs_usuario_id', true);
+            if ($user_id) {
+                $unique_users[$user_id] = true;
+            }
+            
+            // Conta respostas detalhadas
+            $respostas_detalhadas = get_post_meta($resp_post_id, 'vs_respostas_detalhadas', true);
+            if (is_array($respostas_detalhadas)) {
+                $total_responses += count($respostas_detalhadas);
+            }
+        }
+        wp_reset_postdata();
+    }
+    
+    $total_unique_users = count($unique_users);
+    
+    // Calcular usuários e respostas da página atual
+    $current_page_users = array();
+    $current_page_responses = 0;
+    
+    if ($query_paged->have_posts()) {
+        while ($query_paged->have_posts()) {
+            $query_paged->the_post();
+            $resp_post_id = get_the_ID();
+            
+            $post_status = get_post_status($resp_post_id);
+            if ($post_status === 'trash') {
+                continue;
+            }
+            
+            $user_id = get_post_meta($resp_post_id, 'vs_usuario_id', true);
+            if ($user_id) {
+                $current_page_users[$user_id] = true;
+            }
+            
+            $respostas_detalhadas = get_post_meta($resp_post_id, 'vs_respostas_detalhadas', true);
+            if (is_array($respostas_detalhadas)) {
+                $current_page_responses += count($respostas_detalhadas);
+            }
+        }
+        wp_reset_postdata();
+    }
+    
+    $current_unique_users = count($current_page_users);
 
     // Constrói agregação para Coluna 2 baseada nas unificações armazenadas por resposta
     // Agora só considera respostas que não estão na lixeira
@@ -45,9 +155,9 @@ function vs_render_unificacao_page($votacao_id) {
     $agg_posts = array();
     $agg_slot_map = array();
 
-    if ($query->have_posts()) {
-        while ($query->have_posts()) {
-            $query->the_post();
+    if ($query_all->have_posts()) {
+        while ($query_all->have_posts()) {
+            $query_all->the_post();
 
             $resp_post_id = get_the_ID();
             
@@ -123,9 +233,111 @@ function vs_render_unificacao_page($votacao_id) {
             <div class="unificacao-coluna" id="respostas-coluna">
                 <h2 class="unificacao-title">Respostas Votação #<?php echo esc_html($votacao_id); ?></h2>
 
-                <?php if (!$query->have_posts()) : ?>
-                    <p>Nenhuma resposta encontrada para esta votação.</p>
+                <!-- Campo de busca e controles superiores - SEMPRE VISÍVEL -->
+                <div class="unificacao-search-controls" style="margin-bottom: 15px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
+                    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                        <!-- Campo de busca -->
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label for="search_unificacao">Buscar:</label>
+                            <input type="search" 
+                                   id="search_unificacao" 
+                                   name="s" 
+                                   value="<?php echo esc_attr($search_term); ?>" 
+                                   placeholder="Buscar em respostas e unificações..."
+                                   style="width: 250px; padding: 6px 10px;" />
+                            <button type="button" 
+                                    class="button" 
+                                    onclick="performSearch()"
+                                    style="padding: 6px 12px;">
+                                🔍 Buscar
+                            </button>
+                            <?php if (!empty($search_term)) : ?>
+                                <a href="<?php echo esc_url($base_url); ?>" 
+                                   class="button" 
+                                   style="padding: 6px 12px;">
+                                    ✕ Limpar
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <!-- Seletor de itens por página -->
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label for="per_page_unificacao">Itens por página:</label>
+                            <select id="per_page_unificacao" name="per_page" onchange="changePerPage(this.value)">
+                                <?php foreach ($options_por_pagina as $option) : ?>
+                                    <option value="<?php echo $option; ?>" <?php selected($per_page, $option); ?>><?php echo $option; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <!-- Informações de resultados -->
+                        <div style="color: #666; font-size: 13px;">
+                            <?php if (!empty($search_term)) : ?>
+                                <strong>Busca por:</strong> "<?php echo esc_html($search_term); ?>" | 
+                            <?php endif; ?>
+                            <?php echo $current_unique_users; ?> de <?php echo $total_unique_users; ?> usuários | 
+                            <?php echo $current_page_responses; ?> de <?php echo $total_responses; ?> respostas
+                            <?php if (!$query_paged->have_posts() && !empty($search_term)) : ?>
+                                <br><span style="color: #d63638; font-weight: bold;">Nenhum resultado encontrado para esta busca</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <?php if (!$query_paged->have_posts()) : ?>
+                    <?php if (!empty($search_term)) : ?>
+                        <div class="vs-notice vs-notice-warning" style="margin: 15px 0;">
+                            <p><strong>Nenhum resultado encontrado</strong></p>
+                            <p>Sua busca por "<strong><?php echo esc_html($search_term); ?></strong>" não retornou resultados.</p>
+                            <p>Tente:</p>
+                            <ul style="margin-left: 20px;">
+                                <li>Verificar a ortografia</li>
+                                <li>Usar termos mais gerais</li>
+                                <li>Usar palavras-chave diferentes</li>
+                                <li><a href="<?php echo esc_url($base_url); ?>">Limpar a busca</a> para ver todos os resultados</li>
+                            </ul>
+                        </div>
+                    <?php else : ?>
+                        <p>Nenhuma resposta encontrada para esta votação.</p>
+                    <?php endif; ?>
                 <?php else : ?>
+        
+
+                    <!-- Paginação superior -->
+                    <?php if ($total_pages > 1) : ?>
+                        <div class="pagination-wrapper" style="margin-bottom: 15px;">
+                            <div class="pagination-info">
+                                Exibindo <?php echo count($query_paged->posts); ?> de <?php echo $total_posts; ?> resultados 
+                                (página <?php echo $paged; ?> de <?php echo $total_pages; ?>)
+                            </div>
+                            <div class="pagination-controls">
+                                <?php
+                                // Botão Anterior
+                                if ($paged > 1) {
+                                    $prev_url = add_query_arg(['paged' => $paged - 1, 'per_page' => $per_page, 's' => $search_term], $base_url);
+                                    echo '<a href="' . esc_url($prev_url) . '" class="button pagination-btn">« Anterior</a>';
+                                }
+                                
+                                // Botões numerados
+                                $start_page = max(1, $paged - 2);
+                                $end_page = min($total_pages, $paged + 2);
+                                
+                                for ($i = $start_page; $i <= $end_page; $i++) {
+                                    $page_url = add_query_arg(['paged' => $i, 'per_page' => $per_page, 's' => $search_term], $base_url);
+                                    $class = ($i === $paged) ? 'button pagination-btn button-primary' : 'button pagination-btn';
+                                    echo '<a href="' . esc_url($page_url) . '" class="' . $class . '">' . $i . '</a>';
+                                }
+                                
+                                // Botão Próxima
+                                if ($paged < $total_pages) {
+                                    $next_url = add_query_arg(['paged' => $paged + 1, 'per_page' => $per_page, 's' => $search_term], $base_url);
+                                    echo '<a href="' . esc_url($next_url) . '" class="button pagination-btn">Próxima »</a>';
+                                }
+                                ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
                     <button type="button" class="button-unificacao" id="btn-unificacao-top" disabled>Unificação</button>
                     <span class="text-unificacao">Selecione uma ou mais respostas para unificar.</span> 
                     
@@ -142,11 +354,10 @@ function vs_render_unificacao_page($votacao_id) {
                             </thead>
                             <tbody>
                                 <?php
-                                // Reinicia porque consumimos a query acima na passagem de agregação
-                                $query->rewind_posts();
-
-                                while ($query->have_posts()) :
-                                    $query->the_post();
+                                // Conta total de linhas para informação
+                                $total_rows = 0;
+                                while ($query_paged->have_posts()) :
+                                    $query_paged->the_post();
                                     $post_id = get_the_ID();
 
                                     // Verificação adicional de segurança: pula posts que estão na lixeira
@@ -250,6 +461,43 @@ function vs_render_unificacao_page($votacao_id) {
                         </table>
                     </form>
 
+                    <?php
+                    // Renderiza a paginação inferior por botões
+                    if ($total_pages > 1) {
+                        echo '<div class="pagination-wrapper" style="margin-top: 15px;">';
+                        echo '<div class="pagination-info">';
+                        echo 'Exibindo ' . count($query_paged->posts) . ' de ' . $total_posts . ' resultados ';
+                        echo '(página ' . $paged . ' de ' . $total_pages . ')';
+                        echo '</div>';
+                        echo '<div class="pagination-controls">';
+                        
+                        // Botão Anterior
+                        if ($paged > 1) {
+                            $prev_url = add_query_arg(['paged' => $paged - 1, 'per_page' => $per_page, 's' => $search_term], $base_url);
+                            echo '<a href="' . esc_url($prev_url) . '" class="button pagination-btn">« Anterior</a>';
+                        }
+                        
+                        // Botões numerados
+                        $start_page = max(1, $paged - 2);
+                        $end_page = min($total_pages, $paged + 2);
+                        
+                        for ($i = $start_page; $i <= $end_page; $i++) {
+                            $page_url = add_query_arg(['paged' => $i, 'per_page' => $per_page, 's' => $search_term], $base_url);
+                            $class = ($i === $paged) ? 'button pagination-btn button-primary' : 'button pagination-btn';
+                            echo '<a href="' . esc_url($page_url) . '" class="' . $class . '">' . $i . '</a>';
+                        }
+                        
+                        // Botão Próxima
+                        if ($paged < $total_pages) {
+                            $next_url = add_query_arg(['paged' => $paged + 1, 'per_page' => $per_page, 's' => $search_term], $base_url);
+                            echo '<a href="' . esc_url($next_url) . '" class="button pagination-btn">Próxima »</a>';
+                        }
+                        
+                        echo '</div>';
+                        echo '</div>';
+                    }
+                    ?>
+
                     <button type="button" class="button-unificacao" id="btn-unificacao-bottom" style="margin-top: 10px;" disabled >Unificação</button>
                     <span class="text-unificacao">Selecione uma ou mais respostas para unificar.</span>
                 <?php endif; ?>
@@ -315,30 +563,81 @@ function vs_render_unificacao_page($votacao_id) {
     ?>
 
     <script>
-    jQuery(document).ready(function($) {
-        // Event listener para botão de editar na tabela de unificação
-        $(document).on('click', '.vs-edit-unified-btn', function(e) {
+    // Funções para busca e paginação
+    function performSearch() {
+        var searchTerm = document.getElementById('search_unificacao').value;
+        var currentUrl = new URL(window.location.href);
+        
+        if (searchTerm.trim()) {
+            currentUrl.searchParams.set('s', searchTerm);
+        } else {
+            currentUrl.searchParams.delete('s');
+        }
+        
+        // Reset para primeira página ao buscar
+        currentUrl.searchParams.set('paged', '1');
+        
+        window.location.href = currentUrl.toString();
+    }
+    
+    function changePerPage(value) {
+        var currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('per_page', value);
+        currentUrl.searchParams.set('paged', '1'); // Reset para primeira página
+        window.location.href = currentUrl.toString();
+    }
+    
+    // Permitir busca com Enter
+    document.getElementById('search_unificacao').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
             e.preventDefault();
+            performSearch();
+        }
+    });
+
+    jQuery(document).ready(function($) {
+        // Aguardar um pouco para garantir que os botões estejam carregados
+        setTimeout(function() {
+            var buttons = $('.vs-edit-unified-btn');
             
-            var postId = $(this).data('post-id');
-            var questionIndex = $(this).data('question-index');
-            var votacaoId = $(this).data('votacao-id');
-            var currentValue = $(this).closest('td').find('.tooltip').attr('title');
-            
-            // Criar modal de edição
-            var modalContent = '<div style="padding: 20px;">';
-            modalContent += '<h3>Editar Resposta Unificada</h3>';
-            modalContent += '<label for="edit-unified-input">Nova resposta unificada:</label>';
-            modalContent += '<input type="text" id="edit-unified-input" value="' + currentValue + '" style="width: 100%; padding: 8px; margin: 10px 0;" />';
-            modalContent += '<div style="margin-top: 20px; text-align: right;">';
-            modalContent += '<button type="button" class="button" onclick="closeEditModal()">Cancelar</button>';
-            modalContent += '<button type="button" class="button-primary" id="save-edit-unified" style="margin-left: 10px;">Salvar</button>';
-            modalContent += '</div>';
-            modalContent += '</div>';
-            
-            // Mostrar modal
-            showEditModal(modalContent, postId, questionIndex, votacaoId);
-        });
+            // Adicionar event listener diretamente a cada botão
+            buttons.each(function(i) {
+                var $btn = $(this);
+                
+                // Remover event listeners anteriores
+                $btn.off('click.editUnified');
+                
+                // Adicionar novo event listener
+                $btn.on('click.editUnified', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    var postId = $(this).data('post-id');
+                    var questionIndex = $(this).data('question-index');
+                    var votacaoId = $(this).data('votacao-id');
+                    var currentValue = $(this).closest('td').find('.tooltip').attr('title');
+                    
+                    // Verificar se já existe um modal aberto
+                    if ($('#edit-unified-modal').length > 0) {
+                        $('#edit-unified-modal').remove();
+                    }
+                    
+                    // Criar modal de edição
+                    var modalContent = '<div style="padding: 20px;">';
+                    modalContent += '<h3>Editar Resposta Unificada</h3>';
+                    modalContent += '<label for="edit-unified-input">Nova resposta unificada:</label>';
+                    modalContent += '<input type="text" id="edit-unified-input" value="' + (currentValue || '') + '" style="width: 100%; padding: 8px; margin: 10px 0;" />';
+                    modalContent += '<div style="margin-top: 20px; text-align: right;">';
+                    modalContent += '<button type="button" class="button" onclick="closeEditModal()">Cancelar</button>';
+                    modalContent += '<button type="button" class="button-primary" id="save-edit-unified" style="margin-left: 10px;">Salvar</button>';
+                    modalContent += '</div>';
+                    modalContent += '</div>';
+                    
+                    // Mostrar modal
+                    showEditModal(modalContent, postId, questionIndex, votacaoId);
+                });
+            });
+        }, 500);
         
         // Função para mostrar modal de edição
         function showEditModal(content, postId, questionIndex, votacaoId) {
@@ -349,6 +648,11 @@ function vs_render_unificacao_page($votacao_id) {
             modal += '</div>';
             
             $('body').append(modal);
+            
+            // Focar no input após um pequeno delay
+            setTimeout(function() {
+                $('#edit-unified-input').focus();
+            }, 100);
             
             // Event listener para salvar
             $('#save-edit-unified').on('click', function() {
@@ -407,6 +711,179 @@ function vs_render_unificacao_page($votacao_id) {
         });
     });
     </script>
+
+    <style>
+    .unificacao-pagination-info .vs-notice {
+        padding: 8px 12px;
+        margin: 0;
+        background: #f0f6fc;
+        border-left: 4px solid #0073aa;
+    }
+    
+    /* Estilo para mensagem de "nenhum resultado" */
+    .vs-notice {
+        padding: 12px;
+        margin: 15px 0;
+        border-left: 4px solid;
+        background: #fff;
+        box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    }
+    
+    .vs-notice-warning {
+        border-left-color: #ffb900;
+        background: #fff8e5;
+    }
+    
+    .vs-notice p {
+        margin: 0.5em 0;
+    }
+    
+    .vs-notice p:first-child {
+        margin-top: 0;
+    }
+    
+    .vs-notice p:last-child {
+        margin-bottom: 0;
+    }
+    
+    .vs-notice ul {
+        margin: 0.5em 0;
+    }
+    
+    .vs-notice a {
+        color: #0073aa;
+        text-decoration: none;
+    }
+    
+    .vs-notice a:hover {
+        color: #005a87;
+        text-decoration: underline;
+    }
+    
+    /* Estilos para controles de busca */
+    .unificacao-search-controls {
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .unificacao-search-controls input[type="search"] {
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+    
+    .unificacao-search-controls input[type="search"]:focus {
+        border-color: #0073aa;
+        box-shadow: 0 0 0 1px #0073aa;
+        outline: none;
+    }
+    
+    .unificacao-search-controls select {
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        padding: 6px 8px;
+        font-size: 13px;
+    }
+    
+    .unificacao-search-controls .button {
+        height: auto;
+        padding: 6px 12px;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+    
+    /* Responsividade para controles de busca */
+    @media (max-width: 768px) {
+        .unificacao-search-controls > div {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 15px !important;
+        }
+        
+        .unificacao-search-controls input[type="search"] {
+            width: 100% !important;
+        }
+    }
+    
+    /* Estilos para paginação por botões */
+    .pagination-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 15px 0;
+        padding: 10px;
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    
+    .pagination-info {
+        font-size: 13px;
+        color: #666;
+    }
+    
+    .pagination-controls {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+    }
+    
+    .pagination-btn {
+        min-width: 35px;
+        height: 30px;
+        padding: 0 8px;
+        text-align: center;
+        text-decoration: none;
+        border: 1px solid #ccc;
+        background: #f7f7f7;
+        color: #555;
+        border-radius: 3px;
+        font-size: 12px;
+        line-height: 28px;
+        transition: all 0.2s ease;
+    }
+    
+    .pagination-btn:hover {
+        background: #e6e6e6;
+        border-color: #999;
+        color: #333;
+        text-decoration: none;
+    }
+    
+    .pagination-btn.button-primary {
+        background: #0073aa;
+        border-color: #0073aa;
+        color: white;
+        font-weight: bold;
+    }
+    
+    .pagination-btn.button-primary:hover {
+        background: #005a87;
+        border-color: #005a87;
+        color: white;
+    }
+    
+    /* Responsividade para telas menores */
+    @media (max-width: 768px) {
+        .pagination-wrapper {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .pagination-info {
+            text-align: center;
+        }
+        
+        .pagination-controls {
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+    }
+    </style>
 
     <?php
 }
