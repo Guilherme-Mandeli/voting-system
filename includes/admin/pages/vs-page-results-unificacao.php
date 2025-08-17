@@ -228,7 +228,7 @@ function vs_render_unificacao_page($votacao_id) {
 
         <?php vs_render_subpage_navigation($votacao_id, 'unificacao'); ?>
 
-        <div class="unificacao-container" style="gap: 30px;">
+        <div class="unificacao-container">
             <!-- Coluna 1: Todos os slots de resposta -->
             <div class="unificacao-coluna" id="respostas-coluna">
                 <h2 class="unificacao-title">Respostas Votação #<?php echo esc_html($votacao_id); ?></h2>
@@ -445,9 +445,8 @@ function vs_render_unificacao_page($votacao_id) {
                                                             title="Editar resposta unificada" 
                                                             data-post-id="<?php echo esc_attr($post_id); ?>"
                                                             data-question-index="<?php echo esc_attr($idx); ?>"
-                                                            data-votacao-id="<?php echo esc_attr($votacao_id); ?>"
-                                                            style="margin-left: 8px; background: transparent; border: 1px solid #0073aa; color: #0073aa; padding: 2px 4px; border-radius: 3px; cursor: pointer; font-size: 11px;">
-                                                        <span class="dashicons dashicons-edit" style="font-size: 12px; width: 12px; height: 12px;"></span>
+                                                            data-votacao-id="<?php echo esc_attr($votacao_id); ?>">
+                                                        <span class="dashicons dashicons-edit"></span>
                                                     </button>
                                                 <?php endif; ?>
                                             </td>

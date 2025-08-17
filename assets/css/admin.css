@@ -246,6 +246,9 @@
 .unificacao-coluna {
     min-width: 0; /* Permite que as colunas encolham */
 }
+#unificados-coluna {
+    max-width: calc(30% - 15px);
+}
 
 .unificacao-title {
     font-size: 1.2em;
@@ -278,6 +281,7 @@
 
 /* Tabela principal de unificação */
 .unificacao-table {
+    table-layout: auto;
     width: 100%;
     border-collapse: collapse;
     background: #fff;
@@ -293,6 +297,8 @@
     font-weight: 600;
     color: #23282d;
     font-size: 14px;
+    width: 1%;
+    white-space: nowrap;
 }
 
 .unificacao-table td {
@@ -301,6 +307,8 @@
     vertical-align: top;
     font-size: 13px;
     line-height: 1.4;
+    width: 1%;
+    white-space: nowrap;
 }
 
 .unificacao-table tr:hover {
@@ -308,29 +316,56 @@
 }
 
 /* Colunas específicas */
-.unificacao-checkbox-column {
+.unificacao-checkbox-column,
+#unificacao-table tbody td:nth-child(2) {
     width: 16px;
     max-width: 16px;
 }
-
 .unificacao-checkbox-column input[type="checkbox"] {
     margin: 0;
 }
 
-.unificacao-usuario-column {
-    width: 200px;
+.unificacao-usuario-column,
+#unificacao-table tbody td:nth-child(2) {
+    max-width: 200px;
 }
 
-.unificacao-pergunta-column {
-    width: 250px;
+.unificacao-pergunta-column,
+#unificacao-table tbody td:nth-child(3) {
+    max-width: 240px;
 }
 
-.unificacao-resposta-column {
-    min-width: 200px;
+.unificacao-resposta-column,
+#unificacao-table tbody td:nth-child(4) {
+    max-width: 240px;
 }
 
-.unificacao-resposta-unificada-column {
-    width: 150px;
+.unificacao-resposta-unificada-column,
+#unificacao-table tbody td:nth-child(5) {
+    max-width: 240px;
+}
+#unificacao-table tbody td:nth-child(5) {
+    padding-right: 30px;
+}
+
+.vs-edit-unified-btn {
+    background: #ffffff;
+    border: 1px solid #0073aa;
+    color: #0073aa;
+    padding: 2px 4px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    position: absolute;
+    margin-left: 5px;
+    margin-top: 1px;
+    width: 21px;
+    height: 21px;
+}
+.vs-edit-unified-btn span {
+    font-size: 13px;
+    margin-top: 1px;
+    margin-left: -4px;
 }
 
 /* Tabela secundária (unificações) */
