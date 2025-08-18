@@ -66,19 +66,65 @@ function vs_render_unificacao_page($votacao_id) {
     
     // Adiciona busca se houver termo
     if (!empty($search_term)) {
-        $args_paged['meta_query'][] = array(
-            'relation' => 'OR',
-            array(
-                'key'     => 'vs_respostas_detalhadas',
-                'value'   => $search_term,
-                'compare' => 'LIKE'
-            ),
-            array(
-                'key'     => 'vs_resposta_unificada',
-                'value'   => $search_term,
-                'compare' => 'LIKE'
-            )
+        // Buscar usuários que correspondem ao termo de busca
+        $user_search = new WP_User_Query(array(
+            'search' => '*' . $search_term . '*',
+            'search_columns' => array('user_email', 'display_name', 'user_login'),
+            'fields' => 'ID'
+        ));
+        $matching_user_ids = $user_search->get_results();
+        
+        // Buscar por ID de usuário se o termo for numérico
+        if (is_numeric($search_term)) {
+            $matching_user_ids[] = intval($search_term);
+        }
+        
+        // Buscar nas perguntas configuradas
+        $matching_question_indices = array();
+        foreach ($questions as $idx => $question) {
+            if (isset($question['label']) && stripos($question['label'], $search_term) !== false) {
+                $matching_question_indices[] = $idx;
+            }
+        }
+        
+        // Construir meta_query com busca em múltiplos campos
+        $search_meta_query = array('relation' => 'OR');
+        
+        // Busca nas respostas detalhadas
+        $search_meta_query[] = array(
+            'key'     => 'vs_respostas_detalhadas',
+            'value'   => $search_term,
+            'compare' => 'LIKE'
         );
+        
+        // Busca nas respostas unificadas
+        $search_meta_query[] = array(
+            'key'     => 'vs_resposta_unificada',
+            'value'   => $search_term,
+            'compare' => 'LIKE'
+        );
+        
+        // Busca por usuários correspondentes
+        if (!empty($matching_user_ids)) {
+            $search_meta_query[] = array(
+                'key'     => 'vs_usuario_id',
+                'value'   => $matching_user_ids,
+                'compare' => 'IN'
+            );
+        }
+        
+        // Se encontrou perguntas correspondentes, incluir posts que tenham respostas para essas perguntas
+        if (!empty($matching_question_indices)) {
+            foreach ($matching_question_indices as $question_idx) {
+                $search_meta_query[] = array(
+                    'key'     => 'vs_respostas_detalhadas',
+                    'value'   => '"' . $question_idx . '"',
+                    'compare' => 'LIKE'
+                );
+            }
+        }
+        
+        $args_paged['meta_query'][] = $search_meta_query;
     }
     
     $query_paged = new WP_Query($args_paged);
@@ -243,8 +289,8 @@ function vs_render_unificacao_page($votacao_id) {
                                    id="search_unificacao" 
                                    name="s" 
                                    value="<?php echo esc_attr($search_term); ?>" 
-                                   placeholder="Buscar em respostas e unificações..."
-                                   style="width: 250px; padding: 6px 10px;" />
+                                   placeholder="Buscar em usuários, perguntas, respostas e unificações..."
+                                   style="width: 300px; padding: 6px 10px;" />
                             <button type="button" 
                                     class="button" 
                                     onclick="performSearch()"
@@ -289,11 +335,19 @@ function vs_render_unificacao_page($votacao_id) {
                         <div class="vs-notice vs-notice-warning" style="margin: 15px 0;">
                             <p><strong>Nenhum resultado encontrado</strong></p>
                             <p>Sua busca por "<strong><?php echo esc_html($search_term); ?></strong>" não retornou resultados.</p>
+                            <p>A busca procura em:</p>
+                            <ul style="margin-left: 20px;">
+                                <li><strong>Usuários:</strong> email, nome de exibição, login ou ID</li>
+                                <li><strong>Perguntas:</strong> texto das perguntas configuradas</li>
+                                <li><strong>Respostas:</strong> conteúdo das respostas dos usuários</li>
+                                <li><strong>Respostas Unificadas:</strong> texto das unificações</li>
+                            </ul>
                             <p>Tente:</p>
                             <ul style="margin-left: 20px;">
                                 <li>Verificar a ortografia</li>
                                 <li>Usar termos mais gerais</li>
-                                <li>Usar palavras-chave diferentes</li>
+                                <li>Buscar por email do usuário ou ID</li>
+                                <li>Usar palavras-chave das perguntas</li>
                                 <li><a href="<?php echo esc_url($base_url); ?>">Limpar a busca</a> para ver todos os resultados</li>
                             </ul>
                         </div>
@@ -447,6 +501,13 @@ function vs_render_unificacao_page($votacao_id) {
                                                             data-question-index="<?php echo esc_attr($idx); ?>"
                                                             data-votacao-id="<?php echo esc_attr($votacao_id); ?>">
                                                         <span class="dashicons dashicons-edit"></span>
+                                                    </button>
+                                                    <button type="button" class="vs-clear-unified-btn" 
+                                                            title="Limpar resposta unificada" 
+                                                            data-post-id="<?php echo esc_attr($post_id); ?>"
+                                                            data-question-index="<?php echo esc_attr($idx); ?>"
+                                                            data-votacao-id="<?php echo esc_attr($votacao_id); ?>">
+                                                        <span class="dashicons dashicons-dismiss"></span>
                                                     </button>
                                                 <?php endif; ?>
                                             </td>
@@ -634,6 +695,62 @@ function vs_render_unificacao_page($votacao_id) {
                     
                     // Mostrar modal
                     showEditModal(modalContent, postId, questionIndex, votacaoId);
+                });
+            });
+        }, 500);
+
+        // Event listener para botões de limpar
+        setTimeout(function() {
+            var clearButtons = $('.vs-clear-unified-btn');
+            
+            clearButtons.each(function(i) {
+                var $btn = $(this);
+                
+                // Remover event listeners anteriores
+                $btn.off('click.clearUnified');
+                
+                // Adicionar novo event listener
+                $btn.on('click.clearUnified', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    var postId = $(this).data('post-id');
+                    var questionIndex = $(this).data('question-index');
+                    var votacaoId = $(this).data('votacao-id');
+                    
+                    var $btn = $(this);
+                    var originalHtml = $btn.html();
+                    $btn.prop('disabled', true).html('<span class="dashicons dashicons-update" style="animation: spin 1s linear infinite;"></span>');
+                    
+                    // AJAX para limpar
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'vs_update_resposta_unificada',
+                            nonce: <?php echo json_encode(wp_create_nonce("vs_unificacao_nonce")); ?>,
+                            votacao_id: votacaoId,
+                            nova_resposta_unificada: '',
+                            clear_operation: 'true',
+                            linhas: JSON.stringify([{
+                                postId: parseInt(postId),
+                                perguntaIndex: parseInt(questionIndex)
+                            }])
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                // Recarregar página para mostrar mudanças
+                                location.reload();
+                            } else {
+                                alert('Erro ao limpar: ' + (response.data || 'Erro desconhecido'));
+                                $btn.prop('disabled', false).html(originalHtml);
+                            }
+                        },
+                        error: function() {
+                            alert('Erro de conexão ao tentar limpar.');
+                            $btn.prop('disabled', false).html(originalHtml);
+                        }
+                    });
                 });
             });
         }, 500);

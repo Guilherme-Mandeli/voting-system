@@ -238,6 +238,7 @@
 /* Container principal da unificação */
 .unificacao-container {
     display: flex;
+    flex-flow: row wrap;
     gap: 30px;
     width: 100%;
     margin-top: 20px;
@@ -363,6 +364,29 @@
     height: 21px;
 }
 .vs-edit-unified-btn span {
+    font-size: 13px;
+    margin-top: 1px;
+    margin-left: -4px;
+}
+.vs-clear-unified-btn {
+    background: #ffffff;
+    border: 1px solid #d63638;
+    color: #d63638;
+    padding: 2px 4px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    position: absolute;
+    margin-left: 30px;
+    margin-top: 1px;
+    width: 21px;
+    height: 21px;
+}
+.vs-clear-unified-btn:hover {
+    background: #d63638;
+    color: #ffffff;
+}
+.vs-clear-unified-btn span {
     font-size: 13px;
     margin-top: 1px;
     margin-left: -4px;
