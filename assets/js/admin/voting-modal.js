@@ -317,6 +317,60 @@
             $modal.find('.vs-select-question').on('change', function() {
                 window.VSAdmin.VotingModal.updateImportButton($modal);
             });
+
+            // Restaurar seleções baseadas nos dados salvos
+            this.restoreSelectedQuestions($modal, votingId);
+        },
+
+        restoreSelectedQuestions: function($modal, votingId) {
+            try {
+                // Obter dados salvos do campo vs-imported-answers
+                const savedDataField = $('.vs-imported-answers');
+                if (!savedDataField.length || !savedDataField.val()) {
+                    return;
+                }
+
+                const savedData = JSON.parse(savedDataField.val());
+                if (!savedData || !savedData.questions) {
+                    return;
+                }
+
+                // Filtrar perguntas pela vote_id atual
+                const relevantQuestions = savedData.questions.filter(q => 
+                    q.vote_id == votingId
+                );
+
+                if (relevantQuestions.length === 0) {
+                    return;
+                }
+
+                // Marcar checkboxes correspondentes
+                relevantQuestions.forEach(savedQuestion => {
+                    const checkbox = $modal.find(
+                        `.vs-select-question[data-votacao-id="${savedQuestion.vote_id}"][data-question-index="${savedQuestion.question_index}"]`
+                    );
+                    
+                    if (checkbox.length) {
+                        checkbox.prop('checked', true);
+                    }
+                });
+
+                // Atualizar estado do botão de importação
+                this.updateImportButton($modal);
+
+                // Atualizar checkbox "Selecionar todas" se necessário
+                const totalCheckboxes = $modal.find('.vs-select-question').length;
+                const checkedCheckboxes = $modal.find('.vs-select-question:checked').length;
+                
+                if (totalCheckboxes > 0 && checkedCheckboxes === totalCheckboxes) {
+                    $modal.find('.vs-select-all-questions').prop('checked', true);
+                } else {
+                    $modal.find('.vs-select-all-questions').prop('checked', false);
+                }
+
+            } catch (error) {
+                console.error('Erro ao restaurar perguntas selecionadas:', error);
+            }
         },
 
         backToList: function(event) {

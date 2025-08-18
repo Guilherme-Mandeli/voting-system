@@ -26,6 +26,7 @@ defined( 'ABSPATH' ) || exit;
     >
 
     <label>Tipo de Resposta:</label><br>
+
     <select
         name="vs_questions[<?php echo esc_attr($index); ?>][tipo]"
         class="vs-tipo-campo"
@@ -39,8 +40,12 @@ defined( 'ABSPATH' ) || exit;
             'checkbox' => 'Checkbox',
             'imported_vote' => 'Importar respostas de uma votação...'
         ];
+        
+        // Garantir que sempre há um tipo definido
+        $tipo_atual = $question['tipo'] ?? 'texto';
+        
         foreach ($tipos as $val => $label) {
-            $selected = (($question['tipo'] ?? '') === $val) ? 'selected' : '';
+            $selected = ($tipo_atual === $val) ? 'selected' : '';
             echo "<option value='{$val}' {$selected}>{$label}</option>";
         }
         ?>

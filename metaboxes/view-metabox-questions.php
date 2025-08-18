@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
  */
 function vs_render_metabox_questions_view($post) {
     $questions = get_post_meta($post->ID, 'vs_questions', true);
+
     if (!empty($questions) && is_array($questions)) {
         foreach ($questions as &$question) {
             // Garantir que imported_answers seja um JSON válido
@@ -36,15 +37,16 @@ function vs_render_metabox_questions_view($post) {
                 ]);
             }
         }
+        unset($question); // Sem esta linha, problemas acontecem :D - Mandeli, depois de tropezentas horas debugando.
     }
     wp_nonce_field('vs_salvar_perguntas', 'vs_nonce_questions');
 
-    // Obtiene valor guardado para permitir edición
+    // Obtem o valor guardado para permitir a edição
     $permitir_edicao = get_post_meta($post->ID, 'vs_permitir_edicao', true);
 
     ?>
     <div class="vs-metabox-questions">
-        <!-- Opción para permitir editar voto -->
+        <!-- Opção para permitir editar voto -->
         <div class="vs-edit-permission-section">
             <p style="font-size: small; color: #555555; margin-bottom: 4px;">
                 <label>
@@ -59,7 +61,7 @@ function vs_render_metabox_questions_view($post) {
 
         <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;" />
 
-        <!-- Container de preguntas -->
+        <!-- Container de perguntas -->
         <div id="vs-perguntas-wrapper">
             <?php if (!empty($questions) && is_array($questions)) : ?>
                 <?php foreach ($questions as $index => $question) : ?>
@@ -70,7 +72,7 @@ function vs_render_metabox_questions_view($post) {
             <?php endif; ?>
         </div>
 
-        <!-- Botón para agregar pregunta -->
+        <!-- Botão para adicionar pergunta -->
         <button type="button" class="button" id="vs-add-pergunta">
             Adicionar Pergunta
         </button>
@@ -107,15 +109,40 @@ function vs_render_metabox_questions_scripts($post) {
         (function($) {
             const wrapper = document.getElementById('vs-perguntas-wrapper');
             const addBtn = document.getElementById('vs-add-pergunta');
-            let perguntaIndex = <?php echo $last_index + 1; ?>;
+            
+            // Função para calcular o próximo índice disponível dinamicamente
+            function getNextAvailableIndex() {
+                const existingQuestions = wrapper.querySelectorAll('.vs-pergunta');
+                const usedIndices = [];
+                
+                // Extrair todos os índices já em uso
+                existingQuestions.forEach(question => {
+                    const labelInput = question.querySelector('input[name*="[label]"]');
+                    if (labelInput) {
+                        const match = labelInput.name.match(/vs_questions\[(\d+)\]\[label\]/);
+                        if (match) {
+                            usedIndices.push(parseInt(match[1]));
+                        }
+                    }
+                });
+                
+                // Encontrar o menor índice disponível
+                let nextIndex = 0;
+                while (usedIndices.includes(nextIndex)) {
+                    nextIndex++;
+                }
+                
+                return nextIndex;
+            }
 
             // Agregar nueva pregunta
             addBtn.addEventListener('click', function () {
-                fetch('<?php echo admin_url('admin-ajax.php'); ?>?action=vs_get_pergunta_template&index=' + perguntaIndex)
+                const nextIndex = getNextAvailableIndex();
+                
+                fetch('<?php echo admin_url('admin-ajax.php'); ?>?action=vs_get_pergunta_template&index=' + nextIndex)
                     .then(res => res.text())
                     .then(html => {
                         wrapper.insertAdjacentHTML('beforeend', html);
-                        perguntaIndex++;
                     })
                     .catch(error => {
                         console.error('Error al cargar template de pregunta:', error);
@@ -153,7 +180,7 @@ function vs_render_metabox_questions_scripts($post) {
 
                 // Agregar opción
                 if (e.target && e.target.classList.contains('vs-add-option')) {
-                    const perguntaIndex = e.target.getAttribute('data-question-index');
+                    const perguntaIndexLocal = e.target.getAttribute('data-question-index');
                     const optionsContainer = e.target.closest('.vs-options');
                     const optionCount = optionsContainer.querySelectorAll('.vs-option-item').length;
                     const tipoCampo = e.target.closest('.vs-pergunta').querySelector('.vs-tipo-campo').value;
@@ -161,7 +188,7 @@ function vs_render_metabox_questions_scripts($post) {
                     let newoptionHTML = `
                         <div class='vs-option-item' style='margin-bottom: 5px;'>
                             <input type='text' 
-                                   name='vs_questions[${perguntaIndex}][options][]' 
+                                   name='vs_questions[${perguntaIndexLocal}][options][]' 
                                    style='width: 90%;'
                                    placeholder='Opción ${optionCount + 1}'>`;
 
@@ -169,7 +196,7 @@ function vs_render_metabox_questions_scripts($post) {
                     if (tipoCampo === 'imported_vote') {
                         newoptionHTML += `
                             <input type='hidden' 
-                                   name='vs_questions[${perguntaIndex}][valores_reais][]' 
+                                   name='vs_questions[${perguntaIndexLocal}][valores_reais][]' 
                                    value='' 
                                    class='vs-valor-real'>`;
                     }

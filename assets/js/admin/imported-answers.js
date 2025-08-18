@@ -63,7 +63,7 @@
             return this.currentQuestion;
         },
 
-        updateTable: function() {
+        updateTable: function() {            
             if (!this.currentQuestion || !this.currentQuestion.length) {
                 console.warn('currentQuestion não está definido ou é inválido');
                 return;
@@ -115,7 +115,8 @@
                 let rowNumber = 1;
                 let hasAnswers = false;
 
-                data.perguntas.forEach((pergunta) => {
+                data.perguntas.forEach((pergunta, perguntaIndex) => {
+                    
                     if (pergunta.imported_answers && Array.isArray(pergunta.imported_answers) && pergunta.imported_answers.length > 0) {
                         
                         pergunta.imported_answers.forEach(resposta => {
@@ -160,8 +161,8 @@
 
                             $tr.append(
                                 $('<td>', { 
-                                    style: 'padding: 8px; font-size: 11px; color: #666;' 
-                                }).text(pergunta.question_source || 'Fonte não especificada')
+                                    style: 'padding: 8px; font-size: 12px; color: #666;' 
+                                }).text(pergunta.question_source || 'N/A')
                             );
 
                             $tbody.append($tr);
@@ -180,15 +181,12 @@
                 }
 
             } catch (error) {
-                console.error('Erro ao processar JSON das respostas importadas:', error);
+                console.error('Erro ao processar JSON:', error);
                 $tbody.append($('<tr>').append(
                     $('<td>', { 
                         colspan: 5, 
                         style: 'text-align: center; padding: 20px; color: #d63638;' 
-                    }).html(`
-                        <strong>Erro ao carregar respostas:</strong><br>
-                        <small>${error.message}</small>
-                    `)
+                    }).text('Erro ao carregar respostas importadas.')
                 ));
             }
         },
@@ -309,13 +307,22 @@
         },
 
         initializeExistingAnswers: function() {
-            $('.vs-tipo-campo').each(function() {
-                if ($(this).val() === 'imported_vote') {
+            
+            const $camposImportedVote = $('.vs-tipo-campo');
+            
+            $camposImportedVote.each(function(index) {
+                const valor = $(this).val();
+                
+                if (valor === 'imported_vote') {
+                    
                     const $questionContainer = $(this).closest('.vs-pergunta');
+                    
                     window.VSAdmin.ImportedAnswers.setCurrentQuestion($questionContainer);
                     window.VSAdmin.ImportedAnswers.updateTable();
+                    
                 }
             });
+            
         },
 
         importSingleQuestion: function(event) {
