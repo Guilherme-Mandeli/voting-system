@@ -255,6 +255,9 @@
         },
 
         renderQuestions: function(questions, $modal, votingId, status) {
+            // Remover qualquer lista de perguntas existente
+            $modal.find('.vs-questions-list').remove();
+
             // Criar container para perguntas
             const $questionsContainer = $('<div class="vs-questions-list"></div>');
             
@@ -262,7 +265,7 @@
             $questionsContainer.append(`
                 <div class="vs-perguntas-header">
                     <p class="vs-info-text">Ao importar, as respostas das perguntas selecionadas serão incorporadas como opções na nova pergunta, respeitando a unificação.</p>
-                    <button type="button" class="button button-primary vs-import-selected" disabled>Importar Selecionadas</button>
+                    <button type="button" class="button button-primary vs-import-selected" disabled>Importar Respostas Selecionadas</button>
                 </div>
             `);
 
@@ -275,7 +278,7 @@
                                 <input type="checkbox" class="vs-select-all-questions">
                             </th>
                             <th>Pergunta</th>
-                            <th>Votos</th>
+                            <th>Respostas</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -498,23 +501,16 @@
 
             $importedColumn.append($tableHeader, $table);
 
-            // Coluna 2: Opções Selecionadas (estrutura unificada)
-            const $optionsColumn = $('<div>', { class: 'vs-options-column', css: { flex: 1 } });
-            const $optionsContainer = $('<div>', { class: 'vs-options' });
+            // Coluna 2: Usar o vs-options-container existente
+            // CORREÇÃO: Remover 'const' para usar a variável já declarada
+            const existingOptionsContainer = currentQuestion.find('.vs-options-container');
             
-            $optionsColumn.append(
-                $('<label>').text('Opções:'),
-                $('<br>'),
-                $optionsContainer,
-                $('<button>', {
-                    type: 'button',
-                    class: 'button vs-add-option',
-                    text: 'Adicionar Opção'
-                })
-            );
-
-            // Montar a estrutura final (estrutura unificada)
-            $columnsContainer.append($importedColumn, $optionsColumn);
+            if (existingOptionsContainer.length) {
+                // Aplicar estilo flex para que funcione como segunda coluna
+                existingOptionsContainer.css({ flex: 1 });
+                // Mover o vs-options-container para dentro da estrutura de duas colunas
+                $columnsContainer.append($importedColumn, existingOptionsContainer.detach());
+            }
 
             // Inserir as colunas no container
             container.append($columnsContainer);
