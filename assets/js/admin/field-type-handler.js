@@ -20,7 +20,7 @@
         // Coluna 1: Tabela de Respostas Importadas
         const colunaImportadas = $('<div>', { class: 'vs-imported-column', css: { flex: 1 } });
         const tabelaHeader = $('<div>', { class: 'vs-tabela-header' })
-            .append($('<h4>').text('Respostas importadas'))
+            .append($('<h4>').text('Respostas Importadas'))
             .append($('<button>', {
                 type: 'button',
                 class: 'button button-primary vs-add-selected',
@@ -47,20 +47,35 @@
 
         colunaImportadas.append(tabelaHeader, tabela);
 
-        // Coluna 2: Opções Selecionadas
+        // Coluna 2: vs-options-column com conteúdo específico
         const colunaOptions = $('<div>', { class: 'vs-options-column', css: { flex: 1 } });
-        const optionsContainer = $('<div>', { class: 'vs-options' });
         
-        colunaOptions.append(
-            $('<label>').text('Opções:'),
-            $('<br>'),
-            optionsContainer,
-            $('<button>', {
-                type: 'button',
-                class: 'button vs-add-option',
-                text: 'Adicionar Opção'
-            })
-        );
+        // Pegar o conteúdo existente do vs-options-container
+        const currentQuestion = container.closest('.vs-pergunta');
+        const existingOptionsContainer = currentQuestion.find('.vs-options-container');
+        
+        if (existingOptionsContainer.length) {
+            // Mover todo o conteúdo do vs-options-container para vs-options-column
+            const optionsContent = existingOptionsContainer.html();
+            colunaOptions.html(optionsContent);
+            
+            // Esconder o vs-options-container original
+            existingOptionsContainer.hide();
+        } else {
+            // Fallback: criar estrutura básica se não existir
+            const optionsContainer = $('<div>', { class: 'vs-options' });
+            
+            colunaOptions.append(
+                $('<label>').text('Opções:'),
+                $('<br>'),
+                optionsContainer,
+                $('<button>', {
+                    type: 'button',
+                    class: 'button vs-add-option',
+                    text: 'Adicionar Opção'
+                })
+            );
+        }
 
         // Montar estrutura final
         colunasContainer.append(colunaImportadas, colunaOptions);

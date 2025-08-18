@@ -117,23 +117,17 @@
 
             colunaImportadas.append(tabelaHeader, tabela);
 
-            // Coluna 2: Opções Selecionadas
-            const colunaOptions = $('<div>', { class: 'vs-options-column', css: { flex: 1 } });
-            const optionsContainer = $('<div>', { class: 'vs-options' });
+            // Coluna 2: Usar o vs-options-container existente
+            const currentQuestion = container.closest('.vs-pergunta');
+            const existingOptionsContainer = currentQuestion.find('.vs-options-container');
             
-            colunaOptions.append(
-                $('<label>').text('Opções:'),
-                $('<br>'),
-                optionsContainer,
-                $('<button>', {
-                    type: 'button',
-                    class: 'button vs-add-option',
-                    text: 'Adicionar Opção'
-                })
-            );
+            if (existingOptionsContainer.length) {
+                // Aplicar estilo flex para que funcione como segunda coluna
+                existingOptionsContainer.css({ flex: 1 });
+                // Mover o vs-options-container para dentro da estrutura de duas colunas
+                colunasContainer.append(colunaImportadas, existingOptionsContainer.detach());
+            }
 
-            // Montar estrutura final
-            colunasContainer.append(colunaImportadas, colunaOptions);
             return colunasContainer;
         }
 

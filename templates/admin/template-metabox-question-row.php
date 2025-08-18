@@ -143,89 +143,47 @@ defined( 'ABSPATH' ) || exit;
     >
 
     <!-- Container de opções (para select, radio, checkbox e imported_vote) -->
-    <div class="vs-options-container" style="display: <?php echo in_array($question['tipo'] ?? '', ['radio', 'checkbox', 'select', 'imported_vote']) ? 'block' : 'none'; ?>;">
-        <?php if (($question['tipo'] ?? '') === 'imported_vote'): ?>
-        <div class="vs-options-grid">
-            <!-- Coluna 1: Interface de Seleção -->
-            <div class="vs-imported-column">
-                <h3>Respostas Importadas</h3>
-
-                <!-- Filtros -->
-                <div class="vs-filters">
-                    <div style="margin-bottom: 10px;">
-                        <input type="text" class="vs-search-question" placeholder="Buscar pergunta..." style="width: 100%; padding: 5px;">
-                    </div>
-                </div>
-
-                <button type="button" class="button button-primary vs-add-selected">Adicionar Selecionados</button>
-                <div class="vs-tabela-container">
-                    <table class="wp-list-table widefat fixed striped">
-                        <thead>
-                            <tr>
-                                <th style="width: 26px; text-align: center;">#</th>
-                                <th class="check-column">
-                                    <input type="checkbox" class="vs-select-all-answers">
-                                </th>
-                                <th>Resposta</th>
-                                <th>Qtd. de Votos</th>
-                                <th>Pergunta</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Será preenchido via JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        <?php endif; ?>
-
-        <!-- Coluna de Opções (unificada para todos os tipos) -->
-        <div class="<?php echo ($question['tipo'] ?? '') === 'imported_vote' ? 'vs-options-column' : ''; ?>">
-            <label>Opções:</label><br>
-            <div class="vs-options">
-                <?php
-                $options = $question['options'] ?? [''];
-                foreach ($options as $option_index => $option) {
-                    $valor_real = $question['valores_reais'][$option_index] ?? $option;
-                    $is_imported = ($question['tipo'] ?? '') === 'imported_vote';
-                    ?>
-                    <div class="vs-option-item" style="margin-bottom: 5px;">
-                        <input
-                            type="text"
-                            name="vs_questions[<?php echo esc_attr($index); ?>][options][]"
-                            value="<?php echo esc_attr($option); ?>"
-                            style="width: 90%;"
-                            placeholder="Opção <?php echo ($option_index + 1); ?>"
-                        >
-                        <?php if ($is_imported): ?>
-                        <input
-                            type="hidden"
-                            name="vs_questions[<?php echo esc_attr($index); ?>][valores_reais][]"
-                            value="<?php echo esc_attr($valor_real); ?>"
-                            class="vs-valor-real"
-                        >
-                        <span class="vs-valor-real-texto"><?php echo esc_html($valor_real); ?></span>
-                        <?php endif; ?>
-                        <button type="button" class="button button-small vs-remove-option">Remover</button>
-                        <?php if ($is_imported): ?>
-                        <span class="vs-source-question" style="color: #666; font-size: 0.9em; margin-left: 10px;">
-                            <?php echo esc_html($question['question_source'] ?? ''); ?>
-                        </span>
-                        <?php endif; ?>
-                    </div>
-                    <?php
-                }
+    <div class="vs-options-container" style="display: <?php echo in_array($question['tipo'] ?? '', ['radio', 'checkbox', 'select', 'imported_vote']) ? 'block' : 'none'; ?>;">        
+        <label>Opções:</label><br>
+        <div class="vs-options">
+            <?php
+            $options = $question['options'] ?? [''];
+            foreach ($options as $option_index => $option) {
+                $valor_real = $question['valores_reais'][$option_index] ?? $option;
+                $is_imported = ($question['tipo'] ?? '') === 'imported_vote';
                 ?>
-                <button type="button" class="button vs-add-option"
-                    data-question-index="<?php echo esc_attr($index); ?>">
-                    Adicionar Opção
-                </button>
-            </div>
+                <div class="vs-option-item" style="margin-bottom: 5px;">
+                    <input
+                        type="text"
+                        name="vs_questions[<?php echo esc_attr($index); ?>][options][]"
+                        value="<?php echo esc_attr($option); ?>"
+                        style="width: 90%;"
+                        placeholder="Opção <?php echo ($option_index + 1); ?>"
+                    >
+                    <?php if ($is_imported): ?>
+                    <input
+                        type="hidden"
+                        name="vs_questions[<?php echo esc_attr($index); ?>][valores_reais][]"
+                        value="<?php echo esc_attr($valor_real); ?>"
+                        class="vs-valor-real"
+                    >
+                    <span class="vs-valor-real-texto"><?php echo esc_html($valor_real); ?></span>
+                    <?php endif; ?>
+                    <button type="button" class="button button-small vs-remove-option">Remover</button>
+                    <?php if ($is_imported): ?>
+                    <span class="vs-source-question" style="color: #666; font-size: 0.9em; margin-left: 10px;">
+                        <?php echo esc_html($question['question_source'] ?? ''); ?>
+                    </span>
+                    <?php endif; ?>
+                </div>
+                <?php
+            }
+            ?>
+            <button type="button" class="button vs-add-option"
+                data-question-index="<?php echo esc_attr($index); ?>">
+                Adicionar Opção
+            </button>
         </div>
-
-        <?php if (($question['tipo'] ?? '') === 'imported_vote'): ?>
-        </div> <!-- Fechamento do vs-options-grid -->
-        <?php endif; ?>
     </div>
 
     <br>
