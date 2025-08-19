@@ -63,18 +63,18 @@ function vs_save_metabox_questions($post_id) {
     // Processar perguntas
     $questions = [];
     $temp_questions = [];
-    
-    // Log do POST completo para debug
-    error_log('=== DEBUG SALVAMENTO PERGUNTAS - POST ID: ' . $post_id . ' ===');
-    error_log('POST vs_questions: ' . print_r($_POST['vs_questions'] ?? [], true));
-    error_log('Has existing data: ' . ($has_existing_data ? 'SIM' : 'NÃO'));
 
     if (isset($_POST['vs_questions']) && is_array($_POST['vs_questions'])) {
         foreach ($_POST['vs_questions'] as $index => $question_data) {
+            // Função personalizada para sanitizar preservando UTF-8
+            $sanitize_utf8 = function($text) {
+                return trim(strip_tags($text));
+            };
+            
             $label = sanitize_text_field($question_data['label'] ?? '');
             $tipo = sanitize_text_field($question_data['tipo'] ?? 'texto');
-            $options = array_map('sanitize_text_field', $question_data['options'] ?? []);
-            $valores_reais = array_map('sanitize_text_field', $question_data['valores_reais'] ?? []);
+            $options = array_map($sanitize_utf8, $question_data['options'] ?? []);
+            $valores_reais = array_map($sanitize_utf8, $question_data['valores_reais'] ?? []);
             $obrigatoria = isset($question_data['obrigatoria']) ? true : false;
             $unificada = sanitize_text_field($question_data['unificada'] ?? '');
             $imported_vote_id = intval($question_data['imported_vote_id'] ?? 0);
@@ -137,17 +137,6 @@ function vs_save_metabox_questions($post_id) {
             $options = $filtered_options;
             $valores_reais = $filtered_valores_reais;
 
-            // Log específico para cada pergunta
-            error_log("=== PERGUNTA $index ===");
-            error_log("  Label: '$label'");
-            error_log("  Tipo: '$tipo'");
-            error_log("  Options RAW: " . print_r($question_data['options'] ?? [], true));
-            error_log("  Options FILTERED: " . print_r($options, true));
-            error_log("  Valores Reais RAW: " . print_r($question_data['valores_reais'] ?? [], true));
-            error_log("  Valores Reais FILTERED: " . print_r($valores_reais, true));
-            error_log("  Options COUNT: " . count($options));
-            error_log("  Valores Reais COUNT: " . count($valores_reais));
-
             // Processar imported_answers
             $imported_answers_data = ['questions' => [], 'manual_items' => $manual_items, 'imported_items' => $imported_items];
             
@@ -163,21 +152,18 @@ function vs_save_metabox_questions($post_id) {
                     $decoded = json_decode($existing_imported_answers, true);
                     if ($decoded === null) {
                         // JSON inválido - usar apenas os novos dados
-                        $imported_answers = wp_json_encode($imported_answers_data);
-                        error_log("  Imported Answers: JSON INVÁLIDO - usando fallback com manual/imported items");
+                        $imported_answers = json_encode($imported_answers_data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     } else {
                         // Mesclar dados existentes com novos arrays
                         $decoded['manual_items'] = $manual_items;
                         $decoded['imported_items'] = $imported_items;
-                        $imported_answers = wp_json_encode($decoded);
-                        error_log("  Imported Answers: JSON válido (sem stripslashes) - adicionando manual/imported items");
+                        $imported_answers = json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     }
                 } else {
                     // Mesclar dados existentes com novos arrays
                     $decoded['manual_items'] = $manual_items;
                     $decoded['imported_items'] = $imported_items;
-                    $imported_answers = wp_json_encode($decoded);
-                    error_log("  Imported Answers: JSON válido (com stripslashes) - adicionando manual/imported items");
+                    $imported_answers = json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 }
             } else {
                 // Só aplicar fallback vs_get_imported_vote_data se for a primeira vez (não há dados salvos)
@@ -187,19 +173,13 @@ function vs_save_metabox_questions($post_id) {
                     if ($fallback_decoded) {
                         $fallback_decoded['manual_items'] = $manual_items;
                         $fallback_decoded['imported_items'] = $imported_items;
-                        $imported_answers = wp_json_encode($fallback_decoded);
+                        $imported_answers = json_encode($fallback_decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     } else {
-                        $imported_answers = wp_json_encode($imported_answers_data);
+                        $imported_answers = json_encode($imported_answers_data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     }
-                    error_log("  Imported Answers: Usando fallback vs_get_imported_vote_data com manual/imported items");
                 } else {
                     // Usar apenas os novos dados
-                    $imported_answers = wp_json_encode($imported_answers_data);
-                    if ($has_existing_data) {
-                        error_log("  Imported Answers: Usando dados com manual/imported items (dados já existem)");
-                    } else {
-                        error_log("  Imported Answers: Usando dados com manual/imported items (não é imported_vote)");
-                    }
+                    $imported_answers = json_encode($imported_answers_data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 }
             }
 
@@ -215,13 +195,6 @@ function vs_save_metabox_questions($post_id) {
                     'imported_vote_id' => $imported_vote_id,
                     'imported_answers' => $imported_answers
                 ];
-                
-                // Log da pergunta final salva
-                error_log("  PERGUNTA $index SERÁ SALVA:");
-                error_log("    Options finais: " . print_r($temp_questions[$index]['options'], true));
-                error_log("    Valores reais finais: " . print_r($temp_questions[$index]['valores_reais'], true));
-            } else {
-                error_log("  PERGUNTA $index IGNORADA (label vazio)");
             }
         }
         
@@ -229,30 +202,15 @@ function vs_save_metabox_questions($post_id) {
         ksort($temp_questions); // Ordenar por chave
         $questions = array_values($temp_questions); // Reindexar sequencialmente
         
-        // Log final do que será salvo
-        error_log('=== QUESTIONS FINAIS A SEREM SALVAS ===');
-        foreach ($questions as $final_index => $final_question) {
-            error_log("Question $final_index:");
-            error_log("  Label: " . $final_question['label']);
-            error_log("  Tipo: " . $final_question['tipo']);
-            error_log("  Options: " . print_r($final_question['options'], true));
-            error_log("  Valores Reais: " . print_r($final_question['valores_reais'], true));
-        }
     }
 
     // Obter dados anteriores para comparação
     $previous_questions = get_post_meta($post_id, 'vs_questions', true);
-    error_log('=== DADOS ANTERIORES ===');
-    error_log('Previous questions: ' . print_r($previous_questions, true));
 
     update_post_meta($post_id, 'vs_questions', $questions);
     
     // Verificar se foi salvo corretamente
     $saved_questions = get_post_meta($post_id, 'vs_questions', true);
-    error_log('=== DADOS SALVOS (VERIFICAÇÃO) ===');
-    error_log('Saved questions: ' . print_r($saved_questions, true));
-    
-    error_log('=== FIM DEBUG SALVAMENTO ===');
 }
 add_action('save_post', 'vs_save_metabox_questions');
 
