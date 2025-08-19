@@ -154,7 +154,7 @@
                                     class: 'vs-select-answer',
                                     'data-valor': valorResposta,
                                     'data-valor-unificado': resposta.value_unificada || '',
-                                    checked: isExistingOption // Marcar se já está nas opções
+                                    // checked: isExistingOption
                                 }))
                             );
 
@@ -227,81 +227,115 @@
             
             $selectedAnswers.each(function() {
                 const $tr = $(this).closest('tr');
-                const realValue = $(this).data('valor');
-                const visualValue = $tr.find('td:eq(2)').text();
+                const tableDisplayValue = $tr.find('td:eq(2)').text().trim();
+                const originalValue = $(this).data('valor');
+                const unifiedValue = $(this).data('valor-unificado');
+                const realValue = tableDisplayValue || originalValue;
+                const visualValue = unifiedValue || tableDisplayValue;
                 const sourceQuestion = $tr.find('td:eq(4)').text();
+
+                 console.log('Processando item:', {
+                    realValue: realValue,
+                    visualValue: visualValue,
+                    sourceQuestion: sourceQuestion,
+                    dataValor: $(this).data('valor'),
+                    dataValorUnificado: $(this).data('valor-unificado')
+                });
                 
-                    // Verificar se já existe uma opção com este valor real
-                    let isDuplicate = false;
-                    $optionsContainer.find('.vs-valor-real').each(function() {
-                        if ($(this).val() === realValue) {
-                            isDuplicate = true;
-                            return false; // break do loop
-                        }
-                    });
+                // Verificar se já existe uma opção com este valor real E visual
+                let isDuplicate = false;
+                $optionsContainer.find('.vs-option-item').each(function() {
+                    const existingRealValue = $(this).find('.vs-valor-real').val();
+                    const existingVisualValue = $(this).find('input[type="text"]').val();
                     
-                    // Se for duplicata, pular esta opção
-                    if (isDuplicate) {
-                        console.log(`Opção com valor real "${realValue}" já existe. Pulando...`);
-                        return true; // continue do loop
+                    // Considerar duplicata apenas se AMBOS os valores forem iguais
+                    if (existingRealValue === realValue && existingVisualValue === visualValue) {
+                        isDuplicate = true;
+                        return false; // break
                     }
-                    
-                    // Obter o próximo índice de opção
-                    const currentOptionIndex = $optionsContainer.find('.vs-option-item').length;
-                    
-                    // Criar nova opção
-                    const $optionItem = $('<div>', {
-                        class: 'vs-option-item imported_question',
-                        style: 'margin-bottom: 5px;'
-                    });
-                    
-                    const $textInput = $('<input>', {
-                        type: 'text',
-                        name: `vs_questions[${questionIndex}][options][]`,
-                        value: visualValue,
-                        style: 'width: 90%;',
-                        placeholder: `Opção ${currentOptionIndex + 1}`
-                    });
-                    
-                    const $hiddenInput = $('<input>', {
-                        type: 'hidden',
-                        name: `vs_questions[${questionIndex}][valores_reais][${currentOptionIndex}]`,
-                        class: 'vs-valor-real',
-                        value: realValue
-                    });
-                    
-                    const $valorRealTexto = $('<span>', {
-                        class: 'vs-valor-real-texto',
-                        css: { fontSize: '12px', color: '#666', marginLeft: '10px' },
-                        text: realValue
-                    });
-                    
-                    const $removeButton = $('<button>', {
-                        type: 'button',
-                        class: 'button button-small vs-remove-option',
-                        text: 'Remover'
-                    });
-                    
-                    // Montar estrutura unificada
-                    $optionItem.append($textInput, $hiddenInput, $valorRealTexto, $removeButton);
-                    
-                    // Inserir antes do botão "Adicionar Opção"
-                    $optionsContainer.find('.vs-add-option').before($optionItem);
-                    
-                    // Adicionar ao array de itens importados
-                    if (!importedAnswersData.imported_items.includes(currentOptionIndex)) {
-                        importedAnswersData.imported_items.push(currentOptionIndex);
-                    }
+                });
+                
+                // Se for duplicata, pular esta opção
+                if (isDuplicate) {
+                    console.log(`Opção com valor real "${realValue}" já existe. Pulando...`);
+                    return true; // continue do loop
+                }
+                
+                // Obter o próximo índice de opção
+                const currentOptionIndex = $optionsContainer.find('.vs-option-item').length;
+                
+                // Criar nova opção
+                const $optionItem = $('<div>', {
+                    class: 'vs-option-item imported_question',
+                    style: 'margin-bottom: 5px;'
+                });
+                
+                const $textInput = $('<input>', {
+                    type: 'text',
+                    name: `vs_questions[${questionIndex}][options][]`,
+                    value: visualValue,
+                    style: 'width: 90%;',
+                    placeholder: `Opção ${currentOptionIndex + 1}`
+                });
+                
+                const $hiddenInput = $('<input>', {
+                    type: 'hidden',
+                    name: `vs_questions[${questionIndex}][valores_reais][${currentOptionIndex}]`,
+                    class: 'vs-valor-real',
+                    value: realValue
+                });
+                
+                const $valorRealTexto = $('<span>', {
+                    class: 'vs-valor-real-texto',
+                    css: { fontSize: '12px', color: '#666', marginLeft: '10px' },
+                    text: realValue
+                });
+                
+                const $removeButton = $('<button>', {
+                    type: 'button',
+                    class: 'button button-small vs-remove-option',
+                    text: 'Remover'
+                });
+                
+                // Montar estrutura unificada
+                $optionItem.append($textInput, $hiddenInput, $valorRealTexto, $removeButton);
+                
+                // Inserir antes do botão "Adicionar Opção"
+                $optionsContainer.find('.vs-add-option').before($optionItem);
+                
+                // Adicionar ao array de itens importados
+                if (!importedAnswersData.imported_items.includes(currentOptionIndex)) {
+                    importedAnswersData.imported_items.push(currentOptionIndex);
+                }
             });
             
             // Atualizar o campo imported_answers
             $importedAnswersField.val(JSON.stringify(importedAnswersData));
             
-            // Desmarcar checkboxes após adicionar
-            $selectedAnswers.prop('checked', false);
+            // Desmarcar apenas checkboxes que foram processados com sucesso
+            $selectedAnswers.each(function() {
+                const $checkbox = $(this);
+                const realValue = $checkbox.data('valor');
+                const visualValue = $checkbox.closest('tr').find('td:eq(2)').text();
+                let wasAdded = false;
+                
+                // Verificar se foi realmente adicionado
+                $optionsContainer.find('.vs-option-item').each(function() {
+                    const existingReal = $(this).find('.vs-valor-real').val();
+                    const existingVisual = $(this).find('input[type="text"]').val();
+                    if (existingReal === realValue && existingVisual === visualValue) {
+                        wasAdded = true;
+                        return false;
+                    }
+                });
+                
+                if (wasAdded) {
+                    $checkbox.prop('checked', false);
+                }
+            });
             
             // Verificar e marcar automaticamente todos os checkboxes que correspondem às opções existentes
-            this.updateCheckboxesBasedOnExistingOptions($container);
+            // this.updateCheckboxesBasedOnExistingOptions($container);
         },
 
         // Atualizar checkboxes baseado nas opções existentes
@@ -317,14 +351,16 @@
                 }
             });
             
-            // Verificar todos os checkboxes da tabela e marcar os que correspondem às opções existentes
+            // Verificar todos os checkboxes da tabela
             $container.find('.vs-select-answer').each(function() {
                 const $checkbox = $(this);
                 const valorResposta = $checkbox.data('valor') || '';
                 const isExistingOption = existingValues.includes(valorResposta.trim());
                 
-                // Marcar ou desmarcar baseado na existência da opção
-                $checkbox.prop('checked', isExistingOption);
+                // APENAS marcar, nunca desmarcar checkboxes já selecionados pelo usuário
+                if (isExistingOption && !$checkbox.prop('checked')) {
+                    $checkbox.prop('checked', true);
+                }
             });
         },
 
@@ -365,7 +401,7 @@
             
             // Atualizar checkboxes após remoção
             if ($container.length) {
-                this.updateCheckboxesBasedOnExistingOptions($container);
+                // this.updateCheckboxesBasedOnExistingOptions($container);
             }
         },
 
