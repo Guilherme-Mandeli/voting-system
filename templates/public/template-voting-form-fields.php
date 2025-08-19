@@ -11,11 +11,6 @@ if (!defined('ABSPATH')) {
  * @param int $votacao_id ID da votação
  * @param array $respostas Array com as respostas do usuário (se existirem)
  */
-
-// Debug: Log das variáveis no template
-error_log('[DEBUG] template-voting-form-fields - Questions count: ' . count($questions));
-error_log('[DEBUG] template-voting-form-fields - Votacao ID: ' . $votacao_id);
-error_log('[DEBUG] template-voting-form-fields - Questions: ' . print_r($questions, true));
 ?>
 
 <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="vs-form border rounded-lg p-4 bg-white shadow-md">
@@ -24,9 +19,7 @@ error_log('[DEBUG] template-voting-form-fields - Questions: ' . print_r($questio
     <input type="hidden" name="vs_votacao_nonce" value="<?php echo vs_create_nonce( VS_Nonce_Actions::FORM_VOTING ); ?>">
 
     <?php 
-    error_log('[DEBUG] template-voting-form-fields - Iniciando loop das perguntas');
     foreach ($questions as $index => $question): 
-        error_log('[DEBUG] template-voting-form-fields - Processando pergunta ' . $index . ': ' . print_r($question, true));
     ?>
     <div class="vs-question-container" data-type="<?php echo esc_attr($question['tipo']); ?>">
         <label class="vs-question-label">
@@ -40,6 +33,7 @@ error_log('[DEBUG] template-voting-form-fields - Questions: ' . print_r($questio
         // Expandir tipos de campo suportados
         switch ($question['tipo']) {
             case 'text':
+            case 'texto': // Compatibilidade com dados antigos
                 vs_render_text_field($question, $index, $user_responses);
                 break;
             case 'textarea':

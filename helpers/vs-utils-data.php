@@ -310,10 +310,6 @@ function vs_get_imported_vote_data($votacao_id, $question_index = null) {
 function vs_validate_voting_questions($questions) {
     $errors = [];
     
-    // Debug: Log das perguntas recebidas
-    error_log('[DEBUG] vs_validate_voting_questions - Total de perguntas: ' . count($questions));
-    error_log('[DEBUG] vs_validate_voting_questions - Perguntas: ' . print_r($questions, true));
-    
     if (!is_array($questions)) {
         $errors[] = 'Perguntas devem ser um array';
         return $errors;
@@ -357,13 +353,6 @@ function vs_validate_voting_questions($questions) {
         }
     }
     
-    // Debug: Log dos erros encontrados
-    if (!empty($errors)) {
-        error_log('[DEBUG] vs_validate_voting_questions - Erros encontrados: ' . print_r($errors, true));
-    } else {
-        error_log('[DEBUG] vs_validate_voting_questions - Validação passou sem erros');
-    }
-    
     return $errors;
 }
 
@@ -374,29 +363,20 @@ function vs_validate_voting_questions($questions) {
  * @return void
  */
 function vs_debug_voting_questions($votacao_id) {
-    error_log('[DEBUG] vs_debug_voting_questions - Iniciando debug para votação ID: ' . $votacao_id);
     
     // Verificar se o post existe
     $post = get_post($votacao_id);
     if (!$post) {
-        error_log('[DEBUG] Post não encontrado para ID: ' . $votacao_id);
         return;
     }
-    
-    error_log('[DEBUG] Post encontrado: ' . $post->post_title . ' (Tipo: ' . $post->post_type . ')');
-    
+
     // Verificar meta vs_questions
     $questions_raw = get_post_meta($votacao_id, 'vs_questions', true);
-    error_log('[DEBUG] vs_questions raw: ' . print_r($questions_raw, true));
     
     // Verificar outros metas relevantes
     $status = get_post_meta($votacao_id, '_vs_status', true);
     $data_fim = get_post_meta($votacao_id, '_vs_data_fim', true);
-    
-    error_log('[DEBUG] Status da votação: ' . $status);
-    error_log('[DEBUG] Data fim: ' . $data_fim);
-    
+
     // Verificar se vs_get_voting_questions funciona
     $questions_processed = vs_get_voting_questions($votacao_id);
-    error_log('[DEBUG] vs_get_voting_questions resultado: ' . print_r($questions_processed, true));
 }

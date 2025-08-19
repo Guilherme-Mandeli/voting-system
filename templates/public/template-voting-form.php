@@ -15,11 +15,6 @@ if (!defined('ABSPATH')) {
  * @param string $encerrada Status da votação
  */
 
-// Debug: Log das variáveis do template
-error_log('[DEBUG] template-voting-form - Votacao ID: ' . $votacao_id);
-error_log('[DEBUG] template-voting-form - Ja votou: ' . ($ja_votou ? 'SIM' : 'NAO'));
-error_log('[DEBUG] template-voting-form - Permitir edicao: ' . ($permitir_edicao ?? 'NAO_DEFINIDO'));
-error_log('[DEBUG] template-voting-form - Questions count: ' . count($questions));
 ?>
 
 <div class="vs-voting-form-container">
@@ -45,8 +40,6 @@ error_log('[DEBUG] template-voting-form - Questions count: ' . count($questions)
             
             <div class="vs-form-container">
                 <?php 
-                // Debug: Log antes de renderizar o formulário
-                error_log('[DEBUG] template-voting-form - Renderizando formulário');
                 echo vs_render_formulario_votacao($questions, $votacao_id, $respostas); 
                 ?>
             </div>

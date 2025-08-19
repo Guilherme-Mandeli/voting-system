@@ -39,7 +39,6 @@ if ( ! function_exists( 'vs_ajax_update_unificacao' ) ) :
         // Nonce.
         // ------------------------------------------------------------------
         if ( ! isset( $_POST['nonce'] ) ) {
-            error_log( 'Unificacao: nonce missing.' );
             wp_send_json_error( 'Nonce ausente.' );
         }
         check_ajax_referer( 'vs_unificacao_nonce', 'nonce' );
@@ -55,27 +54,19 @@ if ( ! function_exists( 'vs_ajax_update_unificacao' ) ) :
         $nova_unificada = sanitize_text_field( $nova_unificada_raw );
         $linhas_array   = json_decode( $linhas_json_raw, true );
 
-        error_log( 'Unificacao POST votacao_id=' . $votacao_id_raw );
-        error_log( 'Unificacao POST valor=' . $nova_unificada );
-        error_log( 'Unificacao POST clear_operation=' . ($clear_operation ? 'true' : 'false') );
-        error_log( 'Unificacao POST linhas=' . $linhas_json_raw );
-
         // ------------------------------------------------------------------
         // Validate basics.
         // ------------------------------------------------------------------
         if ( $votacao_id_raw <= 0 ) {
-            error_log( 'Unificacao: invalid voting ID.' );
             wp_send_json_error( 'ID de votação inválido.' );
         }
         
         // Permite valor vazio apenas para operações de limpeza
         if ( '' === $nova_unificada && ! $clear_operation ) {
-            error_log( 'Unificacao: empty value.' );
             wp_send_json_error( 'O valor unificado não pode ser vazio.' );
         }
         
         if ( empty( $linhas_array ) || ! is_array( $linhas_array ) ) {
-            error_log( 'Unificacao: linhas array missing/invalid.' );
             wp_send_json_error( 'Nenhuma linha válida recebida.' );
         }
 
@@ -83,7 +74,6 @@ if ( ! function_exists( 'vs_ajax_update_unificacao' ) ) :
         // Capability check.
         // ------------------------------------------------------------------
         if ( ! ( current_user_can( 'edit_post', $votacao_id_raw ) || current_user_can( 'manage_options' ) ) ) {
-            error_log( 'Unificacao: user lacks capability for votacao ' . $votacao_id_raw );
             wp_send_json_error( 'Você não tem permissão para modificar esta votação.' );
         }
 
@@ -93,7 +83,6 @@ if ( ! function_exists( 'vs_ajax_update_unificacao' ) ) :
         $resposta_to_indices = vs_parse_resposta_indices_map( $linhas_array );
 
         if ( empty( $resposta_to_indices ) ) {
-            error_log( 'Unificacao: no valid pairs after parsing linhas.' );
             wp_send_json_error( 'Nenhuma combinação válida de resposta/pergunta recebida.' );
         }
 
@@ -103,52 +92,15 @@ if ( ! function_exists( 'vs_ajax_update_unificacao' ) ) :
         $updated_summary = array();
 
         foreach ( $resposta_to_indices as $resposta_id => $indices_list ) {
-
             $post_obj = get_post( $resposta_id );
             if ( ! $post_obj || 'votacao_resposta' !== $post_obj->post_type ) {
-                error_log( 'Unificacao: post ' . $resposta_id . ' invalid type.' );
                 continue;
             }
 
             vs_update_resposta_unificada_indices( $resposta_id, $indices_list, $nova_unificada );
 
             $updated_summary[ $resposta_id ] = $indices_list;
-
-            error_log(
-                sprintf(
-                    'Unificacao: resposta %d updated idx(s) %s => %s',
-                    $resposta_id,
-                    implode( ',', $indices_list ),
-                    $nova_unificada
-                )
-            );
         }
-
-        // ------------------------------------------------------------------
-        // (Opcional) Atualizar meta global vs_questions no post de votação?
-        // ------------------------------------------------------------------
-        // Comportamento desativado por padrão para evitar sobrescrever globalmente.
-        // Caso queira habilitar, descomente abaixo e forneça um array de índices global.
-        /*
-        $questions = get_post_meta( $votacao_id_raw, 'vs_questions', true );
-        if ( is_array( $questions ) ) {
-            // Colete todos os índices únicos atualizados (somando todos os usuários)
-            $all_indices = array();
-            foreach ( $updated_summary as $resposta_id => $idxs ) {
-                foreach ( $idxs as $i ) {
-                    $all_indices[ $i ] = true;
-                }
-            }
-            foreach ( array_keys( $all_indices ) as $i ) {
-                if ( isset( $questions[ $i ] ) && is_array( $questions[ $i ] ) ) {
-                    $questions[ $i ]['unificada'] = $nova_unificada;
-                }
-            }
-            update_post_meta( $votacao_id_raw, 'vs_questions', $questions );
-        }
-        */
-
-        error_log( '=== Fim vs_ajax_update_unificacao ===' );
 
         wp_send_json_success(
             array(

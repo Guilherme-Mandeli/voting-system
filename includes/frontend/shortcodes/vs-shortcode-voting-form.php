@@ -22,8 +22,6 @@ function vs_votacao_shortcode($atts) {
 
     $votacao_id = $post->ID;
     
-    // Debug: Adicionar log para verificar o estado
-    error_log('[DEBUG] vs_votacao_shortcode - Votação ID: ' . $votacao_id);
     vs_debug_voting_questions($votacao_id);
 
     $data_fim = get_post_meta($votacao_id, '_vs_data_fim', true);
@@ -46,7 +44,6 @@ function vs_votacao_shortcode($atts) {
     $validation_errors = vs_validate_voting_questions($questions);
     
     if (!empty($validation_errors)) {
-        error_log('[ERROR] Erros de validação encontrados: ' . implode(', ', $validation_errors));
         return '<div class="vs-error"><strong>Erro na configuração da votação:</strong><ul><li>' . implode('</li><li>', $validation_errors) . '</li></ul><p><em>Entre em contato com o administrador.</em></p></div>';
     }
 

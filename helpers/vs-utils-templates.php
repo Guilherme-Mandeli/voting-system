@@ -5,21 +5,13 @@ defined( 'ABSPATH' ) || exit;
  * Renderiza o formulário de votação com perguntas dinâmicas.
  */
 function vs_render_formulario_votacao($questions, $votacao_id, $respostas = []) {
-    // Debug: Log das variáveis recebidas
-    error_log('[DEBUG] vs_render_formulario_votacao - Votação ID: ' . $votacao_id);
-    error_log('[DEBUG] vs_render_formulario_votacao - Questions count: ' . count($questions));
-    error_log('[DEBUG] vs_render_formulario_votacao - Questions: ' . print_r($questions, true));
-    error_log('[DEBUG] vs_render_formulario_votacao - Respostas: ' . print_r($respostas, true));
-    
     // Garantir que $questions seja um array
     if (!is_array($questions)) {
-        error_log('[DEBUG] vs_render_formulario_votacao - Questions não é array, convertendo');
         $questions = [];
     }
     
     // Verificar se há perguntas
     if (empty($questions)) {
-        error_log('[DEBUG] vs_render_formulario_votacao - ERRO: Nenhuma pergunta encontrada!');
         return '<div class="vs-error">Nenhuma pergunta configurada para esta votação.</div>';
     }
     
@@ -33,16 +25,11 @@ function vs_render_formulario_votacao($questions, $votacao_id, $respostas = []) 
     
     // Debug: Verificar se o template existe
     $template_path = VS_PLUGIN_PATH . 'templates/public/template-voting-form-fields.php';
-    error_log('[DEBUG] vs_render_formulario_votacao - Template path: ' . $template_path);
-    error_log('[DEBUG] vs_render_formulario_votacao - Template exists: ' . (file_exists($template_path) ? 'YES' : 'NO'));
-    
+
     ob_start();
     include $template_path;
     $output = ob_get_clean();
-    
-    error_log('[DEBUG] vs_render_formulario_votacao - Output length: ' . strlen($output));
-    error_log('[DEBUG] vs_render_formulario_votacao - Output preview: ' . substr($output, 0, 200));
-    
+
     return $output;
 }
 
@@ -127,9 +114,6 @@ function vs_render_choice_field($question, $index, $user_responses = []) {
     $required = !empty($question['obrigatoria']) ? 'required' : '';
     $tipo = isset($question['tipo']) ? $question['tipo'] : 'text';
     
-    // Debug: Log da estrutura da pergunta
-    error_log('[DEBUG] vs_render_choice_field - Question structure: ' . print_r($question, true));
-    
     // Combinar opções manuais e importadas
     $opcoes = [];
     
@@ -156,18 +140,13 @@ function vs_render_choice_field($question, $index, $user_responses = []) {
         }
     }
     
-    // Debug: Log das opções processadas
-    error_log('[DEBUG] vs_render_choice_field - Processed options: ' . print_r($opcoes, true));
-    
     if (empty($opcoes)) {
-        error_log('[DEBUG] vs_render_choice_field - ERRO: Nenhuma opção disponível!');
         echo '<p class="vs-error">Nenhuma opção disponível para esta pergunta.</p>';
         return;
     }
     
     switch ($tipo) {
         case 'radio':
-            error_log('[DEBUG] vs_render_choice_field - Renderizando radio buttons');
             foreach ($opcoes as $opcao_index => $opcao) {
                 $checked = ($current_value == $opcao['value']) ? 'checked' : '';
                 $css_class = $opcao['type'] === 'imported' ? 'vs-radio imported-question' : 'vs-radio';
@@ -214,10 +193,7 @@ function vs_render_choice_field($question, $index, $user_responses = []) {
 function vs_render_imported_vote_field($question, $index, $user_responses = []) {
     $field_name = "vs_respostas[{$index}]";
     $current_value = isset($user_responses[$index]) ? $user_responses[$index] : '';
-    $required = !empty($question['obrigatoria']) ? 'required' : '';
-    
-    // Debug: Log da estrutura da pergunta
-    error_log('[DEBUG] vs_render_imported_vote_field - Question structure: ' . print_r($question, true));
+    $required = !empty($question['obrigatoria']) ? 'required' : '';;
     
     // Usar APENAS opções manuais definidas em options[]
     $opcoes = [];
@@ -232,11 +208,7 @@ function vs_render_imported_vote_field($question, $index, $user_responses = []) 
         }
     }
     
-    // Debug: Log das opções processadas
-    error_log('[DEBUG] vs_render_imported_vote_field - Manual options only: ' . print_r($opcoes, true));
-    
     if (empty($opcoes)) {
-        error_log('[DEBUG] vs_render_imported_vote_field - ERRO: Nenhuma opção manual disponível!');
         echo '<p class="vs-error">Nenhuma opção manual encontrada para esta pergunta importada.</p>';
         return;
     }

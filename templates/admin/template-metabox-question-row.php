@@ -34,7 +34,11 @@ defined( 'ABSPATH' ) || exit;
     >
         <?php
         $tipos = [
-            'texto' => 'Texto Livre', 
+            'text' => 'Texto Livre', 
+            'textarea' => 'Área de Texto',
+            'number' => 'Número',
+            'email' => 'Email',
+            'date' => 'Data',
             'select' => 'Select', 
             'radio' => 'Radio', 
             'checkbox' => 'Checkbox',
@@ -42,7 +46,7 @@ defined( 'ABSPATH' ) || exit;
         ];
         
         // Garantir que sempre há um tipo definido
-        $tipo_atual = $question['tipo'] ?? 'texto';
+        $tipo_atual = $question['tipo'] ?? 'text';
         
         foreach ($tipos as $val => $label) {
             $selected = ($tipo_atual === $val) ? 'selected' : '';
@@ -174,13 +178,6 @@ defined( 'ABSPATH' ) || exit;
                 $imported_answers_data = json_decode($question['imported_answers'] ?? '{}', true);
                 $imported_items = $imported_answers_data['imported_items'] ?? [];
                 $is_imported = in_array($option_index, $imported_items);
-                
-                // DEBUG: Log verificação de cada opção
-                error_log("[DEBUG] Template - Question {$index}, Option {$option_index}:");
-                error_log("[DEBUG] - option: '{$option}'");
-                error_log("[DEBUG] - valor_real: '{$valor_real}'");
-                error_log("[DEBUG] - imported_items array: " . json_encode($imported_items));
-                error_log("[DEBUG] - is_imported: " . ($is_imported ? 'TRUE' : 'FALSE'));
                 
                 // Se não está nos arrays, usar lógica de fallback
                 if (!$is_imported) {

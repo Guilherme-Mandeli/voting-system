@@ -185,7 +185,6 @@ function vs_ajax_obter_perguntas_votacao() {
 
         wp_send_json_success($questions);
     } catch (Exception $e) {
-        error_log('DEBUG: Exception caught - ' . $e->getMessage());
         wp_send_json_error('Erro interno do servidor: ' . $e->getMessage());
         return;
     }
