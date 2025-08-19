@@ -112,6 +112,15 @@
                     return;
                 }
 
+                // Obter valores reais das opções existentes
+                const existingValues = [];
+                this.currentQuestion.find('.vs-valor-real').each(function() {
+                    const value = $(this).val();
+                    if (value && value.trim() !== '') {
+                        existingValues.push(value.trim());
+                    }
+                });
+
                 let rowNumber = 1;
                 let hasAnswers = false;
 
@@ -136,14 +145,19 @@
                                 }).text(rowNumber)
                             );
 
+                            // Verificar se este valor já está nas opções existentes
+                            const valorResposta = resposta.value || '';
+                            const isExistingOption = existingValues.includes(valorResposta.trim());
+
                             $tr.append(
                                 $('<td>', { 
                                     style: 'text-align: center; width: 50px;' 
                                 }).append($('<input>', {
                                     type: 'checkbox',
                                     class: 'vs-select-answer',
-                                    'data-valor': resposta.value || '',
-                                    'data-valor-unificado': resposta.value_unificada || ''
+                                    'data-valor': valorResposta,
+                                    'data-valor-unificado': resposta.value_unificada || '',
+                                    checked: isExistingOption // Marcar se já está nas opções
                                 }))
                             );
 
@@ -254,10 +268,46 @@
             
             // Desmarcar checkboxes após adicionar
             $selectedAnswers.prop('checked', false);
+            
+            // Verificar e marcar automaticamente todos os checkboxes que correspondem às opções existentes
+            this.updateCheckboxesBasedOnExistingOptions($container);
+        },
+
+        // Atualizar checkboxes baseado nas opções existentes
+        updateCheckboxesBasedOnExistingOptions: function($container) {
+            const $questionContainer = $container.closest('.vs-pergunta');
+            
+            // Obter todos os valores reais das opções existentes
+            const existingValues = [];
+            $questionContainer.find('.vs-valor-real').each(function() {
+                const value = $(this).val();
+                if (value && value.trim() !== '') {
+                    existingValues.push(value.trim());
+                }
+            });
+            
+            // Verificar todos os checkboxes da tabela e marcar os que correspondem às opções existentes
+            $container.find('.vs-select-answer').each(function() {
+                const $checkbox = $(this);
+                const valorResposta = $checkbox.data('valor') || '';
+                const isExistingOption = existingValues.includes(valorResposta.trim());
+                
+                // Marcar ou desmarcar baseado na existência da opção
+                $checkbox.prop('checked', isExistingOption);
+            });
         },
 
         removeOption: function(event) {
-            $(event.target).closest('.vs-option-item').remove();
+            const $optionItem = $(event.target).closest('.vs-option-item');
+            const $container = $optionItem.closest('.vs-pergunta').find('.vs-columns-container');
+            
+            // Remover a opção
+            $optionItem.remove();
+            
+            // Atualizar checkboxes após remoção
+            if ($container.length) {
+                this.updateCheckboxesBasedOnExistingOptions($container);
+            }
         },
 
         selectAllAnswers: function(event) {

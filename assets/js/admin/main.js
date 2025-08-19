@@ -45,27 +45,6 @@
                 window.VSAdmin.VotingModal.init();
             }
 
-            // Aguardar um momento para garantir que todos os event handlers foram registrados
-            setTimeout(function() {                
-                // Inicializar campos existentes do tipo imported_vote
-                const $camposImportedVote = $('.vs-tipo-campo');
-                
-                $camposImportedVote.each(function(index) {
-                    const valor = $(this).val();
-                    
-                    if (valor === 'imported_vote') {
-                        
-                        currentQuestion = $(this).closest('.vs-pergunta');
-                        
-                        if (window.VSAdmin.ImportedAnswers) {
-                            window.VSAdmin.ImportedAnswers.setCurrentQuestion(currentQuestion);
-                            window.VSAdmin.ImportedAnswers.updateTable();
-                        }
-                    }
-                });
-                
-            }, 100);
-
         } catch (error) {
             console.error('VSAdmin: Erro durante inicialização dos módulos:', error);
         }

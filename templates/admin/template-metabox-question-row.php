@@ -152,10 +152,23 @@ defined( 'ABSPATH' ) || exit;
         <label>Opções:</label><br>
         <div class="vs-options">
             <?php
-            $options = $question['options'] ?? [''];
+            // Só criar opção vazia se não houver opções existentes E não for tipo imported_vote
+            $options = $question['options'] ?? [];
+            $tipo_atual = $question['tipo'] ?? 'texto';
+            
+            // Filtrar opções vazias
+            $options = array_filter($options, function($option) {
+                return !empty(trim($option));
+            });
+            
+            // Só adicionar opção vazia se não houver opções e não for imported_vote
+            if (empty($options) && $tipo_atual !== 'imported_vote') {
+                $options = [''];
+            }
+            
             foreach ($options as $option_index => $option) {
                 $valor_real = $question['valores_reais'][$option_index] ?? $option;
-                $is_imported = ($question['tipo'] ?? '') === 'imported_vote';
+                $is_imported = $tipo_atual === 'imported_vote';
                 ?>
                 <div class="vs-option-item" style="margin-bottom: 5px;">
                     <input

@@ -56,11 +56,18 @@
         
         if (existingOptionsContainer.length) {
             // Mover todo o conteúdo do vs-options-container para vs-options-column
-            const optionsContent = existingOptionsContainer.html();
-            colunaOptions.html(optionsContent);
+            const optionsContent = existingOptionsContainer.find('.vs-options');
+            if (optionsContent.length) {
+                // Mover os elementos diretamente
+                colunaOptions.append(
+                    $('<label>').text('Opções:'),
+                    $('<br>'),
+                    optionsContent.detach() // detach() move o elemento
+                );
+            }
             
-            // Esconder o vs-options-container original
-            existingOptionsContainer.hide();
+            // Remover completamente o container original
+            existingOptionsContainer.remove();
         } else {
             // Fallback: criar estrutura básica se não existir
             const optionsContainer = $('<div>', { class: 'vs-options' });
