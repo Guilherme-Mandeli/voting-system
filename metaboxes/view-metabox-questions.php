@@ -172,63 +172,6 @@ function vs_render_metabox_questions_scripts($post) {
                     }
                 }
 
-                // Remover opción
-                // if (e.target && e.target.classList.contains('vs-remove-option')) {
-                //     const option = e.target.closest('.vs-option-item');
-                //     const pergunta = option.closest('.vs-pergunta');
-                //     const container = pergunta.querySelector('.vs-columns-container');
-                    
-                //     // Obter o valor da opção que está sendo removida para debug
-                //     const removedValue = $(option).find('.vs-valor-real').val();
-                //     console.log('Removendo opção com valor:', removedValue);
-                    
-                //     // Contar quantas opções existem com este valor ANTES da remoção
-                //     const countBeforeRemoval = $(pergunta).find('.vs-valor-real').filter(function() {
-                //         return $(this).val() === removedValue;
-                //     }).length;
-                //     console.log('Quantidade de opções com este valor antes da remoção:', countBeforeRemoval);
-                    
-                //     // Remover a opção
-                //     option.remove();
-                    
-                //     // Contar quantas opções existem com este valor APÓS a remoção
-                //     const countAfterRemoval = $(pergunta).find('.vs-valor-real').filter(function() {
-                //         return $(this).val() === removedValue;
-                //     }).length;
-                //     console.log('Quantidade de opções com este valor após a remoção:', countAfterRemoval);
-                    
-                //     // Atualizar checkboxes se existir container de colunas (tipo imported_vote)
-                //     if (container) {
-                //         const $pergunta = $(pergunta);
-                //         const $container = $(container);
-                        
-                //         // Obter todos os valores reais das opções existentes (usando Set para evitar duplicatas)
-                //         const existingValuesSet = new Set();
-                //         $pergunta.find('.vs-valor-real').each(function() {
-                //             const value = $(this).val();
-                //             if (value && value.trim() !== '') {
-                //                 existingValuesSet.add(value.trim());
-                //             }
-                //         });
-                        
-                //         const existingValues = Array.from(existingValuesSet);
-                //         console.log('Valores únicos existentes após remoção:', existingValues);
-                        
-                //         // Verificar todos os checkboxes da tabela e marcar os que correspondem às opções existentes
-                //         $container.find('.vs-select-answer').each(function() {
-                //             const $checkbox = $(this);
-                //             const valorResposta = $checkbox.data('valor') || '';
-                //             const valorUnificado = $checkbox.data('valor-unificado') || '';
-                //             const isExistingOption = existingValues.includes(valorResposta.trim()) || 
-                //                                    existingValues.includes(valorUnificado.trim());
-                            
-                //             console.log('Checkbox - data-valor:', valorResposta, 'data-valor-unificado:', valorUnificado, 'Existe:', isExistingOption);
-                            
-                //             $checkbox.prop('checked', isExistingOption);
-                //         });
-                //     }
-                // }
-
                 // Agregar opción
                 if (e.target && e.target.classList.contains('vs-add-option')) {
                     const perguntaIndexLocal = e.target.getAttribute('data-question-index');
@@ -241,18 +184,7 @@ function vs_render_metabox_questions_scripts($post) {
                             <input type='text' 
                                    name='vs_questions[${perguntaIndexLocal}][options][]' 
                                    style='width: 90%;'
-                                   placeholder='Opción ${optionCount + 1}'>`;
-
-                    // Adiciona o input hidden apenas se for do tipo imported_vote
-                    if (tipoCampo === 'imported_vote') {
-                        newoptionHTML += `
-                            <input type='hidden' 
-                                   name='vs_questions[${perguntaIndexLocal}][valores_reais][]' 
-                                   value='' 
-                                   class='vs-valor-real'>`;
-                    }
-
-                    newoptionHTML += `
+                                   placeholder='Opción ${optionCount + 1}'>
                             <button type='button' class='button button-small vs-remove-option'>Remover</button>
                         </div>
                     `;

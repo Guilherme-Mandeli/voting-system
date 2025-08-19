@@ -169,6 +169,11 @@ defined( 'ABSPATH' ) || exit;
             foreach ($options as $option_index => $option) {
                 $valor_real = $question['valores_reais'][$option_index] ?? $option;
                 $is_imported = $tipo_atual === 'imported_vote';
+                
+                // Verificar se é realmente uma opção importada (valor real diferente da opção)
+                $has_real_value =   $is_imported &&
+                                    isset($question['valores_reais'][$option_index]) &&
+                                    $question['valores_reais'][$option_index] !== $option;
                 ?>
                 <div class="vs-option-item" style="margin-bottom: 5px;">
                     <input
@@ -178,7 +183,7 @@ defined( 'ABSPATH' ) || exit;
                         style="width: 90%;"
                         placeholder="Opção <?php echo ($option_index + 1); ?>"
                     >
-                    <?php if ($is_imported): ?>
+                    <?php if ($has_real_value): ?>
                     <input
                         type="hidden"
                         name="vs_questions[<?php echo esc_attr($index); ?>][valores_reais][]"
@@ -188,11 +193,6 @@ defined( 'ABSPATH' ) || exit;
                     <span class="vs-valor-real-texto"><?php echo esc_html($valor_real); ?></span>
                     <?php endif; ?>
                     <button type="button" class="button button-small vs-remove-option">Remover</button>
-                    <?php if ($is_imported): ?>
-                    <span class="vs-source-question" style="color: #666; font-size: 0.9em; margin-left: 10px;">
-                        <?php echo esc_html($question['question_source'] ?? ''); ?>
-                    </span>
-                    <?php endif; ?>
                 </div>
                 <?php
             }

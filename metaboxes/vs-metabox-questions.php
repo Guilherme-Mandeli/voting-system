@@ -87,8 +87,16 @@ function vs_save_metabox_questions($post_id) {
                 // Só manter opções que não estejam vazias (após trim)
                 if (!empty(trim($option))) {
                     $filtered_options[] = $option;
-                    // Manter o valor real correspondente se existir
-                    $filtered_valores_reais[] = $valores_reais[$option_index] ?? $option;
+                    
+                    // Para valores reais, usar o valor fornecido ou a própria opção como fallback
+                    $real_value = $valores_reais[$option_index] ?? $option;
+                    
+                    // Só adicionar valor real se for diferente da opção (indicando importação)
+                    if ($real_value !== $option) {
+                        $filtered_valores_reais[] = $real_value;
+                    } else {
+                        $filtered_valores_reais[] = $option;
+                    }
                 }
             }
             
