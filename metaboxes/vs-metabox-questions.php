@@ -86,56 +86,76 @@ function vs_save_metabox_questions($post_id) {
 
             // Decodificar imported_answers para obter manual_items e imported_items
             $imported_answers_decoded = [];
-            
+            $manual_items = [];
+            $imported_items = [];
+
             if (!empty($question_data['imported_answers'])) {
-                $imported_answers_decoded = json_decode($question_data['imported_answers'], true);
-                if ($imported_answers_decoded) {
+                // Remover escapes duplos antes da decodificação
+                $clean_json = stripslashes($question_data['imported_answers']);
+                $imported_answers_decoded = json_decode($clean_json, true);
+                
+                // DEBUG: Log dados recebidos do JavaScript
+                error_log("[DEBUG] Question {$index} - imported_answers recebido: " . $question_data['imported_answers']);
+                error_log("[DEBUG] Question {$index} - imported_answers limpo: " . $clean_json);
+                error_log("[DEBUG] Question {$index} - json_decode result: " . ($imported_answers_decoded ? 'SUCCESS' : 'FAILED'));
+                error_log("[DEBUG] Question {$index} - json_last_error: " . json_last_error_msg());
+                
+                if ($imported_answers_decoded && is_array($imported_answers_decoded)) {
                     $manual_items = $imported_answers_decoded['manual_items'] ?? [];
                     $imported_items = $imported_answers_decoded['imported_items'] ?? [];
+                    
+                    // DEBUG: Log arrays decodificados
+                    error_log("[DEBUG] Question {$index} - manual_items decodificado: " . json_encode($manual_items));
+                    error_log("[DEBUG] Question {$index} - imported_items decodificado: " . json_encode($imported_items));
+                } else {
+                    error_log("[DEBUG] Question {$index} - FALHA na decodificação do JSON!");
                 }
+            } else {
+                error_log("[DEBUG] Question {$index} - imported_answers está vazio");
             }
             
-            $index_mapping = [];
+            // DEBUG: Log opções e valores reais recebidos
+            error_log("[DEBUG] Question {$index} - options recebidas: " . json_encode($options));
+            error_log("[DEBUG] Question {$index} - valores_reais recebidos: " . json_encode($valores_reais));
+            
+            // Filtrar opções vazias mantendo os índices originais
+            $filtered_options = [];
+            $filtered_valores_reais = [];
+            $valid_indices = [];
             
             foreach ($options as $option_index => $option) {
                 // Só manter opções que não estejam vazias (após trim)
                 if (!empty(trim($option))) {
-                    $new_index = count($filtered_options);
-                    $index_mapping[$option_index] = $new_index;
-                    $filtered_options[] = $option;
+                    $filtered_options[$option_index] = $option;
+                    $valid_indices[] = $option_index;
                     
                     // Para valores reais, verificar se existe um valor real
                     $real_value = $valores_reais[$option_index] ?? null;
                     
-                    // Se tem valor real, adicionar ao array filtrado
+                    // Se tem valor real, manter no mesmo índice
                     if ($real_value !== null) {
-                        $filtered_valores_reais[$new_index] = $real_value;
+                        $filtered_valores_reais[$option_index] = $real_value;
                     }
                 }
             }
             
-            // Reajustar os arrays manual_items e imported_items com os novos índices
-            $new_manual_items = [];
-            $new_imported_items = [];
+            // Filtrar manual_items e imported_items para remover índices de opções vazias
+            $filtered_manual_items = array_intersect($manual_items, $valid_indices);
+            $filtered_imported_items = array_intersect($imported_items, $valid_indices);
             
-            foreach ($manual_items as $old_index) {
-                if (isset($index_mapping[$old_index])) {
-                    $new_manual_items[] = $index_mapping[$old_index];
-                }
-            }
-            
-            foreach ($imported_items as $old_index) {
-                if (isset($index_mapping[$old_index])) {
-                    $new_imported_items[] = $index_mapping[$old_index];
-                }
-            }
-            
-            $manual_items = $new_manual_items;
-            $imported_items = $new_imported_items;
+            // DEBUG: Log arrays após filtragem
+            error_log("[DEBUG] Question {$index} - APÓS filtragem (índices preservados):");
+            error_log("[DEBUG] - valid_indices: " . json_encode($valid_indices));
+            error_log("[DEBUG] - filtered_options: " . json_encode($filtered_options));
+            error_log("[DEBUG] - filtered_valores_reais: " . json_encode($filtered_valores_reais));
+            error_log("[DEBUG] - filtered_manual_items: " . json_encode($filtered_manual_items));
+            error_log("[DEBUG] - filtered_imported_items: " . json_encode($filtered_imported_items));
 
             // Usar as opções filtradas
             $options = $filtered_options;
             $valores_reais = $filtered_valores_reais;
+            $manual_items = $filtered_manual_items;
+            $imported_items = $filtered_imported_items;
 
             // Processar imported_answers
             $imported_answers_data = ['questions' => [], 'manual_items' => $manual_items, 'imported_items' => $imported_items];
@@ -185,6 +205,12 @@ function vs_save_metabox_questions($post_id) {
 
             // Solo agregar si tiene label - PRESERVANDO O ÍNDICE ORIGINAL
             if (!empty($label)) {
+                // DEBUG: Log dados finais que serão salvos
+                error_log("[DEBUG] Question {$index} - DADOS FINAIS SALVOS:");
+                error_log("[DEBUG] - options final: " . json_encode($options));
+                error_log("[DEBUG] - valores_reais final: " . json_encode($valores_reais));
+                error_log("[DEBUG] - imported_answers final: " . $imported_answers);
+                
                 $temp_questions[$index] = [
                     'label' => $label,
                     'tipo' => $tipo,
@@ -201,6 +227,10 @@ function vs_save_metabox_questions($post_id) {
         // Reordenar sequencialmente apenas no final
         ksort($temp_questions); // Ordenar por chave
         $questions = array_values($temp_questions); // Reindexar sequencialmente
+        
+        // DEBUG: Log dados finais após reindexação
+        error_log("[DEBUG] DADOS FINAIS APÓS REINDEXAÇÃO:");
+        error_log("[DEBUG] - questions final: " . json_encode($questions));
         
     }
 

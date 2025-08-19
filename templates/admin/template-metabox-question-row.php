@@ -175,6 +175,13 @@ defined( 'ABSPATH' ) || exit;
                 $imported_items = $imported_answers_data['imported_items'] ?? [];
                 $is_imported = in_array($option_index, $imported_items);
                 
+                // DEBUG: Log verificação de cada opção
+                error_log("[DEBUG] Template - Question {$index}, Option {$option_index}:");
+                error_log("[DEBUG] - option: '{$option}'");
+                error_log("[DEBUG] - valor_real: '{$valor_real}'");
+                error_log("[DEBUG] - imported_items array: " . json_encode($imported_items));
+                error_log("[DEBUG] - is_imported: " . ($is_imported ? 'TRUE' : 'FALSE'));
+                
                 // Se não está nos arrays, usar lógica de fallback
                 if (!$is_imported) {
                     $manual_items = $imported_answers_data['manual_items'] ?? [];
@@ -204,7 +211,7 @@ defined( 'ABSPATH' ) || exit;
                         
                         <!-- Span para mostrar o valor real -->
                         <span class="vs-valor-real-texto" style="font-size: 12px; color: #666; margin-left: 10px;">
-                            <?php echo esc_html($valor_real); ?>
+                            <?php echo esc_html($option); ?>
                         </span>
                     <?php endif; ?>
                     <button type="button" class="vs-remove-option">Remover</button>

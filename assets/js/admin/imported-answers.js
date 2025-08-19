@@ -230,7 +230,7 @@
                 const tableDisplayValue = $tr.find('td:eq(2)').text().trim();
                 const originalValue = $(this).data('valor');
                 const unifiedValue = $(this).data('valor-unificado');
-                const realValue = tableDisplayValue || originalValue;
+                const realValue = originalValue;
                 const visualValue = unifiedValue || tableDisplayValue;
                 const sourceQuestion = $tr.find('td:eq(4)').text();
 
@@ -261,7 +261,7 @@
                     return true; // continue do loop
                 }
                 
-                // Obter o próximo índice de opção
+                // Obter o índice real baseado na posição DOM atual
                 const currentOptionIndex = $optionsContainer.find('.vs-option-item').length;
                 
                 // Criar nova opção
@@ -288,7 +288,7 @@
                 const $valorRealTexto = $('<span>', {
                     class: 'vs-valor-real-texto',
                     css: { fontSize: '12px', color: '#666', marginLeft: '10px' },
-                    text: realValue
+                    text: visualValue
                 });
                 
                 const $removeButton = $('<button>', {
@@ -303,10 +303,8 @@
                 // Inserir antes do botão "Adicionar Opção"
                 $optionsContainer.find('.vs-add-option').before($optionItem);
                 
-                // Adicionar ao array de itens importados
-                if (!importedAnswersData.imported_items.includes(currentOptionIndex)) {
-                    importedAnswersData.imported_items.push(currentOptionIndex);
-                }
+                // Adicionar ao array de itens importados usando o índice correto
+                importedAnswersData.imported_items.push(currentOptionIndex);
             });
             
             // Atualizar o campo imported_answers
@@ -389,20 +387,11 @@
             importedAnswersData.manual_items = importedAnswersData.manual_items.filter(index => index !== optionIndex);
             importedAnswersData.imported_items = importedAnswersData.imported_items.filter(index => index !== optionIndex);
             
-            // Reajustar índices maiores que o removido
-            importedAnswersData.manual_items = importedAnswersData.manual_items.map(index => index > optionIndex ? index - 1 : index);
-            importedAnswersData.imported_items = importedAnswersData.imported_items.map(index => index > optionIndex ? index - 1 : index);
-            
             // Atualizar o campo imported_answers
             $importedAnswersField.val(JSON.stringify(importedAnswersData));
             
             // Remover a opção
             $optionItem.remove();
-            
-            // Atualizar checkboxes após remoção
-            if ($container.length) {
-                // this.updateCheckboxesBasedOnExistingOptions($container);
-            }
         },
 
         selectAllAnswers: function(event) {
