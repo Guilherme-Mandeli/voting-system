@@ -11,6 +11,11 @@ if (!defined('ABSPATH')) {
  * @param int $votacao_id ID da votação
  * @param array $respostas Array com as respostas do usuário (se existirem)
  */
+
+// Debug: Log das variáveis no template
+error_log('[DEBUG] template-voting-form-fields - Questions count: ' . count($questions));
+error_log('[DEBUG] template-voting-form-fields - Votacao ID: ' . $votacao_id);
+error_log('[DEBUG] template-voting-form-fields - Questions: ' . print_r($questions, true));
 ?>
 
 <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="vs-form border rounded-lg p-4 bg-white shadow-md">
@@ -18,61 +23,51 @@ if (!defined('ABSPATH')) {
     <input type="hidden" name="vs_votacao_id" value="<?php echo esc_attr($votacao_id); ?>">
     <input type="hidden" name="vs_votacao_nonce" value="<?php echo vs_create_nonce( VS_Nonce_Actions::FORM_VOTING ); ?>">
 
-    <?php foreach ($questions as $index => $question): ?>
+    <?php 
+    error_log('[DEBUG] template-voting-form-fields - Iniciando loop das perguntas');
+    foreach ($questions as $index => $question): 
+        error_log('[DEBUG] template-voting-form-fields - Processando pergunta ' . $index . ': ' . print_r($question, true));
+    ?>
+    <div class="vs-question-container" data-type="<?php echo esc_attr($question['tipo']); ?>">
+        <label class="vs-question-label">
+            <?php echo esc_html($question['label']); ?>
+            <?php if ($question['obrigatoria']): ?>
+                <span class="vs-required">*</span>
+            <?php endif; ?>
+        </label>
+        
         <?php
-        $label = esc_html($question['label']);
-        $tipo  = esc_attr($question['tipo']);
-        $options = $question['options'] ?? [];
-        $obrigatoria = isset($question['obrigatoria']) && $question['obrigatoria'] ? true : false;
-
-        // Preenchimento das respostas anteriores
-        $valor_anterior = isset($respostas['respostas'][$index]) ? $respostas['respostas'][$index] : '';
+        // Expandir tipos de campo suportados
+        switch ($question['tipo']) {
+            case 'text':
+                vs_render_text_field($question, $index, $user_responses);
+                break;
+            case 'textarea':
+                vs_render_textarea_field($question, $index, $user_responses);
+                break;
+            case 'number':
+                vs_render_number_field($question, $index, $user_responses);
+                break;
+            case 'email':
+                vs_render_email_field($question, $index, $user_responses);
+                break;
+            case 'date':
+                vs_render_date_field($question, $index, $user_responses);
+                break;
+            case 'radio':
+            case 'checkbox':
+            case 'select':
+                vs_render_choice_field($question, $index, $user_responses);
+                break;
+            case 'imported_vote':
+                vs_render_imported_vote_field($question, $index, $user_responses);
+                break;
+            default:
+                echo '<p class="vs-error">Tipo de campo não suportado: ' . esc_html($question['tipo']) . '</p>';
+        }
         ?>
-
-        <div class="mb-4">
-            <label class="block font-semibold mb-2"><?php echo $label; ?></label>
-
-            <?php switch ($tipo):
-                case 'texto': 
-                    $valor = esc_attr(is_array($valor_anterior) ? '' : $valor_anterior);
-                    ?>
-                    <input type="text" name="respostas[<?php echo $index; ?>]" value="<?php echo $valor; ?>" class="w-full border rounded p-2" <?php echo ($obrigatoria ? 'required' : ''); ?>>
-                    <?php break;
-
-                case 'select': ?>
-                    <select name="respostas[<?php echo $index; ?>]" class="w-full border rounded p-2" <?php echo ($obrigatoria ? 'required' : ''); ?>>
-                        <option value="">Selecionar...</option>
-                        <?php foreach ($options as $option): 
-                            $selected = ($option === $valor_anterior) ? 'selected' : '';
-                            ?>
-                            <option value="<?php echo esc_attr($option); ?>" <?php echo $selected; ?>><?php echo esc_html($option); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <?php break;
-
-                case 'radio': 
-                    foreach ($options as $i => $option):
-                        $checked = ($option === $valor_anterior) ? 'checked' : '';
-                        $required = ($obrigatoria && $i === 0) ? 'required' : '';
-                        ?>
-                        <label class="block"><input type="radio" name="respostas[<?php echo $index; ?>]" value="<?php echo esc_attr($option); ?>" <?php echo $checked; ?> <?php echo $required; ?>> <?php echo esc_html($option); ?></label>
-                    <?php endforeach;
-                    break;
-
-                case 'checkbox': 
-                    $valor_anterior = is_array($valor_anterior) ? $valor_anterior : [];
-                    foreach ($options as $option):
-                        $checked = in_array($option, $valor_anterior) ? 'checked' : '';
-                        ?>
-                        <label class="block"><input type="checkbox" name="respostas[<?php echo $index; ?>][]" value="<?php echo esc_attr($option); ?>" <?php echo $checked; ?>> <?php echo esc_html($option); ?></label>
-                    <?php endforeach;
-                    if ($obrigatoria): ?>
-                        <p class="text-sm text-gray-500 italic">Essa pergunta é obrigatória.</p>
-                    <?php endif;
-                    break;
-            endswitch; ?>
-        </div>
-    <?php endforeach; ?>
+    </div>
+<?php endforeach; ?>
 
     <button type="submit" class="vs-button bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">Salvar Voto</button>
 </form>

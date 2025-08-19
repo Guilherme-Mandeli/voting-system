@@ -74,22 +74,54 @@ function vs_update_resposta_unificada_indices( $resposta_id, $indices_list, $nov
     return update_post_meta( $resposta_id, $meta_key, $unifications );
 }
 
-function vs_format_user_answers( $respostas, $questions ) {
+function vs_format_user_answers($respostas, $questions) {
     $respostas_formatadas = [];
-    foreach ( $respostas as $index => $resposta ) {
-        // Verifica se a pergunta existe no array de perguntas
-        if (isset($questions[$index])) {
-            // Obtemos o enunciado da pergunta, que estará na chave 'label'
-            $texto_pergunta = $questions[$index]['label'] ?? 'Pergunta #' . (intval($index) + 1);
-
-            // Processa a resposta (verificando se é um array de opções, como no caso de checkboxes ou múltiplos selects)
-            $respostas_formatadas[] = [
-                'question' => sanitize_text_field($texto_pergunta),
-                'answer' => is_array($resposta) ? implode(', ', array_map('sanitize_text_field', $resposta)) : sanitize_text_field($resposta),
-            ];
+    
+    foreach ($respostas as $index => $resposta) {
+        if (!isset($questions[$index])) {
+            continue; // Pular respostas sem pergunta correspondente
         }
+        
+        $question = $questions[$index];
+        $texto_pergunta = $question['label'] ?? 'Pergunta #' . (intval($index) + 1);
+        
+        // Validação específica por tipo de campo
+        $resposta_sanitizada = vs_sanitize_answer_by_type($resposta, $question['tipo']);
+        
+        // Validação de campo obrigatório
+        if ($question['obrigatoria'] && empty($resposta_sanitizada)) {
+            throw new Exception("Campo obrigatório não preenchido: {$texto_pergunta}");
+        }
+        
+        $respostas_formatadas[] = [
+            'question' => sanitize_text_field($texto_pergunta),
+            'answer' => $resposta_sanitizada,
+            'type' => $question['tipo']
+        ];
     }
+    
     return $respostas_formatadas;
+}
+
+function vs_sanitize_answer_by_type($resposta, $tipo) {
+    switch ($tipo) {
+        case 'email':
+            return sanitize_email($resposta);
+        case 'number':
+            return is_numeric($resposta) ? floatval($resposta) : '';
+        case 'date':
+            return vs_validate_date_format($resposta) ? $resposta : '';
+        case 'checkbox':
+            return is_array($resposta) ? 
+                implode(', ', array_map('sanitize_text_field', $resposta)) : 
+                sanitize_text_field($resposta);
+        case 'textarea':
+            return sanitize_textarea_field($resposta);
+        default:
+            return is_array($resposta) ? 
+                implode(', ', array_map('sanitize_text_field', $resposta)) : 
+                sanitize_text_field($resposta);
+    }
 }
 
 function vs_get_existing_response( $user_id, $votacao_id ) {
@@ -152,6 +184,13 @@ function vs_check_votacao_status($data_fim) {
 }
 
 function vs_get_imported_vote_data($votacao_id, $question_index = null) {
+    $cache_key = 'vs_imported_vote_' . $votacao_id;
+    $cached_data = wp_cache_get($cache_key, 'voting_system');
+
+    if ($cached_data !== false) {
+        return $cached_data;
+    }
+
     if (empty($votacao_id)) {
         return json_encode(['questions' => []], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
@@ -238,7 +277,11 @@ function vs_get_imported_vote_data($votacao_id, $question_index = null) {
         $question['vote_id'] = $votacao_id;
         $question['question_source'] = $question['label'] ?? '';
         
-        return json_encode(['questions' => [$question]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $result = json_encode(['questions' => [$question]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        
+        wp_cache_set($cache_key, $result, 'voting_system', HOUR_IN_SECONDS);
+        
+        return $result;
     }
 
     // Caso contrário, retorna todas as perguntas (comportamento atual)
@@ -251,5 +294,109 @@ function vs_get_imported_vote_data($votacao_id, $question_index = null) {
         $question['question_source'] = $question['label'] ?? '';
     }
 
-    return json_encode(['questions' => $questions], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $result = json_encode(['questions' => $questions], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    
+    wp_cache_set($cache_key, $result, 'voting_system', HOUR_IN_SECONDS);
+    
+    return $result;
+}
+
+/**
+ * Valida as perguntas de uma votação
+ * 
+ * @param array $questions Array de perguntas
+ * @return array Array de erros de validação (vazio se tudo estiver ok)
+ */
+function vs_validate_voting_questions($questions) {
+    $errors = [];
+    
+    // Debug: Log das perguntas recebidas
+    error_log('[DEBUG] vs_validate_voting_questions - Total de perguntas: ' . count($questions));
+    error_log('[DEBUG] vs_validate_voting_questions - Perguntas: ' . print_r($questions, true));
+    
+    if (!is_array($questions)) {
+        $errors[] = 'Perguntas devem ser um array';
+        return $errors;
+    }
+    
+    if (empty($questions)) {
+        $errors[] = 'Nenhuma pergunta encontrada para esta votação';
+        return $errors;
+    }
+    
+    foreach ($questions as $index => $question) {
+        if (!is_array($question)) {
+            $errors[] = "Pergunta {$index} tem formato inválido";
+            continue;
+        }
+        
+        // Verificar se tem label
+        if (empty($question['label'])) {
+            $errors[] = "Pergunta {$index} não tem texto definido";
+        }
+        
+        // Verificar se tem tipo
+        if (empty($question['tipo'])) {
+            $errors[] = "Pergunta {$index} não tem tipo definido";
+        }
+        
+        // Verificar tipos que precisam de opções
+        $tipos_com_opcoes = ['radio', 'checkbox', 'select'];
+        if (in_array($question['tipo'], $tipos_com_opcoes)) {
+            if (empty($question['options']) || !is_array($question['options'])) {
+                $errors[] = "Pergunta {$index} do tipo {$question['tipo']} precisa ter opções definidas";
+            } else {
+                // Verificar se tem pelo menos uma opção não vazia
+                $opcoes_validas = array_filter($question['options'], function($option) {
+                    return !empty(trim($option));
+                });
+                if (empty($opcoes_validas)) {
+                    $errors[] = "Pergunta {$index} não tem opções válidas";
+                }
+            }
+        }
+    }
+    
+    // Debug: Log dos erros encontrados
+    if (!empty($errors)) {
+        error_log('[DEBUG] vs_validate_voting_questions - Erros encontrados: ' . print_r($errors, true));
+    } else {
+        error_log('[DEBUG] vs_validate_voting_questions - Validação passou sem erros');
+    }
+    
+    return $errors;
+}
+
+/**
+ * Função de debug para verificar o estado das perguntas
+ * 
+ * @param int $votacao_id ID da votação
+ * @return void
+ */
+function vs_debug_voting_questions($votacao_id) {
+    error_log('[DEBUG] vs_debug_voting_questions - Iniciando debug para votação ID: ' . $votacao_id);
+    
+    // Verificar se o post existe
+    $post = get_post($votacao_id);
+    if (!$post) {
+        error_log('[DEBUG] Post não encontrado para ID: ' . $votacao_id);
+        return;
+    }
+    
+    error_log('[DEBUG] Post encontrado: ' . $post->post_title . ' (Tipo: ' . $post->post_type . ')');
+    
+    // Verificar meta vs_questions
+    $questions_raw = get_post_meta($votacao_id, 'vs_questions', true);
+    error_log('[DEBUG] vs_questions raw: ' . print_r($questions_raw, true));
+    
+    // Verificar outros metas relevantes
+    $status = get_post_meta($votacao_id, '_vs_status', true);
+    $data_fim = get_post_meta($votacao_id, '_vs_data_fim', true);
+    
+    error_log('[DEBUG] Status da votação: ' . $status);
+    error_log('[DEBUG] Data fim: ' . $data_fim);
+    
+    // Verificar se vs_get_voting_questions funciona
+    $questions_processed = vs_get_voting_questions($votacao_id);
+    error_log('[DEBUG] vs_get_voting_questions resultado: ' . print_r($questions_processed, true));
 }

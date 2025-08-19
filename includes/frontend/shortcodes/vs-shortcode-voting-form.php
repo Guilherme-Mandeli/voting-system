@@ -21,6 +21,10 @@ function vs_votacao_shortcode($atts) {
     }
 
     $votacao_id = $post->ID;
+    
+    // Debug: Adicionar log para verificar o estado
+    error_log('[DEBUG] vs_votacao_shortcode - Votação ID: ' . $votacao_id);
+    vs_debug_voting_questions($votacao_id);
 
     $data_fim = get_post_meta($votacao_id, '_vs_data_fim', true);
     $status_atual = get_post_meta($votacao_id, '_vs_status', true);
@@ -28,7 +32,7 @@ function vs_votacao_shortcode($atts) {
     $permitir_edicao = get_post_meta($votacao_id, 'vs_permitir_edicao', true);
 
     if (!is_user_logged_in()) {
-        return '<p>Você precisa estar logado para votar.</p><p><a href="' . wp_login_url(get_permalink()) . '">Entrar</a></p>';
+        return '<p>Você precisa estar logado para votar.</p><p><a href="' . wp_login_url(get_permalink()) . '" class="vs-login-link">Entrar</a></p>';
     }
 
     $user_id = get_current_user_id();
@@ -36,6 +40,15 @@ function vs_votacao_shortcode($atts) {
     
     // Usa função helper para obter respostas do usuário
     $respostas = vs_get_user_responses($user_id, $votacao_id);
+
+    // Adicionar validação mais robusta
+    $questions = vs_get_voting_questions($votacao_id);
+    $validation_errors = vs_validate_voting_questions($questions);
+    
+    if (!empty($validation_errors)) {
+        error_log('[ERROR] Erros de validação encontrados: ' . implode(', ', $validation_errors));
+        return '<div class="vs-error"><strong>Erro na configuração da votação:</strong><ul><li>' . implode('</li><li>', $validation_errors) . '</li></ul><p><em>Entre em contato com o administrador.</em></p></div>';
+    }
 
     ob_start();
     

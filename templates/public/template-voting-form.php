@@ -14,54 +14,71 @@ if (!defined('ABSPATH')) {
  * @param bool $permitir_edicao Se a votação permite edição
  * @param string $encerrada Status da votação
  */
+
+// Debug: Log das variáveis do template
+error_log('[DEBUG] template-voting-form - Votacao ID: ' . $votacao_id);
+error_log('[DEBUG] template-voting-form - Ja votou: ' . ($ja_votou ? 'SIM' : 'NAO'));
+error_log('[DEBUG] template-voting-form - Permitir edicao: ' . ($permitir_edicao ?? 'NAO_DEFINIDO'));
+error_log('[DEBUG] template-voting-form - Questions count: ' . count($questions));
 ?>
 
-<?php if ($ja_votou && $permitir_edicao !== '1'): ?>
-    <div class="vs-votacao-ja-respondida p-4 border rounded bg-gray-50 shadow-sm">
-        <p><strong>Você já respondeu esta votação. Suas respostas foram:</strong></p>
-        <?php echo wp_kses_post(vs_render_respostas_votacao($questions, $respostas)); ?>
-    </div>
-<?php else: ?>
-    <?php $encerrada = get_post_meta($votacao_id, '_vs_status', true); ?>
-
-    <?php if ($ja_votou): ?>
-        <div class="vs-votacao-container p-4 border rounded bg-gray-50 shadow-sm">
-            <?php if ($permitir_edicao === '1' && $encerrada !== 'encerrada'): ?>
-                <p class="font-semibold mb-4">Você já respondeu esta votação. Você pode editar seu voto abaixo.</p>
-                <div id="vs-read-mode">
-                    <?php echo wp_kses_post(vs_render_respostas_votacao($questions, $respostas)); ?>
-                    <button id="vs-btn-editar" class="vs-button bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition shadow">Editar voto</button>
-                </div>
-                <div id="vs-edit-mode" style="display:none;">
-                    <?php echo wp_kses_post(vs_render_formulario_votacao($questions, $votacao_id, $respostas)); ?>
-                    <button id="vs-btn-cancelar" class="vs-button bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow">Cancelar</button>
-                </div>
-                <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    const btnEditar = document.getElementById('vs-btn-editar');
-                    const btnCancelar = document.getElementById('vs-btn-cancelar');
-                    const modoLeitura = document.getElementById('vs-read-mode');
-                    const modoEdicao = document.getElementById('vs-edit-mode');
-
-                    btnEditar.addEventListener('click', function() {
-                        modoLeitura.style.display = 'none';
-                        modoEdicao.style.display = 'block';
-                    });
-
-                    btnCancelar.addEventListener('click', function() {
-                        modoEdicao.style.display = 'none';
-                        modoLeitura.style.display = 'block';
-                    });
-                });
-                </script>
-            <?php else: ?>
-                <p class="font-semibold mb-4">Você já respondeu esta votação. Suas respostas foram:</p>
-                <?php echo vs_render_respostas_votacao($questions, $respostas); ?>
-            <?php endif; ?>
+<div class="vs-voting-form-container">
+    <?php if ($ja_votou && $permitir_edicao !== '1'): ?>
+        <div class="vs-voting-completed">
+            <h3>Você já participou desta votação</h3>
+            <div class="vs-responses-readonly">
+                <?php vs_render_respostas_votacao($votacao_id, $questions, $respostas); ?>
+            </div>
         </div>
     <?php else: ?>
-        <div class="vs-votacao-container p-4 border rounded bg-gray-50 shadow-sm">
-            <?php echo wp_kses_post(vs_render_formulario_votacao($questions, $votacao_id, $respostas)); ?>
+        <div class="vs-voting-form-active">
+            <?php if ($ja_votou && $permitir_edicao === '1'): ?>
+                <div class="vs-edit-notice">
+                    <p><strong>Você já votou.</strong> Você pode editar suas respostas até <?php echo esc_html($data_fim_formatted ?? 'o encerramento'); ?>.</p>
+                    <button type="button" class="vs-toggle-edit-mode">Editar Respostas</button>
+                </div>
+                
+                <div class="vs-current-responses" style="display: block;">
+                    <?php vs_render_respostas_votacao($votacao_id, $questions, $respostas); ?>
+                </div>
+            <?php endif; ?>
+            
+            <div class="vs-form-container">
+                <?php 
+                // Debug: Log antes de renderizar o formulário
+                error_log('[DEBUG] template-voting-form - Renderizando formulário');
+                echo vs_render_formulario_votacao($questions, $votacao_id, $respostas); 
+                ?>
+            </div>
         </div>
     <?php endif; ?>
-<?php endif; ?>
+</div>
+
+<script>
+(function($) {
+    $('.vs-toggle-edit-mode').on('click', function() {
+        $('.vs-current-responses').toggle();
+        $('.vs-form-container').toggle();
+        $(this).text($(this).text() === 'Editar Respostas' ? 'Cancelar Edição' : 'Editar Respostas');
+    });
+    
+    // Validação em tempo real
+    $('.vs-form-container form').on('submit', function(e) {
+        var hasErrors = false;
+        $('.vs-required').each(function() {
+            var $field = $(this).closest('.vs-question-container').find('input, select, textarea');
+            if (!$field.val()) {
+                hasErrors = true;
+                $field.addClass('vs-error');
+            } else {
+                $field.removeClass('vs-error');
+            }
+        });
+        
+        if (hasErrors) {
+            e.preventDefault();
+            alert('Por favor, preencha todos os campos obrigatórios.');
+        }
+    });
+})(jQuery);
+</script>
