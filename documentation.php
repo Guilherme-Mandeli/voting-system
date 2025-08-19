@@ -305,6 +305,51 @@ defined('ABSPATH') || exit;
  *    - Opções de imported_items recebem a classe 'imported_question'
  *    - Ambos os tipos mantêm o campo 'vs-valor-real' para processamento
  * 
+ * PROBLEMAS IDENTIFICADOS E CORREÇÕES IMPLEMENTADAS:
+ * ==================================================
+ * 
+ * 1. DESALINHAMENTO DE ÍNDICES (CORRIGIDO):
+ *    - Problema: Arrays 'valores_reais' eram reindexados no PHP (vs-metabox-questions.php:152)
+ *      causando desalinhamento entre opções e seus valores reais correspondentes
+ *    - Solução: Removida função array_values() para preservar índices originais
+ *    - Arquivos afetados: metaboxes/vs-metabox-questions.php
+ * 
+ * 2. MAPEAMENTO INCORRETO NO JAVASCRIPT (CORRIGIDO):
+ *    - Problema: Função addSelected() enviava valores_reais sequencialmente em vez de
+ *      usar índices específicos das opções selecionadas
+ *    - Solução: Alterada lógica para enviar valores_reais com índices corretos:
+ *      vs_questions[${questionIndex}][valores_reais][${currentOptionIndex}]
+ *    - Arquivos afetados: assets/js/admin/imported-answers.js
+ * 
+ * 3. EXIBIÇÃO INCORRETA DO VALOR REAL (CORRIGIDO):
+ *    - Problema: Elemento 'vs-valor-real-texto' exibia valor da opção em vez do valor real
+ *    - Solução JavaScript: Alterado de 'text: visualValue' para 'text: realValue'
+ *    - Solução PHP: Alterado de 'esc_html($option)' para 'esc_html($valor_real)'
+ *    - Arquivos afetados: 
+ *      * assets/js/admin/imported-answers.js (linha 291)
+ *      * templates/admin/template-metabox-question-row.php (linha 214)
+ * 
+ * 4. INTERPRETAÇÃO INCORRETA DO STATUS DE IMPORTAÇÃO (CORRIGIDO):
+ *    - Problema: Template verificava status de importação incorretamente
+ *    - Solução: Melhorada lógica de verificação no template para garantir que
+ *      apenas opções com valor_real válido sejam marcadas como importadas
+ *    - Arquivos afetados: templates/admin/template-metabox-question-row.php
+ * 
+ * 5. LOGS DE DEBUG IMPLEMENTADOS:
+ *    - Adicionados logs detalhados para rastreamento de problemas:
+ *      * Dados recebidos (imported_items, options, valores_reais)
+ *      * Processamento de cada opção
+ *      * Estado final dos arrays
+ *    - Localização: metaboxes/vs-metabox-questions.php e template-metabox-question-row.php
+ * 
+ * NOTAS DE COMPATIBILIDADE:
+ * ========================
+ * 
+ * - As correções mantêm compatibilidade com dados existentes
+ * - Valores reais preservam sua integridade após as correções
+ * - Sistema de logs pode ser desabilitado removendo error_log() em produção
+ * - Estrutura de dados permanece inalterada, apenas a lógica de processamento foi corrigida
+ * 
  * ESTRUTURA DE RESPOSTA AJAX PADRÃO
  * =================================
  * 
