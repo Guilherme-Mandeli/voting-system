@@ -20,20 +20,20 @@ function vs_render_metabox_questions_view($post) {
             if (!empty($question['imported_answers'])) {
                 $json_decoded = json_decode($question['imported_answers'], true);
                 if ($json_decoded !== null) {
-                    $question['imported_answers'] = wp_json_encode($json_decoded);
+                    $question['imported_answers'] = json_encode($json_decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 } else {
-                    $question['imported_answers'] = wp_json_encode([
+                    $question['imported_answers'] = json_encode([
                         'perguntas' => [],
                         'manual_items' => [],
                         'imported_items' => []
-                    ]);
+                    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 }
             } else {
-                $question['imported_answers'] = wp_json_encode([
+                $question['imported_answers'] = json_encode([
                     'perguntas' => [],
                     'manual_items' => [],
                     'imported_items' => []
-                ]);
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             }
         }
         unset($question); // Sem esta linha, problemas acontecem :D - Mandeli, depois de tropezentas horas debugando.

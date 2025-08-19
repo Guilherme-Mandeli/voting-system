@@ -57,7 +57,7 @@ defined( 'ABSPATH' ) || exit;
         class="vs-imported-answers"
         vote-id-list="<?php 
             // Verifica se existem respostas importadas
-            $imported_answers = $question['imported_answers'] ?? wp_json_encode(['questions' => []]);
+            $imported_answers = $question['imported_answers'] ?? json_encode(['questions' => []], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             $answers_data = json_decode($imported_answers, true);
             // Validação e sanitização do ID
             $vote_id = isset($answers_data['questions'][0]['question_source']) ? 
@@ -65,7 +65,7 @@ defined( 'ABSPATH' ) || exit;
                 (isset($question['imported_vote_id']) ? absint($question['imported_vote_id']) : '');
             echo esc_attr($vote_id);
         ?>"
-        value="<?php echo esc_attr($question['imported_answers'] ?? wp_json_encode(['questions' => []])); ?>">
+        value="<?php echo esc_attr($question['imported_answers'] ?? json_encode(['questions' => []], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)); ?>">
 
     <!-- Botão para abrir modal (visível apenas quando tipo 'imported_vote' estiver selecionado) -->
     <div class="vs-votacao-anterior-container" style="display: none; margin-top: 10px;">

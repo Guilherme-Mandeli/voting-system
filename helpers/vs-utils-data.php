@@ -153,7 +153,7 @@ function vs_check_votacao_status($data_fim) {
 
 function vs_get_imported_vote_data($votacao_id, $question_index = null) {
     if (empty($votacao_id)) {
-        return wp_json_encode(['questions' => []]);
+        return json_encode(['questions' => []], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     // Busca todas as respostas da votação
@@ -238,7 +238,7 @@ function vs_get_imported_vote_data($votacao_id, $question_index = null) {
         $question['vote_id'] = $votacao_id;
         $question['question_source'] = $question['label'] ?? '';
         
-        return wp_json_encode(['questions' => [$question]]);
+        return json_encode(['questions' => [$question]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     // Caso contrário, retorna todas as perguntas (comportamento atual)
@@ -251,5 +251,5 @@ function vs_get_imported_vote_data($votacao_id, $question_index = null) {
         $question['question_source'] = $question['label'] ?? '';
     }
 
-    return wp_json_encode(['questions' => $questions]);
+    return json_encode(['questions' => $questions], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }

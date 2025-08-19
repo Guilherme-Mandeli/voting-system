@@ -82,7 +82,7 @@ class VS_QuestionFactory {
             'obrigatoria' => rand(0, 1) === 1, // 50% chance de ser obrigatória
             'unificada' => '', // Não preencher conforme solicitado
             'imported_vote_id' => 0,
-            'imported_answers' => wp_json_encode(['perguntas' => []])
+            'imported_answers' => json_encode(['perguntas' => []], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
         ];
         
         // Adiciona opções para tipos que precisam

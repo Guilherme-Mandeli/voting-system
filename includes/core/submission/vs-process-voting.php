@@ -59,11 +59,11 @@ function vs_processar_pergunta_imported_vote($question, $votacao_id) {
     });
 
     // Atualiza o post meta com as respostas processadas
-    update_post_meta($votacao_id, 'vs_imported_answers', wp_json_encode([
+    update_post_meta($votacao_id, 'vs_imported_answers', json_encode([
         'questions' => [[
             'imported_answers' => $todas_respostas
         ]]
-    ]));
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
     return $todas_respostas;
 }
