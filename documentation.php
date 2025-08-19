@@ -240,6 +240,26 @@ defined('ABSPATH') || exit;
  *         }
  *       ]
  *     }
+ *   ],
+ *   "manual_items": [
+ *     {
+ *       "text": "Opção criada manualmente",
+ *       "vs_valor_real": "Opção criada manualmente"
+ *     },
+ *     {
+ *       "text": "Outra opção manual",
+ *       "vs_valor_real": "Outra opção manual"
+ *     }
+ *   ],
+ *   "imported_items": [
+ *     {
+ *       "text": "Excelente evento, muito bem organizado e informativo",
+ *       "vs_valor_real": "Excelente evento, muito bem organizado e informativo"
+ *     },
+ *     {
+ *       "text": "Bom evento, mas alguns aspectos podem melhorar",
+ *       "vs_valor_real": "Bom evento, mas alguns aspectos podem melhorar"
+ *     }
  *   ]
  * }
  * 
@@ -253,6 +273,37 @@ defined('ABSPATH') || exit;
  *     - value (string): Resposta original exata do usuário
  *     - value_unificada (string): Versão unificada/agrupada da resposta
  *     - qtd_votos (int): Quantidade de usuários que deram essa resposta específica
+ * 
+ * - manual_items (array): Lista de opções criadas manualmente pelo administrador
+ *   * text (string): Texto da opção exibido ao usuário
+ *   * vs_valor_real (string): Valor real da opção (igual ao text para opções manuais)
+ * 
+ * - imported_items (array): Lista de opções selecionadas das respostas importadas
+ *   * text (string): Texto da resposta importada selecionada
+ *   * vs_valor_real (string): Valor original da resposta importada
+ * 
+ * FUNCIONAMENTO DA ESTRUTURA:
+ * ===============================
+ * 
+ * 1. SEPARAÇÃO DE TIPOS DE OPÇÕES:
+ *    - manual_items: Opções criadas diretamente pelo administrador
+ *    - imported_items: Opções selecionadas das respostas de votações anteriores
+ *    - Ambos os tipos são renderizados no formulário final da votação
+ * 
+ * 2. PERSISTÊNCIA DE DADOS:
+ *    - A estrutura garante que opções importadas mantenham sua classe CSS 'imported_question'
+ *    - O campo 'vs_valor_real' preserva o valor original das respostas importadas
+ *    - Opções manuais e importadas são tratadas de forma diferenciada na interface
+ * 
+ * 3. VALIDAÇÃO DE DUPLICATAS:
+ *    - O sistema verifica duplicatas baseado no campo 'vs_valor_real'
+ *    - Impede a adição de opções com valores reais idênticos
+ *    - Funciona tanto para opções manuais quanto importadas
+ * 
+ * 4. RENDERIZAÇÃO NO FRONTEND:
+ *    - Opções de manual_items são renderizadas sem classe especial
+ *    - Opções de imported_items recebem a classe 'imported_question'
+ *    - Ambos os tipos mantêm o campo 'vs-valor-real' para processamento
  * 
  * ESTRUTURA DE RESPOSTA AJAX PADRÃO
  * =================================
