@@ -288,7 +288,7 @@
                 const $valorRealTexto = $('<span>', {
                     class: 'vs-valor-real-texto',
                     css: { fontSize: '12px', color: '#666', marginLeft: '10px' },
-                    text: visualValue
+                    text: realValue
                 });
                 
                 const $removeButton = $('<button>', {

@@ -211,7 +211,7 @@ defined( 'ABSPATH' ) || exit;
                         
                         <!-- Span para mostrar o valor real -->
                         <span class="vs-valor-real-texto" style="font-size: 12px; color: #666; margin-left: 10px;">
-                            <?php echo esc_html($option); ?>
+                            <?php echo esc_html($valor_real); ?>
                         </span>
                     <?php endif; ?>
                     <button type="button" class="vs-remove-option">Remover</button>
