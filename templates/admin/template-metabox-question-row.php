@@ -140,7 +140,7 @@ defined( 'ABSPATH' ) || exit;
 </div>
     </div>
 
-    <!-- Campo oculto para valor unificado -->
+    <!-- Campo oculto para valor unificada -->
     <input
         type="hidden"
         name="vs_questions[<?php echo esc_attr($index); ?>][unificada]"
@@ -167,15 +167,26 @@ defined( 'ABSPATH' ) || exit;
             }
             
             foreach ($options as $option_index => $option) {
-                $valor_real = $question['valores_reais'][$option_index] ?? $option;
-                $is_imported = $tipo_atual === 'imported_vote';
+                // Verificar se existe um valor real para este índice específico
+                $valor_real = $question['valores_reais'][$option_index] ?? null;
                 
-                // Verificar se é realmente uma opção importada (valor real diferente da opção)
-                $has_real_value =   $is_imported &&
-                                    isset($question['valores_reais'][$option_index]) &&
-                                    $question['valores_reais'][$option_index] !== $option;
+                // Decodificar imported_answers para verificar se é importada
+                $imported_answers_data = json_decode($question['imported_answers'] ?? '{}', true);
+                $imported_items = $imported_answers_data['imported_items'] ?? [];
+                $is_imported = in_array($option_index, $imported_items);
+                
+                // Se não está nos arrays, usar lógica de fallback
+                if (!$is_imported) {
+                    $manual_items = $imported_answers_data['manual_items'] ?? [];
+                    if (!in_array($option_index, $manual_items)) {
+                        // Fallback: verificar se tem valor real diferente da opção
+                        $is_imported = ($valor_real !== null && $valor_real !== $option);
+                    }
+                }
+                
+                $option_class = $is_imported ? 'vs-option-item imported_question' : 'vs-option-item';
                 ?>
-                <div class="vs-option-item" style="margin-bottom: 5px;">
+                <div class="<?php echo esc_attr($option_class); ?>" style="margin-bottom: 5px;">
                     <input
                         type="text"
                         name="vs_questions[<?php echo esc_attr($index); ?>][options][]"
@@ -183,16 +194,20 @@ defined( 'ABSPATH' ) || exit;
                         style="width: 90%;"
                         placeholder="Opção <?php echo ($option_index + 1); ?>"
                     >
-                    <?php if ($has_real_value): ?>
-                    <input
-                        type="hidden"
-                        name="vs_questions[<?php echo esc_attr($index); ?>][valores_reais][]"
-                        value="<?php echo esc_attr($valor_real); ?>"
-                        class="vs-valor-real"
-                    >
-                    <span class="vs-valor-real-texto"><?php echo esc_html($valor_real); ?></span>
+                    
+                    <?php if ($is_imported && $valor_real !== null): ?>
+                        <!-- Campo oculto para valor real -->
+                        <input type="hidden" 
+                               name="vs_questions[<?php echo esc_attr($index); ?>][valores_reais][<?php echo esc_attr($option_index); ?>]" 
+                               class="vs-valor-real" 
+                               value="<?php echo esc_attr($valor_real); ?>">
+                        
+                        <!-- Span para mostrar o valor real -->
+                        <span class="vs-valor-real-texto" style="font-size: 12px; color: #666; margin-left: 10px;">
+                            <?php echo esc_html($valor_real); ?>
+                        </span>
                     <?php endif; ?>
-                    <button type="button" class="button button-small vs-remove-option">Remover</button>
+                    <button type="button" class="vs-remove-option">Remover</button>
                 </div>
                 <?php
             }

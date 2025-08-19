@@ -17,23 +17,22 @@ function vs_render_metabox_questions_view($post) {
 
     if (!empty($questions) && is_array($questions)) {
         foreach ($questions as &$question) {
-            // Garantir que imported_answers seja um JSON válido
             if (!empty($question['imported_answers'])) {
-                // Decodifica o JSON para verificar se é válido
                 $json_decoded = json_decode($question['imported_answers'], true);
                 if ($json_decoded !== null) {
-                    // Re-codifica para garantir um JSON válido e consistente
                     $question['imported_answers'] = wp_json_encode($json_decoded);
                 } else {
-                    // Se o JSON não for válido, inicializa com um objeto vazio
                     $question['imported_answers'] = wp_json_encode([
-                        'perguntas' => []
+                        'perguntas' => [],
+                        'manual_items' => [],
+                        'imported_items' => []
                     ]);
                 }
             } else {
-                // Se não houver respostas importadas, inicializa com um objeto vazio
                 $question['imported_answers'] = wp_json_encode([
-                    'perguntas' => []
+                    'perguntas' => [],
+                    'manual_items' => [],
+                    'imported_items' => []
                 ]);
             }
         }

@@ -24,9 +24,6 @@
             // Selecionar todas as respostas
             $(document).on('change', '.vs-select-all-answers', this.selectAllAnswers.bind(this));
             
-            // Filtrar perguntas
-            $(document).on('input', '.vs-search-question', this.filterQuestions.bind(this));
-            
             // Remover seleção
             $(document).on('click', '.vs-remover-selecao', this.removeSelection.bind(this));
             
@@ -210,6 +207,20 @@
             const $questionContainer = $container.closest('.vs-pergunta');
             const questionIndex = $questionContainer.find('[name*="[label]"]').attr('name').match(/\[(\d+)\]/)[1];
             const $optionsContainer = $container.find('.vs-options-column .vs-options');
+            const $importedAnswersField = $questionContainer.find('.vs-imported-answers');
+            
+            // Obter dados atuais do imported_answers
+            let importedAnswersData;
+            try {
+                importedAnswersData = JSON.parse($importedAnswersField.val() || '{}');
+            } catch (e) {
+                importedAnswersData = { perguntas: [], manual_items: [], imported_items: [] };
+            }
+            
+            // Inicializar arrays se não existirem
+            if (!importedAnswersData.manual_items) importedAnswersData.manual_items = [];
+            if (!importedAnswersData.imported_items) importedAnswersData.imported_items = [];
+            if (!importedAnswersData.perguntas) importedAnswersData.perguntas = [];
             
             // Obter respostas selecionadas da tabela
             const $selectedAnswers = $container.find('.vs-select-answer:checked');
@@ -220,51 +231,71 @@
                 const visualValue = $tr.find('td:eq(2)').text();
                 const sourceQuestion = $tr.find('td:eq(4)').text();
                 
-                // Verificar se a opção já existe
-                const exists = $optionsContainer.find('.vs-valor-real').filter(function() {
-                    return $(this).val() === realValue;
-                }).length > 0;
-                
-                if (!exists) {
-                    // Estrutura HTML unificada para opções
-                    const $optionItem = $('<div>', { 
-                        class: 'vs-option-item', 
-                        css: { marginBottom: '5px' } 
+                    // Verificar se já existe uma opção com este valor real
+                    let isDuplicate = false;
+                    $optionsContainer.find('.vs-valor-real').each(function() {
+                        if ($(this).val() === realValue) {
+                            isDuplicate = true;
+                            return false; // break do loop
+                        }
+                    });
+                    
+                    // Se for duplicata, pular esta opção
+                    if (isDuplicate) {
+                        console.log(`Opção com valor real "${realValue}" já existe. Pulando...`);
+                        return true; // continue do loop
+                    }
+                    
+                    // Obter o próximo índice de opção
+                    const currentOptionIndex = $optionsContainer.find('.vs-option-item').length;
+                    
+                    // Criar nova opção
+                    const $optionItem = $('<div>', {
+                        class: 'vs-option-item imported_question',
+                        style: 'margin-bottom: 5px;'
                     });
                     
                     const $textInput = $('<input>', {
                         type: 'text',
                         name: `vs_questions[${questionIndex}][options][]`,
                         value: visualValue,
-                        style: 'width: 90%;'
+                        style: 'width: 90%;',
+                        placeholder: `Opção ${currentOptionIndex + 1}`
                     });
                     
                     const $hiddenInput = $('<input>', {
                         type: 'hidden',
-                        name: `vs_questions[${questionIndex}][valores_reais][]`,
-                        value: realValue,
-                        class: 'vs-valor-real'
+                        name: `vs_questions[${questionIndex}][valores_reais][${currentOptionIndex}]`,
+                        class: 'vs-valor-real',
+                        value: realValue
                     });
                     
-                    const $sourceSpan = $('<span>', {
-                        class: 'vs-source-question',
-                        style: 'color: #666; font-size: 0.9em; display: block; margin-top: 2px;'
-                    }).text(sourceQuestion);
+                    const $valorRealTexto = $('<span>', {
+                        class: 'vs-valor-real-texto',
+                        css: { fontSize: '12px', color: '#666', marginLeft: '10px' },
+                        text: realValue
+                    });
                     
                     const $removeButton = $('<button>', {
                         type: 'button',
                         class: 'button button-small vs-remove-option',
-                        text: 'Remover',
-                        style: 'margin-left: 5px;'
+                        text: 'Remover'
                     });
                     
                     // Montar estrutura unificada
-                    $optionItem.append($textInput, $hiddenInput, $sourceSpan, $removeButton);
+                    $optionItem.append($textInput, $hiddenInput, $valorRealTexto, $removeButton);
                     
                     // Inserir antes do botão "Adicionar Opção"
                     $optionsContainer.find('.vs-add-option').before($optionItem);
-                }
+                    
+                    // Adicionar ao array de itens importados
+                    if (!importedAnswersData.imported_items.includes(currentOptionIndex)) {
+                        importedAnswersData.imported_items.push(currentOptionIndex);
+                    }
             });
+            
+            // Atualizar o campo imported_answers
+            $importedAnswersField.val(JSON.stringify(importedAnswersData));
             
             // Desmarcar checkboxes após adicionar
             $selectedAnswers.prop('checked', false);
@@ -299,7 +330,35 @@
 
         removeOption: function(event) {
             const $optionItem = $(event.target).closest('.vs-option-item');
-            const $container = $optionItem.closest('.vs-pergunta').find('.vs-columns-container');
+            const $questionContainer = $optionItem.closest('.vs-pergunta');
+            const $container = $questionContainer.find('.vs-columns-container');
+            const $importedAnswersField = $questionContainer.find('.vs-imported-answers');
+            
+            // Obter o índice da opção que está sendo removida
+            const optionIndex = $optionItem.index();
+            
+            // Atualizar arrays manual_items e imported_items
+            let importedAnswersData;
+            try {
+                importedAnswersData = JSON.parse($importedAnswersField.val() || '{}');
+            } catch (e) {
+                importedAnswersData = { perguntas: [], manual_items: [], imported_items: [] };
+            }
+            
+            // Inicializar arrays se não existirem
+            if (!importedAnswersData.manual_items) importedAnswersData.manual_items = [];
+            if (!importedAnswersData.imported_items) importedAnswersData.imported_items = [];
+            
+            // Remover o índice dos arrays
+            importedAnswersData.manual_items = importedAnswersData.manual_items.filter(index => index !== optionIndex);
+            importedAnswersData.imported_items = importedAnswersData.imported_items.filter(index => index !== optionIndex);
+            
+            // Reajustar índices maiores que o removido
+            importedAnswersData.manual_items = importedAnswersData.manual_items.map(index => index > optionIndex ? index - 1 : index);
+            importedAnswersData.imported_items = importedAnswersData.imported_items.map(index => index > optionIndex ? index - 1 : index);
+            
+            // Atualizar o campo imported_answers
+            $importedAnswersField.val(JSON.stringify(importedAnswersData));
             
             // Remover a opção
             $optionItem.remove();
@@ -313,14 +372,6 @@
         selectAllAnswers: function(event) {
             const isChecked = $(event.target).prop('checked');
             $(event.target).closest('table').find('.vs-select-answer').prop('checked', isChecked);
-        },
-
-        filterQuestions: function(event) {
-            const search = $(event.target).val().toLowerCase();
-            $('.vs-option-item').each(function() {
-                const question = $(this).find('.vs-source-question').text().toLowerCase();
-                $(this).toggle(question.includes(search));
-            });
         },
 
         removeSelection: function(event) {
