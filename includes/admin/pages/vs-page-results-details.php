@@ -54,18 +54,26 @@ function vs_render_todos_resultados_page($votacao_id) {
     // Verifica o filtro de status das respostas
     $status_filter = isset($_GET['status_filter']) ? sanitize_text_field($_GET['status_filter']) : 'active';
 
-    // Recupera os IDs dos usuários que votaram na votação
-    $voting_user_ids = get_post_meta($votacao_id, '_vs_votantes', true);
-    $voting_user_ids = is_array($voting_user_ids) ? $voting_user_ids : [];
-
-    // Aplica filtro baseado no status selecionado
-    if ($status_filter === 'trashed') {
-        $voting_user_ids = vs_filter_users_with_trashed_responses($votacao_id, $voting_user_ids);
-    } elseif ($status_filter === 'active') {
-        $voting_user_ids = vs_filter_users_with_active_responses($votacao_id, $voting_user_ids);
+    // Recupera os IDs dos usuários baseado no filtro
+    if ($status_filter === 'all') {
+        // Para "all", busca todos os usuários que já votaram (incluindo lixeira)
+        $voting_user_ids = vs_get_all_voting_users($votacao_id);
+    } elseif ($status_filter === 'trashed') {
+        // Para "trashed", busca diretamente usuários com respostas na lixeira
+        $voting_user_ids = vs_get_users_with_trashed_responses($votacao_id);
+    } else {
+        // Para "active", usa a lista do meta (usuários ativos)
+        $voting_user_ids = get_post_meta($votacao_id, '_vs_votantes', true);
+        $voting_user_ids = is_array($voting_user_ids) ? $voting_user_ids : [];
     }
-    // Para 'all', não aplica filtro adicional
 
+    // Remove filtros adicionais já que a busca inicial já filtra
+    // if ($status_filter === 'trashed') {
+    //     $voting_user_ids = vs_filter_users_with_trashed_responses($votacao_id, $voting_user_ids);
+    // } elseif ($status_filter === 'active') {
+    //     $voting_user_ids = vs_filter_users_with_active_responses($votacao_id, $voting_user_ids);
+    // }
+    
     // Calcula total de usuários e páginas para paginação
     $total_users = count($voting_user_ids);
     $total_pages = max(1, ceil($total_users / $usuarios_por_pagina));
@@ -322,6 +330,68 @@ function vs_render_todos_resultados_page($votacao_id) {
     }
     </style>
     <?php
+}
+
+/**
+ * Busca todos os usuários que já votaram (incluindo lixeira)
+ */
+function vs_get_all_voting_users($votacao_id) {
+    $args = [
+        'post_type' => 'votacao_resposta',
+        'posts_per_page' => -1,
+        'post_status' => ['publish', 'private', 'trash'],
+        'meta_query' => [
+            [
+                'key' => 'vs_votacao_id',
+                'value' => $votacao_id,
+                'compare' => '=',
+            ],
+        ],
+        'fields' => 'ids',
+    ];
+    
+    $posts = get_posts($args);
+    $user_ids = [];
+    
+    foreach ($posts as $post_id) {
+        $user_id = get_post_field('post_author', $post_id);
+        if ($user_id && !in_array($user_id, $user_ids)) {
+            $user_ids[] = $user_id;
+        }
+    }
+    
+    return $user_ids;
+}
+
+/**
+ * Busca usuários que possuem respostas na lixeira
+ */
+function vs_get_users_with_trashed_responses($votacao_id) {
+    $args = [
+        'post_type' => 'votacao_resposta',
+        'posts_per_page' => -1,
+        'post_status' => 'trash',
+        'meta_query' => [
+            [
+                'key' => 'vs_votacao_id',
+                'value' => $votacao_id,
+                'compare' => '=',
+            ],
+        ],
+        'fields' => 'ids',
+    ];
+    
+    $posts = get_posts($args);
+    $user_ids = [];
+    
+    foreach ($posts as $post_id) {
+        $user_id = get_post_field('post_author', $post_id);
+        if ($user_id && !in_array($user_id, $user_ids)) {
+            $user_ids[] = $user_id;
+        }
+    }
+    
+    return $user_ids;
 }
 
 /**
