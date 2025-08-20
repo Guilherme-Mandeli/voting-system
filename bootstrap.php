@@ -34,6 +34,9 @@ class VS_Bootstrap {
         // Taxonomias
         require_once VS_PLUGIN_PATH . 'includes/core/tax/vs-register-tax-event.php';
         
+        // Hooks de sincronização
+        require_once VS_PLUGIN_PATH . 'includes/core/hooks/vs-sync-votantes.php';
+
         // Submission
         require_once VS_PLUGIN_PATH . 'includes/core/submission/vs-handle-form-submit.php';
         require_once VS_PLUGIN_PATH . 'includes/core/submission/vs-process-voting.php';

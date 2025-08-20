@@ -26,7 +26,7 @@ function vs_votacao_shortcode($atts) {
 
     $data_fim = get_post_meta($votacao_id, '_vs_data_fim', true);
     $status_atual = get_post_meta($votacao_id, '_vs_status', true);
-    $questions = vs_get_voting_questions($votacao_id); // Usa função helper
+    $questions = vs_get_voting_questions($votacao_id);
     $permitir_edicao = get_post_meta($votacao_id, 'vs_permitir_edicao', true);
 
     if (!is_user_logged_in()) {
@@ -34,12 +34,12 @@ function vs_votacao_shortcode($atts) {
     }
 
     $user_id = get_current_user_id();
-    $ja_votou = vs_user_already_voted($votacao_id, $user_id); // Usa função helper
+    $ja_votou = vs_user_already_voted($votacao_id, $user_id);
     
-    // Usa função helper para obter respostas do usuário
+    // Obter respostas do usuário
     $respostas = vs_get_user_responses($user_id, $votacao_id);
 
-    // Adicionar validação mais robusta
+    // Validação das perguntas
     $questions = vs_get_voting_questions($votacao_id);
     $validation_errors = vs_validate_voting_questions($questions);
     
@@ -49,10 +49,26 @@ function vs_votacao_shortcode($atts) {
 
     ob_start();
     
-    // Garante que o CSS seja carregado usando a classe centralizada
+    // Garante que o CSS seja carregado
     VS_CSS_Conditional_Loader::ensure_css_for_shortcode('votacao_formulario');
     
-    include VS_PLUGIN_PATH . 'templates/public/template-voting-form.php';
+    // Verificar se está em modo de edição
+    $modo_edicao = isset($_GET['vs_edit']) && $_GET['vs_edit'] === '1' && $permitir_edicao;
+    
+    // Se o usuário já votou
+    if ($ja_votou && !empty($respostas['respostas'])) {
+        if ($modo_edicao) {
+            // Exibe o formulário de edição
+            include VS_PLUGIN_PATH . 'templates/public/template-voting-form.php';
+        } else {
+            // Exibe os resultados
+            include VS_PLUGIN_PATH . 'templates/public/template-voting-results.php';
+        }
+    } else {
+        // Formulário normal para novos votos
+        include VS_PLUGIN_PATH . 'templates/public/template-voting-form.php';
+    }
+    
     return ob_get_clean();
 }
 add_shortcode('votacao_formulario', 'vs_votacao_shortcode');

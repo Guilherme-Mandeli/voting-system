@@ -19,16 +19,21 @@ function vs_render_formulario_votacao($questions, $votacao_id, $respostas = []) 
     if (!is_array($respostas)) {
         $respostas = [];
     }
+
+    // Extrair as respostas do formato correto para preenchimento automático
+    $user_responses = [];
+    if (isset($respostas['respostas']) && is_array($respostas['respostas'])) {
+        $user_responses = $respostas['respostas'];
+    }
     
-    // Disponibilizar variáveis para o template
-    $user_responses = $respostas;
-    
-    // Debug: Verificar se o template existe
     $template_path = VS_PLUGIN_PATH . 'templates/public/template-voting-form-fields.php';
 
     ob_start();
     include $template_path;
     $output = ob_get_clean();
+
+    // Adicionar ID ao formulário para que o botão Salvar funcione
+    $output = str_replace('class="vs-form', 'id="vs-voting-form" class="vs-form', $output);
 
     return $output;
 }
@@ -54,7 +59,7 @@ function vs_render_respostas_votacao($questions, $respostas) {
  * Renderiza campo de texto simples
  */
 function vs_render_text_field($question, $index, $user_responses = []) {
-    $field_name = "vs_respostas[{$index}]";
+    $field_name = "respostas[{$index}]";
     $current_value = isset($user_responses[$index]) ? esc_attr($user_responses[$index]) : '';
     $required = !empty($question['obrigatoria']) ? 'required' : '';
     
@@ -65,7 +70,7 @@ function vs_render_text_field($question, $index, $user_responses = []) {
  * Renderiza campo de textarea
  */
 function vs_render_textarea_field($question, $index, $user_responses = []) {
-    $field_name = "vs_respostas[{$index}]";
+    $field_name = "respostas[{$index}]";
     $current_value = isset($user_responses[$index]) ? esc_textarea($user_responses[$index]) : '';
     $required = !empty($question['obrigatoria']) ? 'required' : '';
     
@@ -76,7 +81,7 @@ function vs_render_textarea_field($question, $index, $user_responses = []) {
  * Renderiza campo numérico
  */
 function vs_render_number_field($question, $index, $user_responses = []) {
-    $field_name = "vs_respostas[{$index}]";
+    $field_name = "respostas[{$index}]";
     $current_value = isset($user_responses[$index]) ? esc_attr($user_responses[$index]) : '';
     $required = !empty($question['obrigatoria']) ? 'required' : '';
     
@@ -87,7 +92,7 @@ function vs_render_number_field($question, $index, $user_responses = []) {
  * Renderiza campo de email
  */
 function vs_render_email_field($question, $index, $user_responses = []) {
-    $field_name = "vs_respostas[{$index}]";
+    $field_name = "respostas[{$index}]";
     $current_value = isset($user_responses[$index]) ? esc_attr($user_responses[$index]) : '';
     $required = !empty($question['obrigatoria']) ? 'required' : '';
     
@@ -98,7 +103,7 @@ function vs_render_email_field($question, $index, $user_responses = []) {
  * Renderiza campo de data
  */
 function vs_render_date_field($question, $index, $user_responses = []) {
-    $field_name = "vs_respostas[{$index}]";
+    $field_name = "respostas[{$index}]";
     $current_value = isset($user_responses[$index]) ? esc_attr($user_responses[$index]) : '';
     $required = !empty($question['obrigatoria']) ? 'required' : '';
     
@@ -109,7 +114,7 @@ function vs_render_date_field($question, $index, $user_responses = []) {
  * Renderiza campos de escolha (radio, checkbox, select)
  */
 function vs_render_choice_field($question, $index, $user_responses = []) {
-    $field_name = "vs_respostas[{$index}]";
+    $field_name = "respostas[{$index}]";
     $current_value = isset($user_responses[$index]) ? $user_responses[$index] : '';
     $required = !empty($question['obrigatoria']) ? 'required' : '';
     $tipo = isset($question['tipo']) ? $question['tipo'] : 'text';
@@ -117,7 +122,6 @@ function vs_render_choice_field($question, $index, $user_responses = []) {
     // Combinar opções manuais e importadas
     $opcoes = [];
     
-    // Adicionar opções manuais - CORRIGIDO: usar 'options' em vez de 'opcoes'
     if (!empty($question['options']) && is_array($question['options'])) {
         foreach ($question['options'] as $opcao_index => $opcao) {
             $valor_real = isset($question['valores_reais'][$opcao_index]) ? $question['valores_reais'][$opcao_index] : $opcao;
@@ -151,8 +155,11 @@ function vs_render_choice_field($question, $index, $user_responses = []) {
                 $checked = ($current_value == $opcao['value']) ? 'checked' : '';
                 $css_class = $opcao['type'] === 'imported' ? 'vs-radio imported-question' : 'vs-radio';
                 
+
+                $data_required = $required ? 'data-required="true"' : '';
+                
                 echo '<div class="' . esc_attr($css_class) . '">';
-                echo '<input type="radio" name="' . esc_attr($field_name) . '" value="' . esc_attr($opcao['value']) . '" id="' . esc_attr($field_name . '_' . $opcao_index) . '" ' . $checked . ' ' . $required . '>';
+                echo '<input type="radio" name="' . esc_attr($field_name) . '" value="' . esc_attr($opcao['value']) . '" id="' . esc_attr($field_name . '_' . $opcao_index) . '" ' . $checked . ' ' . $data_required . '>';
                 echo '<label for="' . esc_attr($field_name . '_' . $opcao_index) . '">' . esc_html($opcao['label']) . '</label>';
                 echo '<input type="hidden" name="vs-valor-real" value="' . esc_attr($opcao['value']) . '">';
                 echo '</div>';
@@ -191,7 +198,7 @@ function vs_render_choice_field($question, $index, $user_responses = []) {
  * Renderiza campo de voto importado
  */
 function vs_render_imported_vote_field($question, $index, $user_responses = []) {
-    $field_name = "vs_respostas[{$index}]";
+    $field_name = "respostas[{$index}]";
     $current_value = isset($user_responses[$index]) ? $user_responses[$index] : '';
     $required = !empty($question['obrigatoria']) ? 'required' : '';;
     

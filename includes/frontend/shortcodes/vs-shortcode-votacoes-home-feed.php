@@ -206,7 +206,19 @@ function vs_build_home_feed_query_args($params) {
 /**
  * Processa votações adicionando informações do usuário
  */
-function vs_process_votacoes_with_user_data($query, $options) {
+function vs_process_votacoes_with_user_data($query, $options = []) {
+    // Define valores padrão para evitar warnings
+    $options = array_merge([
+        'hide_encerradas' => false,
+        'only_active' => false,
+        'show_uncategorized' => true,
+        'show_excerpts' => true,
+        'excerpt_length' => 20,
+        'show_participation_badge' => true,
+        'show_time_remaining' => true,
+        'show_actions' => 'visible'
+    ], $options);
+    
     $votacoes = [];
     $user_id = get_current_user_id();
     
@@ -224,7 +236,7 @@ function vs_process_votacoes_with_user_data($query, $options) {
             // Verifica se está encerrada
             $is_encerrada = ($status === 'encerrada') || vs_check_votacao_status($data_fim);
             
-            // Filtros de status
+            // Filtros de status - agora sem warnings
             if ($options['hide_encerradas'] && $is_encerrada) {
                 continue;
             }
