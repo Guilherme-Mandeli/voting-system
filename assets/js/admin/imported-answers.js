@@ -154,7 +154,7 @@
                                     class: 'vs-select-answer',
                                     'data-valor': valorResposta,
                                     'data-valor-unificado': resposta.value_unificada || '',
-                                    // checked: isExistingOption
+                                    checked: isExistingOption
                                 }))
                             );
 
@@ -199,6 +199,12 @@
                         style: 'text-align: center; padding: 20px; color: #d63638;' 
                     }).text('Erro ao carregar respostas importadas.')
                 ));
+            }
+
+            // Atualizar checkboxes baseado nas opções existentes após carregar a tabela
+            const $container = this.currentQuestion.find('.vs-columns-container');
+            if ($container.length) {
+                this.updateCheckboxesBasedOnExistingOptions($container);
             }
         },
 
@@ -326,12 +332,11 @@
                         return false;
                     }
                 });
-                
-                if (wasAdded) {
-                    $checkbox.prop('checked', false);
-                }
             });
             
+            // Desmarcar o checkbox "Selecionar todos" após adicionar itens selecionados
+            $container.find('.vs-select-all-answers').prop('checked', false);
+
             // Verificar e marcar automaticamente todos os checkboxes que correspondem às opções existentes
             // this.updateCheckboxesBasedOnExistingOptions($container);
         },
@@ -368,6 +373,15 @@
             const $container = $questionContainer.find('.vs-columns-container');
             const $importedAnswersField = $questionContainer.find('.vs-imported-answers');
             
+            // Verificar se é uma opção importada antes de remover
+            const isImportedQuestion = $optionItem.hasClass('imported_question');
+            
+            // Se for uma opção importada, obter os valores para desmarcar o checkbox correspondente
+            let valorReal = null;
+            if (isImportedQuestion) {
+                valorReal = $optionItem.find('.vs-valor-real').val();
+            }
+            
             // Obter o índice da opção que está sendo removida
             const optionIndex = $optionItem.index();
             
@@ -392,6 +406,29 @@
             
             // Remover a opção
             $optionItem.remove();
+            
+            // Se era uma opção importada, desmarcar o checkbox correspondente na tabela
+            if (isImportedQuestion && valorReal) {
+                $container.find('.vs-select-answer').each(function() {
+                    const $checkbox = $(this);
+                    const checkboxValor = $checkbox.data('valor');
+                    
+                    // Se o valor real corresponde, desmarcar o checkbox
+                    if (checkboxValor === valorReal) {
+                        $checkbox.prop('checked', false);
+                    }
+                });
+                
+                // Também verificar se precisa desmarcar o "Selecionar todos"
+                const $selectAllCheckbox = $container.find('.vs-select-all-answers');
+                const totalCheckboxes = $container.find('.vs-select-answer').length;
+                const checkedCheckboxes = $container.find('.vs-select-answer:checked').length;
+                
+                // Se nem todos estão marcados, desmarcar o "Selecionar todos"
+                if (checkedCheckboxes < totalCheckboxes) {
+                    $selectAllCheckbox.prop('checked', false);
+                }
+            }
         },
 
         selectAllAnswers: function(event) {
