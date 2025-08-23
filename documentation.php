@@ -331,20 +331,110 @@ defined('ABSPATH') || exit;
  *      apenas opções com valor_real válido sejam marcadas como importadas
  *    - Arquivos afetados: templates/admin/template-metabox-question-row.php
  * 
- * 5. LOGS DE DEBUG IMPLEMENTADOS:
- *    - Adicionados logs detalhados para rastreamento de problemas:
- *      * Dados recebidos (imported_items, options, valores_reais)
- *      * Processamento de cada opção
- *      * Estado final dos arrays
- *    - Localização: metaboxes/vs-metabox-questions.php e template-metabox-question-row.php
+ * 5. MANUAL_ITEMS E IMPORTED_ITEMS (CORRIGIDO):
+ *    - Problema: Após atualizações que incluíram informações de evento e votação,
+ *      os arrays manual_items e imported_items eram reinicializados como vazios
+ *    - Solução: Implementada preservação de dados existentes em múltiplos pontos:
+ *      * view-metabox-questions.php: Preservar arrays existentes na inicialização
+ *      * vs-metabox-questions.php: Manter dados durante processamento
+ *      * imported-answers.js: Garantir arrays válidos sem perder dados
+ *      * voting-modal.js: Preservar dados durante importação de novas perguntas
+ *    - Arquivos afetados:
+ *      * metaboxes/view-metabox-questions.php
+ *      * metaboxes/vs-metabox-questions.php
+ *      * assets/js/admin/imported-answers.js
+ *      * assets/js/admin/voting-modal.js
  * 
- * NOTAS DE COMPATIBILIDADE:
- * ========================
+ * 6. ESTRUTURA JSON INCOMPLETA (CORRIGIDO):
+ *    - Problema: Campo vs-imported-answers não continha informações completas
+ *      do evento e votação, causando "Evento desconhecido" e "Votação undefined"
+ *    - Solução: Implementada estrutura JSON completa com:
+ *      * vote_id: ID da votação de origem
+ *      * vote_title: Título da votação
+ *      * event_id: ID do evento
+ *      * event_title: Nome do evento
+ *      * event_slug: Slug do evento
+ *    - Arquivos afetados:
+ *      * helpers/vs-utils-data.php (função vs_get_imported_vote_data)
+ *      * assets/js/admin/imported-answers.js (extração direta de dados)
+ *      * assets/js/admin/voting-modal.js (inclusão de dados completos)
  * 
- * - As correções mantêm compatibilidade com dados existentes
- * - Valores reais preservam sua integridade após as correções
- * - Sistema de logs pode ser desabilitado removendo error_log() em produção
- * - Estrutura de dados permanece inalterada, apenas a lógica de processamento foi corrigida
+ * 7. BUSCA AJAX DESNECESSÁRIA (CORRIGIDO):
+ *    - Problema: Sistema fazia busca AJAX para obter informações do evento
+ *      mesmo quando os dados já estavam disponíveis no JSON
+ *    - Solução: Removidas chamadas AJAX desnecessárias e implementada
+ *      extração direta das informações do JSON existente
+ *    - Arquivos afetados: assets/js/admin/imported-answers.js
+ * 
+ * 8. TABELA NÃO LIMPA ADEQUADAMENTE (CORRIGIDO):
+ *    - Problema: Mensagem "Nenhuma resposta foi importada" persistia
+ *      mesmo com dados válidos na tabela
+ *    - Solução: Adicionado $tbody.empty() no início da função processTableData
+ *    - Arquivos afetados: assets/js/admin/imported-answers.js
+ * 
+ * ESTRUTURA JSON ATUALIZADA COM INFORMAÇÕES COMPLETAS:
+ * ===================================================
+ * 
+ * A estrutura JSON do campo 'vs-imported-answers' agora inclui informações
+ * completas de evento e votação para cada pergunta importada:
+ * 
+ * {
+ *   "questions": [
+ *     {
+ *       "vote_id": 123,
+ *       "vote_title": "Avaliação do Evento 2024",
+ *       "event_id": 456,
+ *       "event_title": "Conferência de Tecnologia 2024",
+ *       "event_slug": "conferencia-tecnologia-2024",
+ *       "question_source": "Como você avalia o evento?",
+ *       "question_index": 1,
+ *       "imported_answers": [
+ *         {
+ *           "value": "Excelente evento",
+ *           "value_unificada": "Avaliação Positiva",
+ *           "qtd_votos": 15
+ *         }
+ *       ]
+ *     }
+ *   ],
+ *   "manual_items": [0, 2],
+ *   "imported_items": [1, 3],
+ *   "selected_questions": {
+ *     "123": [0, 1]
+ *   }
+ * }
+ * 
+ * SISTEMA DE RESUMO DE EVENTOS:
+ * ============================
+ * 
+ * O sistema agora exibe automaticamente um resumo informativo acima da tabela
+ * de respostas importadas, incluindo:
+ * - Nome do evento de origem
+ * - Título da votação
+ * - Quantidade de perguntas importadas
+ * 
+ * Funções responsáveis:
+ * - extractEventInfo(): Extrai informações diretamente do JSON
+ * - renderEventSummary(): Renderiza o parágrafo informativo
+ * - updateTable(): Coordena a atualização da interface
+ *
+ * CAMPOS OCULTOS E INTERFACE:
+ * ==========================
+ * 
+ * - vs-imported-answers: Campo oculto principal com estrutura JSON completa
+ * - vs-imported-column: Tabela que exibe respostas importadas
+ * - vs-event-summary: Parágrafo com resumo do evento e votação
+ * - vs-select-answer: Checkboxes para seleção de respostas
+ * - vs-add-selected: Botão para adicionar respostas selecionadas
+ *
+ * COMPATIBILIDADE E MIGRAÇÃO:
+ * ===========================
+ * 
+ * - Sistema mantém compatibilidade com dados existentes
+ * - Estruturas antigas são automaticamente migradas para novo formato
+ * - Fallback para busca AJAX quando dados JSON estão incompletos
+ * - Preservação de manual_items e imported_items durante todas as operações
+ * - Validação de tipos de dados para evitar erros de JavaScript
  * 
  * ESTRUTURA DE RESPOSTA AJAX PADRÃO
  * =================================

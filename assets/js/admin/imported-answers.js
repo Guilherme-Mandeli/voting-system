@@ -284,6 +284,38 @@
             }
         },
 
+        updateCheckboxStates: function() {
+            const $container = $('.vs-imported-column');
+            if (!$container.length) return;
+            
+            // Obter valores reais das opções existentes (mesma lógica da _executeUpdateTable)
+            const existingValues = [];
+            this.currentQuestion.find('.vs-valor-real').each(function() {
+                const value = $(this).val();
+                if (value && value.trim() !== '') {
+                    existingValues.push(value.trim());
+                }
+            });
+            
+            $container.find('.vs-select-answer').each(function() {
+                const $checkbox = $(this);
+                const valor = $checkbox.data('valor');
+                const isExisting = existingValues.includes(valor);
+                
+                if (isExisting) {
+                    // Item ainda existe como vs-option-item: desabilitar e manter checked
+                    $checkbox.prop('disabled', true).prop('checked', true);
+                    $checkbox.attr('title', 'Esta resposta já foi importada');
+                    $checkbox.addClass('vs-checkbox-disabled');
+                } else {
+                    // Item foi removido: habilitar e desmarcar
+                    $checkbox.prop('disabled', false).prop('checked', false);
+                    $checkbox.removeAttr('title');
+                    $checkbox.removeClass('vs-checkbox-disabled');
+                }
+            });
+        },
+
         // Processar os dados da tabela
         processTableData: function(data, eventInfoArray) {
             try {
@@ -356,37 +388,38 @@
                             
                             const $row = $('<tr>');
                             
-                            // Coluna de seleção
-                            const $checkboxCell = $('<td>');
-                            if (!isExisting) {
-                                $checkboxCell.append(
-                                    $('<input>', {
-                                        type: 'checkbox',
-                                        class: 'vs-select-answer',
-                                        'data-valor': resposta.value || valorExibir,
-                                        'data-valor-unificado': resposta.value_unificada || '',
-                                        value: valorExibir
-                                    })
-                                );
-                            } else {
-                                $checkboxCell.append(
-                                    $('<span>', {
-                                        style: 'color: #666; font-style: italic;'
-                                    }).text('Já existe')
-                                );
-                            }
-                            $row.append($checkboxCell);
-                            
-                            // Coluna do número
+                            // Coluna do número (primeira coluna)
                             $row.append($('<td>').text(rowNumber));
                             
-                            // Coluna do valor
+                            // Coluna de seleção (segunda coluna)
+                            const $checkboxCell = $('<td>');
+                            const $checkbox = $('<input>', {
+                                type: 'checkbox',
+                                class: 'vs-select-answer',
+                                'data-valor': resposta.value || valorExibir,
+                                'data-valor-unificado': resposta.value_unificada || '',
+                                value: valorExibir,
+                                disabled: isExisting, // Desabilitar se já existe
+                                checked: isExisting   // Marcar como checked se já existe
+                            });
+
+                            // Adicionar classe especial e título para checkboxes desabilitados
+                            if (isExisting) {
+                                $checkbox.addClass('vs-checkbox-disabled');
+                                $checkbox.attr('title', 'Esta resposta já foi importada');
+                                $checkboxCell.addClass('vs-existing-item');
+                            }
+
+                            $checkboxCell.append($checkbox);
+                            $row.append($checkboxCell);
+                            
+                            // Coluna do valor (terceira coluna)
                             $row.append($('<td>').text(valorExibir));
                             
-                            // Coluna da quantidade de votos
+                            // Coluna da quantidade de votos (quarta coluna)
                             $row.append($('<td>').text(qtdVotos));
                             
-                            // Coluna da fonte da pergunta
+                            // Coluna da fonte da pergunta (quinta coluna)
                             $row.append($('<td>').text(questionSource));
                             
                             $tbody.append($row);
@@ -468,7 +501,7 @@
             if (!importedAnswersData.questions) importedAnswersData.questions = [];
             
             // Obter respostas selecionadas da tabela
-            const $selectedAnswers = $container.find('.vs-select-answer:checked');
+            const $selectedAnswers = $container.find('.vs-select-answer:checked:not(:disabled)');
             
             $selectedAnswers.each(function() {
                 const $tr = $(this).closest('tr');
@@ -576,8 +609,8 @@
             // Desmarcar o checkbox "Selecionar todos" após adicionar itens selecionados
             $container.find('.vs-select-all-answers').prop('checked', false);
 
-            // Verificar e marcar automaticamente todos os checkboxes que correspondem às opções existentes
-            // this.updateCheckboxesBasedOnExistingOptions($container);
+            // Atualizar estados dos checkboxes após adicionar itens
+            this.updateCheckboxStates();
         },
 
         // Atualizar checkboxes baseado nas opções existentes
@@ -668,6 +701,12 @@
             
             // Remover a opção
             $optionItem.remove();
+
+            // Atualizar estado dos checkboxes após remoção
+            const self = this;
+            setTimeout(function() {
+                self.updateCheckboxStates();
+            }, 100);
             
             // Sincronizar com checkboxes do modal
             if (isImportedQuestion && voteId && questionIndex !== null) {
@@ -721,12 +760,16 @@
                         }
                     }
                 }
+                
+                // Sincronizar checkboxes após remoção
+                this.updateCheckboxStates();
             }
         },
 
         selectAllAnswers: function(event) {
             const isChecked = $(event.target).prop('checked');
-            $(event.target).closest('table').find('.vs-select-answer').prop('checked', isChecked);
+            // Selecionar apenas checkboxes habilitados
+            $(event.target).closest('table').find('.vs-select-answer:not(:disabled)').prop('checked', isChecked);
         },
 
         removeSelection: function(event) {
