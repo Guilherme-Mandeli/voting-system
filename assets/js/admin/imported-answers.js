@@ -289,6 +289,9 @@
             try {
                 const $tbody = this.currentQuestion.find('.vs-imported-column tbody');
                 
+                // Limpar a tabela antes de processar novos dados
+                $tbody.empty();
+                
                 // Verificar se há duplicatas nos dados JSON
                 const allAnswers = [];
                 data.questions.forEach(pergunta => {
@@ -400,7 +403,7 @@
                             style: 'text-align: center; padding: 20px; color: #666;' 
                         }).text('Nenhuma resposta foi importada.')
                     ));
-                    // Remover parágrafo de resumo se não há dados
+                    // Remover parágrafo de resumo se não há perguntas
                     this.currentQuestion.find('.vs-event-summary').remove();
                 } else {
                     // Renderizar parágrafo informativo com informações dos eventos
