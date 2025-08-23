@@ -586,11 +586,29 @@
                         if (currentQuestion && currentQuestion.length) {
                             // Obter dados existentes para merge
                             const $importedAnswersField = currentQuestion.find('.vs-imported-answers');
+                            // Preparar dados existentes
                             let existingData;
                             try {
                                 existingData = JSON.parse($importedAnswersField.val() || '{}');
+                                
+                                // Preservar manual_items e imported_items existentes
+                                if (!existingData.manual_items) existingData.manual_items = [];
+                                if (!existingData.imported_items) existingData.imported_items = [];
+                                if (!existingData.questions) existingData.questions = [];
+                                if (!existingData.selected_questions) existingData.selected_questions = {};
+                                
+                                // Garantir que sejam arrays/objetos válidos
+                                if (!Array.isArray(existingData.manual_items)) existingData.manual_items = [];
+                                if (!Array.isArray(existingData.imported_items)) existingData.imported_items = [];
+                                if (!Array.isArray(existingData.questions)) existingData.questions = [];
+                                if (typeof existingData.selected_questions !== 'object') existingData.selected_questions = {};
                             } catch (e) {
-                                existingData = {};
+                                existingData = {
+                                    questions: [],
+                                    manual_items: [],
+                                    imported_items: [],
+                                    selected_questions: {}
+                                };
                             }
                             
                             // Inicializar estrutura se não existir

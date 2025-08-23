@@ -20,6 +20,21 @@ function vs_render_metabox_questions_view($post) {
             if (!empty($question['imported_answers'])) {
                 $json_decoded = json_decode($question['imported_answers'], true);
                 if ($json_decoded !== null) {
+                    // Preservar manual_items e imported_items existentes
+                    $existing_manual_items = $json_decoded['manual_items'] ?? [];
+                    $existing_imported_items = $json_decoded['imported_items'] ?? [];
+                    
+                    // Garantir que a estrutura tenha todos os campos necessários
+                    if (!isset($json_decoded['questions'])) {
+                        $json_decoded['questions'] = [];
+                    }
+                    if (!isset($json_decoded['manual_items'])) {
+                        $json_decoded['manual_items'] = $existing_manual_items;
+                    }
+                    if (!isset($json_decoded['imported_items'])) {
+                        $json_decoded['imported_items'] = $existing_imported_items;
+                    }
+                    
                     $question['imported_answers'] = json_encode($json_decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 } else {
                     $question['imported_answers'] = json_encode([

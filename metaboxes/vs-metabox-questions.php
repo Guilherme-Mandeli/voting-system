@@ -96,7 +96,11 @@ function vs_save_metabox_questions($post_id) {
                 
                 if ($imported_answers_decoded && is_array($imported_answers_decoded)) {
                     $manual_items = $imported_answers_decoded['manual_items'] ?? [];
-                    $imported_items = $imported_answers_decoded['imported_items'] ?? [];    
+                    $imported_items = $imported_answers_decoded['imported_items'] ?? [];
+                    
+                    // Garantir que sejam arrays válidos
+                    if (!is_array($manual_items)) $manual_items = [];
+                    if (!is_array($imported_items)) $imported_items = [];
                 }
             }
             
@@ -132,7 +136,11 @@ function vs_save_metabox_questions($post_id) {
             $imported_items = $filtered_imported_items;
 
             // Processar imported_answers
-            $imported_answers_data = ['questions' => [], 'manual_items' => $manual_items, 'imported_items' => $imported_items];
+            $imported_answers_data = [
+                'questions' => [],
+                'manual_items' => $manual_items,
+                'imported_items' => $imported_items
+            ];
             
             if (isset($question_data['imported_answers']) && !empty($question_data['imported_answers'])) {
                 $existing_imported_answers = $question_data['imported_answers'];
@@ -148,15 +156,23 @@ function vs_save_metabox_questions($post_id) {
                         // JSON inválido - usar apenas os novos dados
                         $imported_answers = json_encode($imported_answers_data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     } else {
-                        // Mesclar dados existentes com novos arrays
+                        // Preservar dados existentes e mesclar com novos arrays
                         $decoded['manual_items'] = $manual_items;
                         $decoded['imported_items'] = $imported_items;
+                        // Preservar questions existentes se houver
+                        if (!isset($decoded['questions'])) {
+                            $decoded['questions'] = [];
+                        }
                         $imported_answers = json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     }
                 } else {
-                    // Mesclar dados existentes com novos arrays
+                    // Preservar dados existentes e mesclar com novos arrays
                     $decoded['manual_items'] = $manual_items;
                     $decoded['imported_items'] = $imported_items;
+                    // Preservar questions existentes se houver
+                    if (!isset($decoded['questions'])) {
+                        $decoded['questions'] = [];
+                    }
                     $imported_answers = json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 }
             } else {

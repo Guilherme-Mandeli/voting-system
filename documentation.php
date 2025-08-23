@@ -216,6 +216,10 @@ defined('ABSPATH') || exit;
  *       "question_source": "Como você avalia o evento anterior?",
  *       "question_index": 1,
  *       "vote_id": 456,
+ *       "vote_title": "Avaliação do Evento 2023",
+ *       "event_id": 789,
+ *       "event_title": "Conferência Anual de Tecnologia",
+ *       "event_slug": "conferencia-anual-tecnologia",
  *       "total_votos": 26,
  *       "imported_answers": [
  *         {
@@ -245,20 +249,12 @@ defined('ABSPATH') || exit;
  *     {
  *       "text": "Opção criada manualmente",
  *       "vs_valor_real": "Opção criada manualmente"
- *     },
- *     {
- *       "text": "Outra opção manual",
- *       "vs_valor_real": "Outra opção manual"
  *     }
  *   ],
  *   "imported_items": [
  *     {
  *       "text": "Excelente evento, muito bem organizado e informativo",
  *       "vs_valor_real": "Excelente evento, muito bem organizado e informativo"
- *     },
- *     {
- *       "text": "Bom evento, mas alguns aspectos podem melhorar",
- *       "vs_valor_real": "Bom evento, mas alguns aspectos podem melhorar"
  *     }
  *   ]
  * }

@@ -436,6 +436,28 @@
             let importedAnswersData;
             try {
                 importedAnswersData = JSON.parse($importedAnswersField.val() || '{}');
+                
+                // Preservar manual_items e imported_items existentes
+                if (!importedAnswersData.manual_items) {
+                    importedAnswersData.manual_items = [];
+                }
+                if (!importedAnswersData.imported_items) {
+                    importedAnswersData.imported_items = [];
+                }
+                if (!importedAnswersData.questions) {
+                    importedAnswersData.questions = [];
+                }
+                
+                // Garantir que sejam arrays válidos
+                if (!Array.isArray(importedAnswersData.manual_items)) {
+                    importedAnswersData.manual_items = [];
+                }
+                if (!Array.isArray(importedAnswersData.imported_items)) {
+                    importedAnswersData.imported_items = [];
+                }
+                if (!Array.isArray(importedAnswersData.questions)) {
+                    importedAnswersData.questions = [];
+                }
             } catch (e) {
                 importedAnswersData = { questions: [], manual_items: [], imported_items: [] };
             }
