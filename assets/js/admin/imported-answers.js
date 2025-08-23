@@ -8,6 +8,8 @@
     window.VSAdmin.ImportedAnswers = {
         
         currentQuestion: null,
+        isUpdating: false,
+        updateTimeout: null,
 
         init: function() {
             this.bindEvents();
@@ -72,42 +74,236 @@
                 return;
             }
 
-            const jsonData = $jsonInput.val();
-            
             const $tbody = this.currentQuestion.find('.vs-imported-column tbody');
             if (!$tbody.length) {
                 console.warn('Tabela .vs-imported-column tbody não encontrada');
                 return;
             }
 
-            $tbody.empty();
-
-            if (!jsonData || jsonData.trim() === '') {
-                $tbody.append($('<tr>').append(
-                    $('<td>', { 
-                        colspan: 5, 
-                        style: 'text-align: center; padding: 20px; color: #666;' 
-                    }).text('Nenhuma resposta foi importada.')
-                ));
+            // Prevenir múltiplas execuções simultâneas
+            if (this.isUpdating) {
+                console.log('updateTable() já está executando, ignorando chamada duplicada');
                 return;
             }
 
-            try {
-                const data = JSON.parse(jsonData);
-                
-                if (!data || typeof data !== 'object') {
-                    throw new Error('Estrutura JSON inválida');
+            // Implementar debounce para evitar chamadas muito próximas
+            if (this.updateTimeout) {
+                clearTimeout(this.updateTimeout);
+            }
+
+            this.updateTimeout = setTimeout(() => {
+                this._executeUpdateTable();
+            }, 50);
+        },
+
+        // Função para buscar informações do evento via AJAX
+        fetchEventInfo: function(voteId) {
+            return new Promise((resolve, reject) => {
+                if (!voteId) {
+                    reject('Vote ID não fornecido');
+                    return;
                 }
 
-                if (!data.perguntas || !Array.isArray(data.perguntas)) {
+                $.ajax({
+                    url: vs_admin.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'vs_get_event_info',
+                        vote_id: voteId,
+                        nonce: vs_admin.nonce
+                    },
+                    success: function(response) {
+                        if (response.success && response.data) {
+                            resolve({
+                                event_name: response.data.event_name || 'Evento sem nome',
+                                vote_id: voteId
+                            });
+                        } else {
+                            reject('Erro ao buscar informações do evento');
+                        }
+                    },
+                    error: function() {
+                        reject('Erro na requisição AJAX');
+                    }
+                });
+            });
+        },
+
+        // Função para extrair vote_ids únicos dos dados JSON
+        extractUniqueVoteIds: function(data) {
+            const voteIds = new Set();
+            
+            if (data && data.questions && Array.isArray(data.questions)) {
+                data.questions.forEach(pergunta => {
+                    if (pergunta.vote_id) {
+                        voteIds.add(pergunta.vote_id);
+                    }
+                });
+            }
+            
+            return Array.from(voteIds);
+        },
+
+        // Função para renderizar o parágrafo informativo
+        renderEventSummary: function(eventInfo, totalAnswers) {
+            const $container = this.currentQuestion.find('.vs-imported-column');
+            const $existingSummary = $container.find('.vs-event-summary');
+            
+            // Remover parágrafo existente se houver
+            if ($existingSummary.length) {
+                $existingSummary.remove();
+            }
+            
+            // Criar novo parágrafo informativo
+            const $summaryParagraph = $('<div>', {
+                class: 'vs-event-summary',
+            });
+            
+            let summaryText = '';
+            if (eventInfo.length === 1) {
+                // Um único evento
+                const event = eventInfo[0];
+                summaryText = `<strong>Evento:</strong> ${event.event_name} | <strong>Votação:</strong> ${event.vote_title} | <strong>Respostas:</strong> ${totalAnswers}`;
+            } else if (eventInfo.length > 1) {
+                // Múltiplos eventos
+                const eventNames = eventInfo.map(info => info.event_name).join(', ');
+                summaryText = `<strong>Eventos:</strong> ${eventNames} | <strong>Respostas:</strong> ${totalAnswers}`;
+            } else {
+                // Nenhum evento encontrado
+                summaryText = `<strong>Respostas exibidas:</strong> ${totalAnswers}`;
+            }
+            
+            $summaryParagraph.html(summaryText);
+            
+            // Inserir antes da tabela
+            $container.find('table').before($summaryParagraph);
+        },
+
+        // Função para extrair informações dos eventos dos dados JSON
+        extractEventInfo: function(data) {
+            const eventMap = new Map();
+            
+            if (data && data.questions && Array.isArray(data.questions)) {
+                data.questions.forEach(pergunta => {
+                    const voteId = pergunta.vote_id;
+                    
+                    if (voteId) {
+                        const eventInfo = {
+                            event_id: pergunta.event_id || null,
+                            event_name: pergunta.event_title || 'Evento sem nome',
+                            event_slug: pergunta.event_slug || null,
+                            vote_id: voteId,
+                            vote_title: pergunta.vote_title || 'Votação sem título'
+                        };
+                        
+                        const eventKey = eventInfo.event_id || voteId;
+                        if (!eventMap.has(eventKey)) {
+                            eventMap.set(eventKey, eventInfo);
+                        }
+                    }
+                });
+            }
+            
+            return Array.from(eventMap.values());
+        },
+
+        _executeUpdateTable: function() {
+            this.isUpdating = true;
+            
+            try {
+                console.log('=== INÍCIO updateTable() ===');
+                console.log('currentQuestion:', this.currentQuestion);
+                
+                const $tbody = this.currentQuestion.find('.vs-imported-column tbody');
+                const $importedAnswersField = this.currentQuestion.find('.vs-imported-answers');
+                const jsonData = $importedAnswersField.val();
+                
+                console.log('JSON bruto:', jsonData);
+                
+                if (!jsonData || jsonData.trim() === '' || jsonData === '{}') {
+                    console.log('Nenhum dado JSON encontrado');
+                    $tbody.empty();
+                    
+                    // Remover parágrafo de resumo se não há perguntas
+                    this.currentQuestion.find('.vs-event-summary').remove();
+                    
                     $tbody.append($('<tr>').append(
                         $('<td>', { 
                             colspan: 5, 
                             style: 'text-align: center; padding: 20px; color: #666;' 
                         }).text('Nenhuma resposta foi importada.')
                     ));
+                    this.isUpdating = false;
                     return;
                 }
+                
+                let data;
+                try {
+                    data = JSON.parse(jsonData);
+                    console.log('Dados JSON parseados:', data);
+                } catch (parseError) {
+                    console.error('Erro ao fazer parse do JSON:', parseError);
+                    this.currentQuestion.find('.vs-event-summary').remove();
+                    $tbody.append($('<tr>').append(
+                        $('<td>', { 
+                            colspan: 5, 
+                            style: 'text-align: center; padding: 20px; color: #d63638;' 
+                        }).text('Erro: Dados JSON inválidos.')
+                    ));
+                    this.isUpdating = false;
+                    return;
+                }
+                
+                if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
+                    console.log('Nenhuma pergunta encontrada nos dados');
+                    $tbody.empty();
+                    
+                    // Remover parágrafo de resumo se não há perguntas
+                    this.currentQuestion.find('.vs-event-summary').remove();
+                    
+                    $tbody.append($('<tr>').append(
+                        $('<td>', { 
+                            colspan: 5, 
+                            style: 'text-align: center; padding: 20px; color: #666;' 
+                        }).text('Nenhuma resposta foi importada.')
+                    ));
+                    this.isUpdating = false;
+                    return;
+                }
+
+                // Extrair informações dos eventos diretamente dos dados JSON
+                const eventInfoArray = this.extractEventInfo(data);
+                console.log('Informações dos eventos extraídas:', eventInfoArray);
+
+                // Processar dados da tabela diretamente
+                this.processTableData(data, eventInfoArray);
+
+            } catch (error) {
+                console.error('Erro em _executeUpdateTable:', error);
+                this.isUpdating = false;
+            }
+        },
+
+        // Processar os dados da tabela
+        processTableData: function(data, eventInfoArray) {
+            try {
+                const $tbody = this.currentQuestion.find('.vs-imported-column tbody');
+                
+                // Verificar se há duplicatas nos dados JSON
+                const allAnswers = [];
+                data.questions.forEach(pergunta => {
+                    if (pergunta.imported_answers) {
+                        pergunta.imported_answers.forEach(resposta => {
+                            allAnswers.push({
+                                value: resposta.value_unificada || resposta.value,
+                                qtd_votos: resposta.qtd_votos
+                            });
+                        });
+                    }
+                });
+                
+                console.log('Total de respostas nos dados JSON:', allAnswers.length);
+                console.log('Respostas únicas:', [...new Set(allAnswers.map(a => a.value))].length);
 
                 // Obter valores reais das opções existentes
                 const existingValues = [];
@@ -120,68 +316,83 @@
 
                 let rowNumber = 1;
                 let hasAnswers = false;
+                let processedAnswers = new Set(); // Para evitar duplicatas na renderização
+                let totalDisplayedAnswers = 0;
 
-                data.perguntas.forEach((pergunta, perguntaIndex) => {
+                data.questions.forEach((pergunta, perguntaIndex) => {
+                    console.log(`Processando pergunta ${perguntaIndex}:`, pergunta.question_source);
                     
                     if (pergunta.imported_answers && Array.isArray(pergunta.imported_answers) && pergunta.imported_answers.length > 0) {
                         
-                        pergunta.imported_answers.forEach(resposta => {
+                        pergunta.imported_answers.forEach((resposta, respostaIndex) => {
                             const valorExibir = resposta.value_unificada || resposta.value;
+                            const qtdVotos = parseInt(resposta.qtd_votos || 0);
+                            const questionSource = pergunta.question_source || 'Fonte desconhecida';
                             
-                            if (!valorExibir || valorExibir.trim() === '') {
-                                return;
+                            // Criar chave única para detectar duplicatas
+                            const uniqueKey = `${valorExibir}_${qtdVotos}_${questionSource}`;
+                            
+                            if (processedAnswers.has(uniqueKey)) {
+                                console.log(`Duplicata detectada e ignorada: ${uniqueKey}`);
+                                return; // Pular esta resposta duplicada
                             }
-
-                            hasAnswers = true;
-
-                            const $tr = $('<tr>');
                             
-                            $tr.append(
-                                $('<td>', { 
-                                    style: 'text-align: center; font-size: 12px; width: 40px;' 
-                                }).text(rowNumber)
-                            );
-
-                            // Verificar se este valor já está nas opções existentes
-                            const valorResposta = resposta.value || '';
-                            const isExistingOption = existingValues.includes(valorResposta.trim());
-
-                            $tr.append(
-                                $('<td>', { 
-                                    style: 'text-align: center; width: 50px;' 
-                                }).append($('<input>', {
-                                    type: 'checkbox',
-                                    class: 'vs-select-answer',
-                                    'data-valor': valorResposta,
-                                    'data-valor-unificado': resposta.value_unificada || '',
-                                    checked: isExistingOption
-                                }))
-                            );
-
-                            $tr.append(
-                                $('<td>', { 
-                                    style: 'padding: 8px;' 
-                                }).text(valorExibir)
-                            );
-
-                            $tr.append(
-                                $('<td>', { 
-                                    style: 'text-align: center; width: 80px;' 
-                                }).text(resposta.qtd_votos || 0)
-                            );
-
-                            $tr.append(
-                                $('<td>', { 
-                                    style: 'padding: 8px; font-size: 12px; color: #666;' 
-                                }).text(pergunta.question_source || 'N/A')
-                            );
-
-                            $tbody.append($tr);
+                            processedAnswers.add(uniqueKey);
+                            hasAnswers = true;
+                            totalDisplayedAnswers++;
+                            
+                            console.log(`Adicionando linha ${rowNumber}:`, {
+                                valorExibir,
+                                qtdVotos,
+                                questionSource,
+                                uniqueKey
+                            });
+                            
+                            // Verificar se já existe nas opções
+                            const isExisting = existingValues.includes(valorExibir);
+                            
+                            const $row = $('<tr>');
+                            
+                            // Coluna de seleção
+                            const $checkboxCell = $('<td>');
+                            if (!isExisting) {
+                                $checkboxCell.append(
+                                    $('<input>', {
+                                        type: 'checkbox',
+                                        class: 'vs-select-answer',
+                                        'data-valor': resposta.value || valorExibir,
+                                        'data-valor-unificado': resposta.value_unificada || '',
+                                        value: valorExibir
+                                    })
+                                );
+                            } else {
+                                $checkboxCell.append(
+                                    $('<span>', {
+                                        style: 'color: #666; font-style: italic;'
+                                    }).text('Já existe')
+                                );
+                            }
+                            $row.append($checkboxCell);
+                            
+                            // Coluna do número
+                            $row.append($('<td>').text(rowNumber));
+                            
+                            // Coluna do valor
+                            $row.append($('<td>').text(valorExibir));
+                            
+                            // Coluna da quantidade de votos
+                            $row.append($('<td>').text(qtdVotos));
+                            
+                            // Coluna da fonte da pergunta
+                            $row.append($('<td>').text(questionSource));
+                            
+                            $tbody.append($row);
                             rowNumber++;
                         });
                     }
                 });
 
+                // Se não há respostas válidas, mostrar mensagem
                 if (!hasAnswers) {
                     $tbody.append($('<tr>').append(
                         $('<td>', { 
@@ -189,22 +400,25 @@
                             style: 'text-align: center; padding: 20px; color: #666;' 
                         }).text('Nenhuma resposta foi importada.')
                     ));
+                    // Remover parágrafo de resumo se não há dados
+                    this.currentQuestion.find('.vs-event-summary').remove();
+                } else {
+                    // Renderizar parágrafo informativo com informações dos eventos
+                    if (eventInfoArray.length > 0) {
+                        this.renderEventSummary(eventInfoArray, totalDisplayedAnswers);
+                    } else {
+                        // Se não há informações de evento, mostrar apenas a quantidade
+                        this.renderEventSummary([], totalDisplayedAnswers);
+                    }
                 }
 
+                console.log(`Total de linhas renderizadas: ${$tbody.find('tr').length}`);
+                console.log(`Total de respostas exibidas: ${totalDisplayedAnswers}`);
+                
             } catch (error) {
-                console.error('Erro ao processar JSON:', error);
-                $tbody.append($('<tr>').append(
-                    $('<td>', { 
-                        colspan: 5, 
-                        style: 'text-align: center; padding: 20px; color: #d63638;' 
-                    }).text('Erro ao carregar respostas importadas.')
-                ));
-            }
-
-            // Atualizar checkboxes baseado nas opções existentes após carregar a tabela
-            const $container = this.currentQuestion.find('.vs-columns-container');
-            if ($container.length) {
-                this.updateCheckboxesBasedOnExistingOptions($container);
+                console.error('Erro ao processar dados da tabela:', error);
+            } finally {
+                this.isUpdating = false;
             }
         },
 
@@ -220,13 +434,13 @@
             try {
                 importedAnswersData = JSON.parse($importedAnswersField.val() || '{}');
             } catch (e) {
-                importedAnswersData = { perguntas: [], manual_items: [], imported_items: [] };
+                importedAnswersData = { questions: [], manual_items: [], imported_items: [] };
             }
             
             // Inicializar arrays se não existirem
             if (!importedAnswersData.manual_items) importedAnswersData.manual_items = [];
             if (!importedAnswersData.imported_items) importedAnswersData.imported_items = [];
-            if (!importedAnswersData.perguntas) importedAnswersData.perguntas = [];
+            if (!importedAnswersData.questions) importedAnswersData.questions = [];
             
             // Obter respostas selecionadas da tabela
             const $selectedAnswers = $container.find('.vs-select-answer:checked');
@@ -378,8 +592,31 @@
             
             // Se for uma opção importada, obter os valores para desmarcar o checkbox correspondente
             let valorReal = null;
+            let voteId = null;
+            let questionIndex = null;
+            
             if (isImportedQuestion) {
                 valorReal = $optionItem.find('.vs-valor-real').val();
+                
+                // Obter dados para identificar a pergunta de origem
+                try {
+                    const importedData = JSON.parse($importedAnswersField.val() || '{}');
+                    if (importedData.questions) {
+                        // Encontrar a pergunta que contém esta resposta
+                        for (const pergunta of importedData.questions) {
+                            const foundAnswer = pergunta.imported_answers.find(answer => 
+                                answer.value === valorReal || answer.value_unificada === valorReal
+                            );
+                            if (foundAnswer) {
+                                voteId = pergunta.vote_id;
+                                questionIndex = pergunta.question_index - 1; // Ajustar para índice base 0
+                                break;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Erro ao processar dados importados:', e);
+                }
             }
             
             // Obter o índice da opção que está sendo removida
@@ -390,7 +627,7 @@
             try {
                 importedAnswersData = JSON.parse($importedAnswersField.val() || '{}');
             } catch (e) {
-                importedAnswersData = { perguntas: [], manual_items: [], imported_items: [] };
+                importedAnswersData = { questions: [], manual_items: [], imported_items: [] };
             }
             
             // Inicializar arrays se não existirem
@@ -407,26 +644,57 @@
             // Remover a opção
             $optionItem.remove();
             
-            // Se era uma opção importada, desmarcar o checkbox correspondente na tabela
-            if (isImportedQuestion && valorReal) {
-                $container.find('.vs-select-answer').each(function() {
-                    const $checkbox = $(this);
-                    const checkboxValor = $checkbox.data('valor');
-                    
-                    // Se o valor real corresponde, desmarcar o checkbox
-                    if (checkboxValor === valorReal) {
-                        $checkbox.prop('checked', false);
+            // Sincronizar com checkboxes do modal
+            if (isImportedQuestion && voteId && questionIndex !== null) {
+                // Atualizar metadados de seleções
+                try {
+                    const importedData = JSON.parse($importedAnswersField.val() || '{}');
+                    if (importedData.selected_questions && importedData.selected_questions[voteId]) {
+                        // Verificar se ainda existem outras respostas desta pergunta
+                        const remainingAnswers = importedData.questions.filter(p => 
+                            p.vote_id === voteId && p.question_index === (questionIndex + 1)
+                        );
+                        
+                        if (remainingAnswers.length === 0 || 
+                            (remainingAnswers.length === 1 && remainingAnswers[0].imported_answers.length === 0)) {
+                            // Remover pergunta dos metadados se não há mais respostas
+                            importedData.selected_questions[voteId] = 
+                                importedData.selected_questions[voteId].filter(idx => idx !== questionIndex);
+                            
+                            // Se não há mais perguntas selecionadas desta votação, remover completamente
+                            if (importedData.selected_questions[voteId].length === 0) {
+                                delete importedData.selected_questions[voteId];
+                            }
+                            
+                            // Atualizar campo
+                            $importedAnswersField.val(JSON.stringify(importedData));
+                        }
                     }
-                });
+                } catch (e) {
+                    console.error('Erro ao atualizar metadados:', e);
+                }
                 
-                // Também verificar se precisa desmarcar o "Selecionar todos"
-                const $selectAllCheckbox = $container.find('.vs-select-all-answers');
-                const totalCheckboxes = $container.find('.vs-select-answer').length;
-                const checkedCheckboxes = $container.find('.vs-select-answer:checked').length;
-                
-                // Se nem todos estão marcados, desmarcar o "Selecionar todos"
-                if (checkedCheckboxes < totalCheckboxes) {
-                    $selectAllCheckbox.prop('checked', false);
+                // Desmarcar checkbox correspondente se o modal estiver aberto
+                const $modal = $(`.vs-modal:visible`);
+                if ($modal.length) {
+                    const $checkbox = $modal.find(
+                        `.vs-select-question[data-votacao-id="${voteId}"][data-question-index="${questionIndex}"]`
+                    );
+                    if ($checkbox.length) {
+                        $checkbox.prop('checked', false);
+                        
+                        // Atualizar estado do "Selecionar todas"
+                        const totalCheckboxes = $modal.find('.vs-select-question').length;
+                        const checkedCheckboxes = $modal.find('.vs-select-question:checked').length;
+                        $modal.find('.vs-select-all-questions').prop('checked', 
+                            totalCheckboxes > 0 && checkedCheckboxes === totalCheckboxes
+                        );
+                        
+                        // Atualizar botão de importação
+                        if (window.VSAdmin.VotingModal) {
+                            window.VSAdmin.VotingModal.updateImportButton($modal);
+                        }
+                    }
                 }
             }
         },
@@ -513,7 +781,7 @@
                         }));
 
                         const answersJson = JSON.stringify({
-                            perguntas: [{
+                            questions: [{
                                 question_source: questionData.label || '',
                                 question_index: questionIndex + 1,
                                 imported_answers: importedAnswers
@@ -581,6 +849,11 @@
                                 }));
 
                                 allImportedAnswers.push({
+                                    vote_id: votingId,
+                                    vote_title: questionData.vote_title || '',
+                                    event_id: questionData.event_id || null,
+                                    event_title: questionData.event_title || 'Evento sem nome',
+                                    event_slug: questionData.event_slug || null,
                                     question_source: questionData.label || '',
                                     question_index: questionIndex + 1,
                                     imported_answers: importedAnswers
@@ -588,9 +861,12 @@
                             }
                         });
 
-                        // Criar JSON unificado com todas as respostas
+                        // JSON unificado com todas as respostas
                         const answersJson = JSON.stringify({
-                            perguntas: allImportedAnswers
+                            questions: allImportedAnswers,
+                            selected_questions: {
+                                [votingId]: selectedQuestionIndexes
+                            }
                         });
                         
                         // Atualizar campo oculto

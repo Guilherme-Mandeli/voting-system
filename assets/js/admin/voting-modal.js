@@ -321,9 +321,116 @@
             // Restaurar seleções baseadas nos dados salvos
             this.restoreSelectedQuestions($modal, votingId);
         },
+    
+        // Verificar se respostas ainda existem como 'imported' na coluna vs-options-column
+        checkImportedAnswersExistence: function(votingId, questionIndexes) {
+            const validQuestionIndexes = [];
+            
+            // Para cada pergunta, verificar se pelo menos uma resposta ainda existe como 'imported'
+            questionIndexes.forEach(questionIndex => {
+                const hasImportedAnswers = this.hasImportedAnswersForQuestion(votingId, questionIndex);
+                if (hasImportedAnswers) {
+                    validQuestionIndexes.push(questionIndex);
+                }
+            });
+            
+            return validQuestionIndexes;
+        },
+
+        // Verificar se uma pergunta específica tem respostas importadas
+        hasImportedAnswersForQuestion: function(votingId, questionIndex) {
+            // Obter dados salvos do campo vs-imported-answers
+            const savedDataField = $('.vs-imported-answers');
+            if (!savedDataField.length || !savedDataField.val()) {
+                return false;
+            }
+
+            try {
+                const savedData = JSON.parse(savedDataField.val());
+                if (!savedData || !savedData.questions) {
+                    return false;
+                }
+
+                // Verificar se existem respostas importadas para esta pergunta específica
+                const questionData = savedData.questions.find(q => 
+                    q.vote_id == votingId && q.question_index == (questionIndex + 1)
+                );
+
+                if (!questionData || !questionData.imported_answers) {
+                    return false;
+                }
+
+                // Verificar se pelo menos uma resposta ainda existe na coluna vs-options-column
+                const currentQuestion = window.VSAdmin.ImportedAnswers ? 
+                    window.VSAdmin.ImportedAnswers.getCurrentQuestion() : null;
+                    
+                if (!currentQuestion || !currentQuestion.length) {
+                    return false;
+                }
+
+                // Obter valores reais das opções importadas existentes
+                const existingImportedValues = [];
+                currentQuestion.find('.vs-option-item.imported_question .vs-valor-real').each(function() {
+                    const value = $(this).val();
+                    if (value && value.trim() !== '') {
+                        existingImportedValues.push(value.trim());
+                    }
+                });
+
+                // Verificar se pelo menos uma resposta da pergunta ainda existe
+                return questionData.imported_answers.some(answer => {
+                    const answerValue = answer.value || answer.value_unificada;
+                    return answerValue && existingImportedValues.includes(answerValue.trim());
+                });
+
+            } catch (error) {
+                console.error('Erro ao verificar existência de respostas importadas:', error);
+                return false;
+            }
+        },
+
+        // Limpar metadados de perguntas que não têm mais respostas importadas
+        cleanupInvalidSelections: function(votingId) {
+            const savedDataField = $('.vs-imported-answers');
+            if (!savedDataField.length || !savedDataField.val()) {
+                return;
+            }
+
+            try {
+                const savedData = JSON.parse(savedDataField.val());
+                if (!savedData || !savedData.selected_questions || !savedData.selected_questions[votingId]) {
+                    return;
+                }
+
+                const currentSelections = savedData.selected_questions[votingId];
+                const validSelections = this.checkImportedAnswersExistence(votingId, currentSelections);
+
+                // Se houve mudanças, atualizar os metadados
+                if (validSelections.length !== currentSelections.length) {
+                    if (validSelections.length === 0) {
+                        // Remover completamente se não há seleções válidas
+                        delete savedData.selected_questions[votingId];
+                    } else {
+                        // Atualizar com apenas as seleções válidas
+                        savedData.selected_questions[votingId] = validSelections;
+                    }
+
+                    // Salvar dados atualizados
+                    savedDataField.val(JSON.stringify(savedData));
+                    
+                    console.log(`Limpeza automática: ${currentSelections.length - validSelections.length} seleções inválidas removidas para votação ${votingId}`);
+                }
+
+            } catch (error) {
+                console.error('Erro ao limpar seleções inválidas:', error);
+            }
+        },
 
         restoreSelectedQuestions: function($modal, votingId) {
             try {
+                // Primeiro, limpar seleções inválidas
+                this.cleanupInvalidSelections(votingId);
+                
                 // Obter dados salvos do campo vs-imported-answers
                 const savedDataField = $('.vs-imported-answers');
                 if (!savedDataField.length || !savedDataField.val()) {
@@ -335,25 +442,55 @@
                     return;
                 }
 
-                // Filtrar perguntas pela vote_id atual
-                const relevantQuestions = savedData.questions.filter(q => 
-                    q.vote_id == votingId
-                );
-
-                if (relevantQuestions.length === 0) {
-                    return;
-                }
-
-                // Marcar checkboxes correspondentes
-                relevantQuestions.forEach(savedQuestion => {
-                    const checkbox = $modal.find(
-                        `.vs-select-question[data-votacao-id="${savedQuestion.vote_id}"][data-question-index="${savedQuestion.question_index}"]`
-                    );
+                // Verificar se existe metadados de seleções (nova estrutura)
+                if (savedData.selected_questions && savedData.selected_questions[votingId]) {
+                    const selectedIndexes = savedData.selected_questions[votingId];
                     
-                    if (checkbox.length) {
-                        checkbox.prop('checked', true);
+                    // Validar novamente antes de marcar (validação em tempo real)
+                    const validIndexes = this.checkImportedAnswersExistence(votingId, selectedIndexes);
+                    
+                    // Marcar checkboxes apenas para perguntas válidas
+                    validIndexes.forEach(questionIndex => {
+                        const checkbox = $modal.find(
+                            `.vs-select-question[data-votacao-id="${votingId}"][data-question-index="${questionIndex}"]`
+                        );
+                        
+                        if (checkbox.length) {
+                            checkbox.prop('checked', true);
+                        }
+                    });
+                    
+                    // Se houve mudanças na validação, atualizar metadados
+                    if (validIndexes.length !== selectedIndexes.length) {
+                        if (validIndexes.length === 0) {
+                            delete savedData.selected_questions[votingId];
+                        } else {
+                            savedData.selected_questions[votingId] = validIndexes;
+                        }
+                        savedDataField.val(JSON.stringify(savedData));
                     }
-                });
+                    
+                } else {
+                    // Fallback: usar estrutura antiga (compatibilidade com dados existentes)
+                    const relevantQuestions = savedData.questions.filter(q => 
+                        q.vote_id == votingId
+                    );
+
+                    // Validar perguntas da estrutura antiga
+                    const validQuestions = relevantQuestions.filter(savedQuestion => {
+                        return this.hasImportedAnswersForQuestion(votingId, savedQuestion.question_index - 1);
+                    });
+
+                    validQuestions.forEach(savedQuestion => {
+                        const checkbox = $modal.find(
+                            `.vs-select-question[data-votacao-id="${savedQuestion.vote_id}"][data-question-index="${savedQuestion.question_index - 1}"]`
+                        );
+                        
+                        if (checkbox.length) {
+                            checkbox.prop('checked', true);
+                        }
+                    });
+                }
 
                 // Atualizar estado do botão de importação
                 this.updateImportButton($modal);
@@ -442,39 +579,67 @@
                 },
                 success: function(response) {
                     if (response.success && response.data) {
-                        const allQuestions = {
-                            perguntas: []
-                        };
-
-                        questionsToImport.forEach(questionInfo => {
-                            const questionData = response.data[questionInfo.question_index];
-                            if (questionData) {
-                                const unifiedAnswers = questionData.respostas_unificadas || [];
-                                
-                                const importedAnswers = unifiedAnswers.map(answer => ({
-                                    value: answer.value || '',
-                                    value_unificada: answer.value_unificada || '',
-                                    qtd_votos: parseInt(answer.qtd_votos || 0)
-                                }));
-
-                                allQuestions.perguntas.push({
-                                    vote_id: votingId,
-                                    question_source: questionData.label || '',
-                                    question_index: questionInfo.question_index + 1,
-                                    imported_answers: importedAnswers
-                                });
-                            }
-                        });
-
-                        const answersJson = JSON.stringify(allQuestions);
-                
                         // Obter currentQuestion do módulo ImportedAnswers
                         const currentQuestion = window.VSAdmin.ImportedAnswers ? 
                             window.VSAdmin.ImportedAnswers.getCurrentQuestion() : null;
                             
                         if (currentQuestion && currentQuestion.length) {
+                            // Obter dados existentes para merge
+                            const $importedAnswersField = currentQuestion.find('.vs-imported-answers');
+                            let existingData;
+                            try {
+                                existingData = JSON.parse($importedAnswersField.val() || '{}');
+                            } catch (e) {
+                                existingData = {};
+                            }
+                            
+                            // Inicializar estrutura se não existir
+                            if (!existingData.questions) existingData.questions = [];
+                            if (!existingData.selected_questions) existingData.selected_questions = {};
+                            
+                            // Preparar novas perguntas
+                            const newQuestions = [];
+                            const selectedIndexes = [];
+                            
+                            questionsToImport.forEach(questionInfo => {
+                                const questionData = response.data[questionInfo.question_index];
+                                if (questionData) {
+                                    const unifiedAnswers = questionData.respostas_unificadas || [];
+                                    
+                                    const importedAnswers = unifiedAnswers.map(answer => ({
+                                        value: answer.value || '',
+                                        value_unificada: answer.value_unificada || '',
+                                        qtd_votos: parseInt(answer.qtd_votos || 0)
+                                    }));
+
+                                    newQuestions.push({
+                                        vote_id: votingId,
+                                        vote_title: questionData.vote_title || '',
+                                        event_id: questionData.event_id || null,
+                                        event_title: questionData.event_title || 'Evento sem nome',
+                                        event_slug: questionData.event_slug || null,
+                                        question_source: questionData.label || '',
+                                        question_index: questionInfo.question_index + 1,
+                                        imported_answers: importedAnswers
+                                    });
+                                    
+                                    selectedIndexes.push(questionInfo.question_index);
+                                }
+                            });
+                            
+                            // Merge inteligente: remover perguntas antigas do mesmo vote_id
+                            existingData.questions = existingData.questions.filter(q => q.vote_id != votingId);
+                            
+                            // Adicionar novas perguntas
+                            existingData.questions = existingData.questions.concat(newQuestions);
+                            
+                            // Atualizar metadados de seleções
+                            existingData.selected_questions[votingId] = selectedIndexes;
+                            
+                            const answersJson = JSON.stringify(existingData);
+                            
                             // Atualizar campo oculto com o JSON
-                            currentQuestion.find('.vs-imported-answers')
+                            $importedAnswersField
                                 .val(answersJson)
                                 .attr('vote-id-list', votingId);
                             

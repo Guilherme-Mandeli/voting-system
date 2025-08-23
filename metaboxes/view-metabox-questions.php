@@ -23,14 +23,14 @@ function vs_render_metabox_questions_view($post) {
                     $question['imported_answers'] = json_encode($json_decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 } else {
                     $question['imported_answers'] = json_encode([
-                        'perguntas' => [],
+                        'questions' => [],
                         'manual_items' => [],
                         'imported_items' => []
                     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 }
             } else {
                 $question['imported_answers'] = json_encode([
-                    'perguntas' => [],
+                    'questions' => [],
                     'manual_items' => [],
                     'imported_items' => []
                 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

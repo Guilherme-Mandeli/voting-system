@@ -63,17 +63,34 @@ function vs_ajax_buscar_votacoes() {
             $query->the_post();
             $post_id = get_the_ID();
             
-            // Obter o termo da taxonomia eventos
+            // Obter informações completas do evento
             $eventos = wp_get_post_terms($post_id, 'eventos');
-            $evento_nome = !empty($eventos) ? $eventos[0]->name : '';
+            $event_info = [
+                'event_id' => null,
+                'event_title' => 'Evento sem nome',
+                'event_slug' => null
+            ];
+            
+            if (!empty($eventos) && !is_wp_error($eventos)) {
+                $event_info = [
+                    'event_id' => $eventos[0]->term_id,
+                    'event_title' => $eventos[0]->name,
+                    'event_slug' => $eventos[0]->slug
+                ];
+            }
             
             $votacoes[] = [
                 'id' => $post_id,
-                'titulo' => get_the_title(),
+                'vote_id' => $post_id,
+                'vote_title' => get_the_title(),
+                'titulo' => get_the_title(), // Manter compatibilidade
                 'codigo' => get_post_meta($post_id, '_vs_codigo', true),
                 'ano' => get_post_meta($post_id, '_vs_ano', true),
                 'status' => get_post_meta($post_id, '_vs_status', true),
-                'evento' => $evento_nome // Adicionando o nome do evento
+                'evento' => $event_info['event_title'], // Manter compatibilidade
+                'event_id' => $event_info['event_id'],
+                'event_title' => $event_info['event_title'],
+                'event_slug' => $event_info['event_slug']
             ];
         }
     }
@@ -104,6 +121,29 @@ function vs_ajax_obter_perguntas_votacao() {
         if (!$votacao_id) {
             wp_send_json_error('ID da votação inválido');
             return;
+        }
+
+        // Buscar informações do evento ANTES de processar as perguntas
+        $votacao_post = get_post($votacao_id);
+        if (!$votacao_post) {
+            wp_send_json_error('Votação não encontrada');
+            return;
+        }
+
+        // Buscar evento associado
+        $eventos = wp_get_post_terms($votacao_id, 'eventos');
+        $event_info = [
+            'event_id' => null,
+            'event_title' => 'Evento sem nome',
+            'event_slug' => null
+        ];
+        
+        if (!empty($eventos) && !is_wp_error($eventos)) {
+            $event_info = [
+                'event_id' => $eventos[0]->term_id,
+                'event_title' => $eventos[0]->name,
+                'event_slug' => $eventos[0]->slug
+            ];
         }
 
         $questions = get_post_meta($votacao_id, 'vs_questions', true);
@@ -175,12 +215,17 @@ function vs_ajax_obter_perguntas_votacao() {
             }
         }
 
-        // Adiciona contagem de respostas e respostas unificadas para cada pergunta
+        // Adicionar informações do evento a cada pergunta
         foreach ($questions as $index => &$question) {
             $question['total_votos'] = $contagem_respostas[$index] ?? 0;
             $question['respostas_unificadas'] = !empty($respostas_por_pergunta[$index]) 
                 ? array_values($respostas_por_pergunta[$index]) 
                 : [];
+            $question['vote_id'] = $votacao_id;
+            $question['vote_title'] = $votacao_post->post_title;
+            $question['event_id'] = $event_info['event_id'];
+            $question['event_title'] = $event_info['event_title'];
+            $question['event_slug'] = $event_info['event_slug'];
         }
 
         wp_send_json_success($questions);

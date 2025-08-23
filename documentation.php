@@ -115,7 +115,7 @@ defined('ABSPATH') || exit;
  *     "obrigatoria": true,
  *     "unificada": "",
  *     "imported_vote_id": null,
- *     "imported_answers": "{\"perguntas\": []}",
+ *     "imported_answers": "{\"questions\": []}",
  *     "valores_reais": ["Aprovo totalmente", "Aprovo parcialmente", "Reprovo"],
  *     "question_source": ""
  *   },
@@ -126,7 +126,7 @@ defined('ABSPATH') || exit;
  *     "obrigatoria": false,
  *     "unificada": "",
  *     "imported_vote_id": null,
- *     "imported_answers": "{\"perguntas\": []}"
+ *     "imported_answers": "{\"questions\": []}"
  *   },
  *   "2": {
  *     "label": "Avaliação baseada em votação anterior",
@@ -135,7 +135,7 @@ defined('ABSPATH') || exit;
  *     "obrigatoria": true,
  *     "unificada": "",
  *     "imported_vote_id": 456,
- *     "imported_answers": "{\"perguntas\": [{\"question_source\": \"Como avalia o evento?\", \"question_index\": 1, \"imported_answers\": [{\"value\": \"Muito bom evento\", \"value_unificada\": \"Positivo\", \"qtd_votos\": 15}]}]}",
+ *     "imported_answers": "{\"questions\": [{\"question_source\": \"Como avalia o evento?\", \"question_index\": 1, \"imported_answers\": [{\"value\": \"Muito bom evento\", \"value_unificada\": \"Positivo\", \"qtd_votos\": 15}]}]}",
  *     "valores_reais": ["Muito bom evento", "Evento regular", "Evento fraco", "Evento ruim"],
  *     "question_source": "Como avalia o evento?"
  *   }
@@ -211,7 +211,7 @@ defined('ABSPATH') || exit;
  * 
  * Estrutura JSON completa:
  * {
- *   "perguntas": [
+ *   "questions": [
  *     {
  *       "question_source": "Como você avalia o evento anterior?",
  *       "question_index": 1,
@@ -264,7 +264,7 @@ defined('ABSPATH') || exit;
  * }
  * 
  * CAMPOS DA ESTRUTURA DE RESPOSTAS IMPORTADAS:
- * - perguntas (array): Lista de perguntas importadas
+ * - questions (array): Lista de perguntas importadas
  *   * question_source (string): Texto original da pergunta na votação anterior
  *   * question_index (int): Índice da pergunta na votação original (1-based)
  *   * vote_id (int): ID da votação de origem

@@ -1042,3 +1042,18 @@
     color: #666;
     font-size: 0.9em;
 }
+
+.vs-event-summary {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: #495057;
+}
+
+.vs-event-summary strong {
+    color: #212529;
+    font-weight: 600;
+}

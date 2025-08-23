@@ -195,6 +195,26 @@ function vs_get_imported_vote_data($votacao_id, $question_index = null) {
         return json_encode(['questions' => []], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
+    // Buscar informações do evento ANTES de processar as perguntas
+    $votacao_post = get_post($votacao_id);
+    $event_info = [
+        'event_id' => null,
+        'event_title' => 'Evento sem nome',
+        'event_slug' => null
+    ];
+    
+    if ($votacao_post) {
+        // Buscar evento associado
+        $eventos = wp_get_post_terms($votacao_id, 'eventos');
+        if (!empty($eventos) && !is_wp_error($eventos)) {
+            $event_info = [
+                'event_id' => $eventos[0]->term_id,
+                'event_title' => $eventos[0]->name,
+                'event_slug' => $eventos[0]->slug
+            ];
+        }
+    }
+
     // Busca todas as respostas da votação
     $args = [
         'post_type' => 'votacao_resposta',
@@ -275,6 +295,10 @@ function vs_get_imported_vote_data($votacao_id, $question_index = null) {
             ? array_values($respostas_por_pergunta[$question_index]) 
             : [];
         $question['vote_id'] = $votacao_id;
+        $question['vote_title'] = $votacao_post ? $votacao_post->post_title : '';
+        $question['event_id'] = $event_info['event_id'];
+        $question['event_title'] = $event_info['event_title'];
+        $question['event_slug'] = $event_info['event_slug'];
         $question['question_source'] = $question['label'] ?? '';
         
         $result = json_encode(['questions' => [$question]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -291,6 +315,10 @@ function vs_get_imported_vote_data($votacao_id, $question_index = null) {
             ? array_values($respostas_por_pergunta[$index]) 
             : [];
         $question['vote_id'] = $votacao_id;
+        $question['vote_title'] = $votacao_post ? $votacao_post->post_title : '';
+        $question['event_id'] = $event_info['event_id'];
+        $question['event_title'] = $event_info['event_title'];
+        $question['event_slug'] = $event_info['event_slug'];
         $question['question_source'] = $question['label'] ?? '';
     }
 

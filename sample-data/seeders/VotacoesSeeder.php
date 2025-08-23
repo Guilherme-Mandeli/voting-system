@@ -83,8 +83,8 @@ class VS_VotacoesSeeder {
                 $votacao_id = $factory->create($config);
                 
                 if ($votacao_id) {
-                    // Cria as perguntas
-                    $questions = $question_factory->createSet($config['question_types']);
+                    // Cria as perguntas com informações da votação
+                    $questions = $question_factory->createSet($config['question_types'], $votacao_id);
                     update_post_meta($votacao_id, 'vs_questions', $questions);
                     
                     // Marca como dados de exemplo
