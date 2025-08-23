@@ -286,14 +286,18 @@
             `);
 
             // Preencher tabela com perguntas
-            questions.forEach((question, index) => {                            
+            questions.forEach((question, index) => {
+                // Verificar se esta pergunta tem respostas importadas ativas
+                const hasImportedAnswers = window.VSAdmin.VotingModal.hasImportedAnswersForQuestion(votingId, index);
+                
                 const $row = $(`
                     <tr>
                         <td>
                             <input type="checkbox" class="vs-select-question" 
                                 data-votacao-id="${votingId}" 
                                 data-question-index="${index}"
-                                data-status="${status}">
+                                data-status="${status}"
+                                ${hasImportedAnswers ? 'checked disabled' : ''}>
                         </td>
                         <td>#${index + 1} ${question.label}</td>
                         <td>${question.total_votos || 0}</td>
