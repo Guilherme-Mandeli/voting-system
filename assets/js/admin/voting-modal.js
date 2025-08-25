@@ -588,38 +588,7 @@
                             window.VSAdmin.ImportedAnswers.getCurrentQuestion() : null;
                             
                         if (currentQuestion && currentQuestion.length) {
-                            // Obter dados existentes para merge
-                            const $importedAnswersField = currentQuestion.find('.vs-imported-answers');
-                            // Preparar dados existentes
-                            let existingData;
-                            try {
-                                existingData = JSON.parse($importedAnswersField.val() || '{}');
-                                
-                                // Preservar manual_items e imported_items existentes
-                                if (!existingData.manual_items) existingData.manual_items = [];
-                                if (!existingData.imported_items) existingData.imported_items = [];
-                                if (!existingData.questions) existingData.questions = [];
-                                if (!existingData.selected_questions) existingData.selected_questions = {};
-                                
-                                // Garantir que sejam arrays/objetos válidos
-                                if (!Array.isArray(existingData.manual_items)) existingData.manual_items = [];
-                                if (!Array.isArray(existingData.imported_items)) existingData.imported_items = [];
-                                if (!Array.isArray(existingData.questions)) existingData.questions = [];
-                                if (typeof existingData.selected_questions !== 'object') existingData.selected_questions = {};
-                            } catch (e) {
-                                existingData = {
-                                    questions: [],
-                                    manual_items: [],
-                                    imported_items: [],
-                                    selected_questions: {}
-                                };
-                            }
-                            
-                            // Inicializar estrutura se não existir
-                            if (!existingData.questions) existingData.questions = [];
-                            if (!existingData.selected_questions) existingData.selected_questions = {};
-                            
-                            // Preparar novas perguntas
+                            // Preparar novas perguntas para importação
                             const newQuestions = [];
                             const selectedIndexes = [];
                             
@@ -649,31 +618,37 @@
                                 }
                             });
                             
-                            // Merge inteligente: remover perguntas antigas do mesmo vote_id
-                            existingData.questions = existingData.questions.filter(q => q.vote_id != votingId);
-                            
-                            // Adicionar novas perguntas
-                            existingData.questions = existingData.questions.concat(newQuestions);
-                            
-                            // Atualizar metadados de seleções
-                            existingData.selected_questions[votingId] = selectedIndexes;
-                            
-                            const answersJson = JSON.stringify(existingData);
-                            
-                            // Atualizar campo oculto com o JSON
-                            $importedAnswersField
-                                .val(answersJson)
-                                .attr('vote-id-list', votingId);
-                            
-                            // Fechar o modal após importação
-                            $modal.hide();
+                            // Usar a nova função safeUpdateImportedAnswers para o merge
+                            try {
+                                const result = window.VSAdmin.ImportedAnswers.safeUpdateImportedAnswers(
+                                    votingId,
+                                    {
+                                        questions: newQuestions,
+                                        selected_questions: { [votingId]: selectedIndexes }
+                                    },
+                                    'REPLACE' // Estratégia de substituição para perguntas do mesmo vote_id
+                                );
+                                
+                                if (result.success) {
+                                    console.log('Importação realizada com sucesso:', result.message);
+                                    
+                                    // Fechar o modal após importação
+                                    $modal.hide();
 
-                            // Criar e atualizar a estrutura de duas colunas
-                            window.VSAdmin.VotingModal.createImportStructure();
+                                    // Criar e atualizar a estrutura de duas colunas
+                                    window.VSAdmin.VotingModal.createImportStructure();
 
-                            // Atualizar a tabela usando os dados do input hidden
-                            if (window.VSAdmin.ImportedAnswers) {
-                                window.VSAdmin.ImportedAnswers.updateTable();
+                                    // Atualizar a tabela usando os dados do input hidden
+                                    if (window.VSAdmin.ImportedAnswers) {
+                                        window.VSAdmin.ImportedAnswers.updateTable();
+                                    }
+                                } else {
+                                    console.error('Erro na importação:', result.message);
+                                    alert('Erro ao importar respostas: ' + result.message);
+                                }
+                            } catch (error) {
+                                console.error('Erro ao executar safeUpdateImportedAnswers:', error);
+                                alert('Erro interno ao importar respostas. Verifique o console para mais detalhes.');
                             }
                         }
                     } else {

@@ -117,6 +117,31 @@
                     window.VSAdmin.ImportedAnswers.updateTable();
                 }
             } else {
+                // NOVA LIMPEZA: Limpar dados importados quando muda para outro tipo
+                if (window.VSAdmin.ImportedAnswers && window.VSAdmin.ImportedAnswers.currentQuestion) {
+                    console.log('🧹 Limpando dados importados devido à mudança de tipo de campo');
+                    
+                    // Limpar campo de dados importados
+                    $questionContainer.find('.vs-imported-answers').val('').attr('vote-id-list', '');
+                    
+                    // Limpar seleções
+                    $questionContainer.find('.vs-votacao-selecionada').empty();
+                    
+                    // Limpar tabela se existir
+                    const $tbody = $questionContainer.find('.vs-imported-column tbody');
+                    if ($tbody.length) {
+                        $tbody.empty().append($('<tr>').append(
+                            $('<td>', { 
+                                colspan: 5, 
+                                style: 'text-align: center; padding: 20px; color: #666;' 
+                            }).text('Nenhuma resposta foi importada.')
+                        ));
+                    }
+                    
+                    // Remover resumo do evento
+                    $questionContainer.find('.vs-event-summary').remove();
+                }
+                
                 container.hide();
                 if (!$(this).val().match(/^(select|radio|checkbox)$/)) {
                     optionsContainer.hide();
