@@ -127,8 +127,25 @@ function vs_save_metabox_questions($post_id) {
             
             // Filtrar manual_items e imported_items para remover índices de opções vazias
             $filtered_manual_items = array_intersect($manual_items, $valid_indices);
-            $filtered_imported_items = array_intersect($imported_items, $valid_indices);
-
+            
+            // Para imported_items, filtrar objetos baseado nos índices válidos
+            $filtered_imported_items = [];
+            if (is_array($imported_items)) {
+                foreach ($imported_items as $item) {
+                    if (is_array($item)) {
+                        // Nova estrutura: manter objetos (não dependem de índices)
+                        $filtered_imported_items[] = $item;
+                    } else {
+                        // Estrutura antiga: filtrar por índices válidos
+                        if (in_array($item, $valid_indices)) {
+                            $filtered_imported_items[] = $item;
+                        }
+                    }
+                }
+            } else {
+                $filtered_imported_items = array_intersect($imported_items, $valid_indices);
+            }
+            
             // Usar as opções filtradas
             $options = $filtered_options;
             $valores_reais = $filtered_valores_reais;

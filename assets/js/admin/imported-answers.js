@@ -653,8 +653,14 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                 // Inserir antes do botão "Adicionar Opção"
                 $optionsContainer.find('.vs-add-option').before($optionItem);
                 
-                // Adicionar ao array de itens importados usando o índice correto
-                importedAnswersData.imported_items.push(currentOptionIndex);
+                // Adicionar ao array de itens importados usando objeto com text e vs_valor_real
+                importedAnswersData.imported_items.push({
+                    text: visualValue,
+                    vs_valor_real: realValue,
+                    vote_id: null, // Será preenchido quando necessário
+                    question_index: questionIndex,
+                    answer_index: currentOptionIndex
+                });
             });
             
             // Atualizar o campo imported_answers
@@ -720,14 +726,15 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
             // Verificar se é uma opção importada antes de remover
             const isImportedQuestion = $optionItem.hasClass('imported_question');
             
+            // Obter valores da opção que está sendo removida
+            const textValue = $optionItem.find('input[type="text"]').val();
+            const realValue = $optionItem.find('.vs-valor-real').val();
+            const questionIndex = parseInt($questionContainer.data('question-index') || 0);
+            
             // Se for uma opção importada, obter os valores para desmarcar o checkbox correspondente
-            let valorReal = null;
             let voteId = null;
-            let questionIndex = null;
             
             if (isImportedQuestion) {
-                valorReal = $optionItem.find('.vs-valor-real').val();
-                
                 // Obter dados para identificar a pergunta de origem
                 try {
                     const importedData = JSON.parse($importedAnswersField.val() || '{}');
@@ -735,11 +742,10 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                         // Encontrar a pergunta que contém esta resposta
                         for (const pergunta of importedData.questions) {
                             const foundAnswer = pergunta.imported_answers.find(answer => 
-                                answer.value === valorReal || answer.value_unificada === valorReal
+                                answer.value === realValue || answer.value_unificada === realValue
                             );
                             if (foundAnswer) {
                                 voteId = pergunta.vote_id;
-                                questionIndex = pergunta.question_index - 1; // Ajustar para índice base 0
                                 break;
                             }
                         }
@@ -748,9 +754,6 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                     console.error('Erro ao processar dados importados:', e);
                 }
             }
-            
-            // Obter o índice da opção que está sendo removida
-            const optionIndex = $optionItem.index();
             
             // Atualizar arrays manual_items e imported_items
             let importedAnswersData;
@@ -764,9 +767,19 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
             if (!importedAnswersData.manual_items) importedAnswersData.manual_items = [];
             if (!importedAnswersData.imported_items) importedAnswersData.imported_items = [];
             
-            // Remover o índice dos arrays
+            // Remover objeto do array imported_items baseado nos valores text e vs_valor_real
+            importedAnswersData.imported_items = importedAnswersData.imported_items.filter(item => {
+                // Se for um objeto (nova estrutura)
+                if (typeof item === 'object' && item !== null) {
+                    return !(item.text === textValue && item.vs_valor_real === realValue && item.question_index === questionIndex);
+                }
+                // Se for um índice (estrutura antiga), manter para compatibilidade
+                return true;
+            });
+            
+            // Para manual_items, ainda usar índice se necessário (compatibilidade)
+            const optionIndex = $optionItem.index();
             importedAnswersData.manual_items = importedAnswersData.manual_items.filter(index => index !== optionIndex);
-            importedAnswersData.imported_items = importedAnswersData.imported_items.filter(index => index !== optionIndex);
             
             // Atualizar o campo imported_answers
             $importedAnswersField.val(JSON.stringify(importedAnswersData));
@@ -1904,7 +1917,6 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
             
             try {
                 // Implementar comportamento legacy simplificado
-                // Por enquanto, vamos usar uma versão simplificada que apenas adiciona os dados
                 const currentData = this.getCurrentJsonData();
                 
                 // Estratégia legacy: sempre adicionar (equivalente a PUSH)
@@ -1920,13 +1932,13 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                     currentData.questions = currentData.questions || [];
                     currentData.questions.push(...questionsToAdd);
                     
-                    // Adicionar imported_items básicos
+                    // Adicionar imported_items como objetos com nova estrutura
                     questionsToAdd.forEach((question, questionIndex) => {
                         if (question.imported_answers) {
                             question.imported_answers.forEach((answer, answerIndex) => {
                                 currentData.imported_items.push({
-                                    real_value: answer.value || answer.real_value || '',
-                                    visual_value: answer.display || answer.visual_value || answer.value || '',
+                                    text: answer.display || answer.visual_value || answer.value || '',
+                                    vs_valor_real: answer.value || answer.real_value || '',
                                     vote_id: question.vote_id,
                                     question_index: questionIndex,
                                     answer_index: answerIndex
@@ -1975,21 +1987,44 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                 return { isValid: false, errors };
             }
             
+            // Validar se é array de questions
             if (Array.isArray(input)) {
-                // Validar array de questions
-                if (input.length === 0) {
-                    errors.push('Array de questions está vazio');
-                }
-                
                 input.forEach((question, index) => {
                     if (!question.vote_id) {
-                        errors.push(`Question ${index} não possui vote_id`);
+                        errors.push(`Question ${index}: vote_id é obrigatório`);
+                    }
+                    if (!question.imported_answers || !Array.isArray(question.imported_answers)) {
+                        errors.push(`Question ${index}: imported_answers deve ser um array`);
                     }
                 });
-            } else if (typeof input === 'object') {
-                // Validar objeto com estrutura
-                if (!input.questions && !input.imported_items) {
-                    errors.push('Objeto não possui questions nem imported_items');
+            }
+            // Validar se é objeto com estrutura completa
+            else if (typeof input === 'object') {
+                // Validar imported_items se presente
+                if (input.imported_items && Array.isArray(input.imported_items)) {
+                    input.imported_items.forEach((item, index) => {
+                        if (typeof item === 'object' && item !== null) {
+                            // Nova estrutura de objeto
+                            if (!item.hasOwnProperty('text')) {
+                                errors.push(`imported_items[${index}]: propriedade 'text' é obrigatória`);
+                            }
+                            if (!item.hasOwnProperty('vs_valor_real')) {
+                                errors.push(`imported_items[${index}]: propriedade 'vs_valor_real' é obrigatória`);
+                            }
+                        } else if (typeof item !== 'number') {
+                            // Estrutura antiga deve ser número (índice)
+                            errors.push(`imported_items[${index}]: deve ser objeto ou número`);
+                        }
+                    });
+                }
+                
+                // Validar questions se presente
+                if (input.questions && Array.isArray(input.questions)) {
+                    input.questions.forEach((question, index) => {
+                        if (!question.vote_id) {
+                            errors.push(`questions[${index}]: vote_id é obrigatório`);
+                        }
+                    });
                 }
             } else {
                 errors.push('Entrada deve ser array ou objeto');
@@ -1997,7 +2032,7 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
             
             return {
                 isValid: errors.length === 0,
-                errors
+                errors: errors
             };
         },
         
@@ -2046,32 +2081,54 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                     // Gerar imported_items e selected_questions a partir das questions
                     newQuestions.forEach((question, questionIndex) => {
                         if (question.imported_answers && Array.isArray(question.imported_answers)) {
+                            // Adicionar à selected_questions
+                            if (!newDataStructure.selected_questions[question.vote_id]) {
+                                newDataStructure.selected_questions[question.vote_id] = [];
+                            }
+                            newDataStructure.selected_questions[question.vote_id].push(question.question_index - 1);
+                            
+                            // Gerar imported_items como objetos
                             question.imported_answers.forEach((answer, answerIndex) => {
                                 newDataStructure.imported_items.push({
-                                    real_value: this.normalizeValue(answer.value || answer.real_value),
-                                    visual_value: this.normalizeValue(answer.display || answer.visual_value || answer.value),
+                                    text: answer.display || answer.visual_value || answer.value || '',
+                                    vs_valor_real: answer.value || answer.real_value || '',
                                     vote_id: question.vote_id,
                                     question_index: questionIndex,
                                     answer_index: answerIndex
                                 });
                             });
-                            
-                            // Adicionar aos selected_questions
-                            if (!newDataStructure.selected_questions[question.vote_id]) {
-                                newDataStructure.selected_questions[question.vote_id] = [];
-                            }
-                            newDataStructure.selected_questions[question.vote_id].push(questionIndex);
                         }
                     });
                 } else if (newQuestions && typeof newQuestions === 'object') {
-                    // Entrada é objeto com estrutura completa
-                    newDataStructure = {
-                        questions: newQuestions.questions || [],
-                        imported_items: newQuestions.imported_items || [],
-                        selected_questions: newQuestions.selected_questions || {},
-                        manual_items: [] // Sempre vazio para novos dados
-                    };
-                    questionsToProcess = newDataStructure.questions;
+                    // Entrada é objeto completo - usar como está mas garantir estrutura de objetos
+                    newDataStructure = { ...newQuestions };
+                    
+                    // Converter imported_items para objetos se ainda forem índices
+                    if (newDataStructure.imported_items && Array.isArray(newDataStructure.imported_items)) {
+                        newDataStructure.imported_items = newDataStructure.imported_items.map(item => {
+                            if (typeof item === 'object' && item !== null) {
+                                // Já é objeto, garantir propriedades necessárias
+                                return {
+                                    text: item.text || item.visual_value || '',
+                                    vs_valor_real: item.vs_valor_real || item.real_value || '',
+                                    vote_id: item.vote_id || null,
+                                    question_index: item.question_index || 0,
+                                    answer_index: item.answer_index || 0
+                                };
+                            } else {
+                                // É índice, converter para objeto (fallback)
+                                return {
+                                    text: '',
+                                    vs_valor_real: '',
+                                    vote_id: null,
+                                    question_index: 0,
+                                    answer_index: item
+                                };
+                            }
+                        });
+                    }
+                    
+                    questionsToProcess = newDataStructure.questions || [];
                 } else {
                     console.warn('updateImportedAnswers: entrada inválida', newQuestions);
                     return existingData;

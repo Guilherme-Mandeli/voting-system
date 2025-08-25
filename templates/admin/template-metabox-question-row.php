@@ -177,7 +177,27 @@ defined( 'ABSPATH' ) || exit;
                 // Decodificar imported_answers para verificar se é importada
                 $imported_answers_data = json_decode($question['imported_answers'] ?? '{}', true);
                 $imported_items = $imported_answers_data['imported_items'] ?? [];
-                $is_imported = in_array($option_index, $imported_items);
+                
+                // Verificar se é importada usando nova estrutura de objetos
+                $is_imported = false;
+                if (is_array($imported_items)) {
+                    foreach ($imported_items as $item) {
+                        if (is_array($item)) {
+                            // Nova estrutura: objetos com text e vs_valor_real
+                            if (isset($item['text']) && $item['text'] === $option && 
+                                isset($item['vs_valor_real']) && $item['vs_valor_real'] === $valor_real) {
+                                $is_imported = true;
+                                break;
+                            }
+                        } else {
+                            // Compatibilidade com estrutura antiga: índices numéricos
+                            if ($item === $option_index) {
+                                $is_imported = true;
+                                break;
+                            }
+                        }
+                    }
+                }
                 
                 // Se não está nos arrays, usar lógica de fallback
                 if (!$is_imported) {
