@@ -27,7 +27,10 @@
                 text: 'Adicionar Selecionados'
             }));
 
-        const tabela = $('<table>', { class: 'wp-list-table widefat fixed striped' })
+        const tabela = $('<table>', { 
+            id: 'vs-imported-answers-table',
+            class: 'wp-list-table widefat fixed striped' 
+        })
             .append($('<thead>').append($('<tr>')
                 .append($('<th>', { style: 'width: 26px; text-align: center;' }).text('#'))
                 .append($('<th>', { class: 'check-column' })

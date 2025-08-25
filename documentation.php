@@ -245,18 +245,11 @@ defined('ABSPATH') || exit;
  *       ]
  *     }
  *   ],
- *   "manual_items": [
- *     {
- *       "text": "Opção criada manualmente",
- *       "vs_valor_real": "Opção criada manualmente"
- *     }
- *   ],
- *   "imported_items": [
- *     {
- *       "text": "Excelente evento, muito bem organizado e informativo",
- *       "vs_valor_real": "Excelente evento, muito bem organizado e informativo"
- *     }
- *   ]
+ *   "manual_items": [0, 2],
+ *   "imported_items": [1, 3],
+ *   "selected_questions": {
+ *     "123": [0, 1]
+ *   }
  * }
  * 
  * CAMPOS DA ESTRUTURA DE RESPOSTAS IMPORTADAS:
@@ -576,11 +569,19 @@ defined('ABSPATH') || exit;
  *    - Coleta respostas detalhadas e unificadas
  *    - Gera estatísticas por resposta
  *    - Formata dados para interface
+ *    - Inclui metadados completos de votação e evento
  * 
  * 3. INTEGRAÇÃO NA PERGUNTA:
  *    - Campo 'imported_answers' armazena JSON com dados
  *    - Campo 'valores_reais' mantém respostas originais
  *    - Interface permite seleção de respostas específicas
+ *    - Metadados são aplicados automaticamente aos elementos DOM
+ * 
+ * 4. CONTROLE DE METADADOS:
+ *    - Sistema aplica data-vote-id, data-question-index, data-answer-index
+ *    - Filtragem precisa por votação específica
+ *    - Prevenção de substituição incorreta de importações
+ *    - Merge inteligente baseado em dados reais do DOM
  * 
  * ===============================================================================
  * SEÇÃO 4: SHORTCODES E TEMPLATES
@@ -759,6 +760,11 @@ defined('ABSPATH') || exit;
  *    - vs_generate_thank_you_token(): Token temporário (5 min)
  *    - Cache de consultas pesadas quando aplicável
  * 
+ * 4. FILTRAGEM DOM:
+ *    - Sistema de metadados elimina consultas AJAX desnecessárias
+ *    - Filtragem direta no DOM usando data-vote-id
+ *    - Cache eficiente de dados de importação no JSON
+ * 
  * CARREGAMENTO CONDICIONAL
  * =======================
  * 
@@ -805,6 +811,9 @@ defined('ABSPATH') || exit;
  * - vs_unification_groups: Modifica grupos de unificação
  *   Parâmetros: $groups, $votacao_id, $question_index
  * 
+ * - vs_imported_metadata: Modifica metadados aplicados aos elementos importados
+ *   Parâmetros: $metadata, $vote_id, $question_index, $answer_index
+ * 
  * EXEMPLO DE USO:
  * 
  * // Adicionar ação personalizada após votação
@@ -821,6 +830,12 @@ defined('ABSPATH') || exit;
  *     return $data;
  * }, 10, 2);
  * 
+ * // Personalizar metadados de importação
+ * add_filter('vs_imported_metadata', function($metadata, $vote_id, $question_index, $answer_index) {
+ *     $metadata['data-custom-attr'] = 'custom-value';
+ *     return $metadata;
+ * }, 10, 4);
+ * 
  * ===============================================================================
  * SEÇÃO 9: CONSIDERAÇÕES PARA DESENVOLVIMENTO
  * ===============================================================================
@@ -833,6 +848,7 @@ defined('ABSPATH') || exit;
  * - Classes modulares com responsabilidades específicas
  * - Templates customizáveis via tema
  * - Estrutura de dados flexível em JSON
+ * - Sistema de metadados extensível para novos tipos de importação
  * 
  * COMPATIBILIDADE
  * ==============
@@ -862,6 +878,7 @@ defined('ABSPATH') || exit;
  * - Operações de unificação
  * - Erros de validação
  * - Falhas de AJAX
+ * - Problemas de metadados de importação
  * 
  * TESTES RECOMENDADOS
  * ==================
@@ -873,6 +890,7 @@ defined('ABSPATH') || exit;
  * - Exportação CSV
  * - Área do usuário (shortcodes novos)
  * - Importação de respostas anteriores
+ * - Sistema de metadados para controle de importações
  * 
  * CENÁRIOS DE TESTE:
  * - Usuários não logados
@@ -881,6 +899,9 @@ defined('ABSPATH') || exit;
  * - Respostas duplicadas
  * - Performance com muitos dados
  * - Responsividade mobile
+ * - Múltiplas importações na mesma pergunta
+ * - Substituição vs. adição de importações
+ * - Filtragem por votação específica
  * 
  * PRÓXIMOS DESENVOLVIMENTOS SUGERIDOS
  * ==================================
@@ -896,6 +917,8 @@ defined('ABSPATH') || exit;
  * - Sistema de favoritos/bookmarks
  * - Filtros avançados na área do usuário
  * - Integração com outros plugins populares
+ * - Versionamento de importações
+ * - Histórico de alterações em metadados
  * 
  * MELHORIAS TÉCNICAS:
  * - Cache avançado com Redis/Memcached
@@ -904,11 +927,12 @@ defined('ABSPATH') || exit;
  * - Compressão de dados JSON
  * - Indexação de banco de dados
  * - Monitoramento de performance
+ * - Validação avançada de metadados
+ * - Sistema de migração automática de estruturas
  * 
  * ===============================================================================
  * FIM DA DOCUMENTAÇÃO TÉCNICA
  * ===============================================================================
- */
-
-// Fim da documentação
-?>
+ * 
+ * // Fim da documentação
+ * ?>

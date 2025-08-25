@@ -180,6 +180,9 @@ defined( 'ABSPATH' ) || exit;
                 
                 // Verificar se é importada usando nova estrutura de objetos
                 $is_imported = false;
+                $vote_id = null;
+                $answer_question_index = null;
+                
                 if (is_array($imported_items)) {
                     foreach ($imported_items as $item) {
                         if (is_array($item)) {
@@ -187,6 +190,8 @@ defined( 'ABSPATH' ) || exit;
                             if (isset($item['text']) && $item['text'] === $option && 
                                 isset($item['vs_valor_real']) && $item['vs_valor_real'] === $valor_real) {
                                 $is_imported = true;
+                                $vote_id = $item['vote_id'] ?? null;
+                                $answer_question_index = $item['question_index'] ?? null;
                                 break;
                             }
                         } else {
@@ -209,8 +214,19 @@ defined( 'ABSPATH' ) || exit;
                 }
                 
                 $option_class = $is_imported ? 'vs-option-item imported_question' : 'vs-option-item';
+                
+                // Preparar atributos de metadados para opções importadas
+                $metadata_attrs = '';
+                if ($is_imported && $vote_id !== null && $answer_question_index !== null) {
+                    $metadata_attrs = sprintf(
+                        'data-vote-id="%s" data-question-index="%s" data-answer-index="%s"',
+                        esc_attr($vote_id),
+                        esc_attr($answer_question_index),
+                        esc_attr($option_index)
+                    );
+                }
                 ?>
-                <div class="<?php echo esc_attr($option_class); ?>" style="margin-bottom: 5px;">
+                <div class="<?php echo esc_attr($option_class); ?>" <?php echo $metadata_attrs; ?> style="margin-bottom: 5px;">
                     <input
                         type="text"
                         name="vs_questions[<?php echo esc_attr($index); ?>][options][]"

@@ -620,24 +620,20 @@
                             
                             // Usar a nova função safeUpdateImportedAnswers para o merge
                             try {
-                                const result = window.VSAdmin.ImportedAnswers.safeUpdateImportedAnswers(
-                                    votingId,
-                                    {
-                                        questions: newQuestions,
-                                        selected_questions: { [votingId]: selectedIndexes }
-                                    },
-                                    'REPLACE' // Estratégia de substituição para perguntas do mesmo vote_id
-                                );
+                                const result = window.VSAdmin.ImportedAnswers.safeUpdateImportedAnswers({
+                                    questions: newQuestions,
+                                    selected_questions: { [votingId]: selectedIndexes }
+                                });
                                 
                                 if (result.success) {
                                     console.log('Importação realizada com sucesso:', result.message);
                                     
                                     // Fechar o modal após importação
                                     $modal.hide();
-
+                                
                                     // Criar e atualizar a estrutura de duas colunas
                                     window.VSAdmin.VotingModal.createImportStructure();
-
+                                
                                     // Atualizar a tabela usando os dados do input hidden
                                     if (window.VSAdmin.ImportedAnswers) {
                                         window.VSAdmin.ImportedAnswers.updateTable();

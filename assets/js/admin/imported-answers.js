@@ -121,6 +121,7 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
         init: function() {
             this.bindEvents();
             this.initializeExistingAnswers();
+            this.initTableBasedPersistence();
         },
 
         bindEvents: function() {
@@ -385,19 +386,39 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
             const $container = $('.vs-imported-column');
             if (!$container.length) return;
             
-            // Obter valores reais das opções existentes (mesma lógica da _executeUpdateTable)
-            const existingValues = [];
-            this.currentQuestion.find('.vs-valor-real').each(function() {
-                const value = $(this).val();
-                if (value && value.trim() !== '') {
-                    existingValues.push(value.trim());
+            // Obter metadados completos das opções existentes
+            const existingItems = [];
+            this.currentQuestion.find('.vs-option-item.imported_question').each(function() {
+                const $item = $(this);
+                const valor = $item.find('.vs-valor-real').val();
+                const voteId = $item.data('vote-id');
+                const questionIndex = $item.data('question-index');
+                const answerIndex = $item.data('answer-index');
+                
+                if (valor && valor.trim() !== '') {
+                    existingItems.push({
+                        valor: valor.trim(),
+                        voteId: voteId,
+                        questionIndex: questionIndex,
+                        answerIndex: answerIndex
+                    });
                 }
             });
             
             $container.find('.vs-select-answer').each(function() {
                 const $checkbox = $(this);
                 const valor = $checkbox.data('valor');
-                const isExisting = existingValues.includes(valor);
+                const voteId = $checkbox.data('vote-id');
+                const questionIndex = $checkbox.data('question-index');
+                const answerIndex = $checkbox.data('answer-index');
+                
+                // Verificar se existe uma correspondência exata com todos os metadados
+                const isExisting = existingItems.some(item => 
+                    item.valor === valor &&
+                    item.voteId === voteId &&
+                    item.questionIndex === questionIndex &&
+                    item.answerIndex === answerIndex
+                );
                 
                 if (isExisting) {
                     // Item ainda existe como vs-option-item: desabilitar e manter checked
@@ -418,7 +439,36 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
             try {
                 const $tbody = this.currentQuestion.find('.vs-imported-column tbody');
                 
-                // Limpar a tabela antes de processar novos dados
+                // Preservar dados existentes
+                // Coletar dados existentes da tabela antes de processar novos
+                const existingTableData = [];
+                $tbody.find('tr').each(function() {
+                    const $row = $(this);
+                    const voteId = $row.data('vote-id');
+                    const questionIndex = $row.data('question-index');
+                    const answerIndex = $row.data('answer-index');
+                    const valor = $row.find('.vs-select-answer').data('valor');
+                    const valorUnificado = $row.find('.vs-select-answer').data('valor-unificado');
+                    const qtdVotos = $row.find('td:eq(3)').text();
+                    const questionSource = $row.find('td:eq(4)').text();
+                    const isChecked = $row.find('.vs-select-answer').is(':checked');
+                    
+                    if (voteId && questionIndex !== undefined && valor) {
+                        existingTableData.push({
+                            voteId,
+                            questionIndex,
+                            answerIndex,
+                            valor,
+                            valorUnificado,
+                            qtdVotos,
+                            questionSource,
+                            isChecked,
+                            rowHtml: $row[0].outerHTML // Preservar HTML completo
+                        });
+                    }
+                });
+                
+                // Agora limpar a tabela
                 $tbody.empty();
                 
                 // Verificar se há duplicatas nos dados JSON
@@ -447,7 +497,32 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                 let hasAnswers = false;
                 let processedAnswers = new Set(); // Para evitar duplicatas na renderização
                 let totalDisplayedAnswers = 0;
+                
+                // Primeiro, recriar linhas existentes que não estão nos novos dados
+                existingTableData.forEach(existingItem => {
+                    const existsInNewData = data.questions.some(pergunta => 
+                        pergunta.vote_id === existingItem.voteId &&
+                        pergunta.question_index === existingItem.questionIndex &&
+                        pergunta.imported_answers?.some(resposta => 
+                            (resposta.value_unificada || resposta.value) === existingItem.valor
+                        )
+                    );
+                    
+                    if (!existsInNewData) {
+                        // Recriar linha existente
+                        const $existingRow = $(existingItem.rowHtml);
+                        $existingRow.find('td:first').text(rowNumber++);
+                        $tbody.append($existingRow);
+                        hasAnswers = true;
+                        totalDisplayedAnswers++;
+                        
+                        // Marcar como processado para evitar duplicatas
+                        const uniqueKey = `${existingItem.valor}_${existingItem.qtdVotos}_${existingItem.questionSource}`;
+                        processedAnswers.add(uniqueKey);
+                    }
+                });
 
+                // Depois, processar novos dados
                 data.questions.forEach((pergunta, perguntaIndex) => {                    
                     if (pergunta.imported_answers && Array.isArray(pergunta.imported_answers) && pergunta.imported_answers.length > 0) {
                         
@@ -470,7 +545,11 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                             // Verificar se já existe nas opções
                             const isExisting = existingValues.includes(valorExibir);
                             
-                            const $row = $('<tr>');
+                            const $row = $('<tr>', {
+                                'data-vote-id': pergunta.vote_id,
+                                'data-question-index': pergunta.question_index || (perguntaIndex + 1),
+                                'data-answer-index': respostaIndex
+                            });
                             
                             // Coluna do número (primeira coluna)
                             $row.append($('<td>').text(rowNumber));
@@ -482,9 +561,12 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                                 class: 'vs-select-answer',
                                 'data-valor': resposta.value || valorExibir,
                                 'data-valor-unificado': resposta.value_unificada || '',
+                                'data-vote-id': pergunta.vote_id,
+                                'data-question-index': pergunta.question_index || (perguntaIndex + 1),
+                                'data-answer-index': respostaIndex,
                                 value: valorExibir,
-                                disabled: isExisting, // Desabilitar se já existe
-                                checked: isExisting   // Marcar como checked se já existe
+                                disabled: isExisting,
+                                checked: isExisting
                             });
 
                             // Adicionar classe especial e título para checkboxes desabilitados
@@ -589,6 +671,9 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                 const tableDisplayValue = $tr.find('td:eq(2)').text().trim();
                 const originalValue = $(this).data('valor');
                 const unifiedValue = $(this).data('valor-unificado');
+                const voteId = $(this).data('vote-id');
+                const questionIndex = $(this).data('question-index');
+                const answerIndex = $(this).data('answer-index');
                 const realValue = originalValue;
                 const visualValue = unifiedValue || tableDisplayValue;
                 const sourceQuestion = $tr.find('td:eq(4)').text();
@@ -617,7 +702,10 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                 // Criar nova opção
                 const $optionItem = $('<div>', {
                     class: 'vs-option-item imported_question',
-                    style: 'margin-bottom: 5px;'
+                    style: 'margin-bottom: 5px;',
+                    'data-vote-id': voteId,
+                    'data-question-index': questionIndex,
+                    'data-answer-index': answerIndex
                 });
                 
                 const $textInput = $('<input>', {
@@ -657,9 +745,9 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                 importedAnswersData.imported_items.push({
                     text: visualValue,
                     vs_valor_real: realValue,
-                    vote_id: null, // Será preenchido quando necessário
+                    vote_id: voteId,
                     question_index: questionIndex,
-                    answer_index: currentOptionIndex
+                    answer_index: answerIndex
                 });
             });
             
@@ -904,9 +992,107 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                     window.VSAdmin.ImportedAnswers.setCurrentQuestion($questionContainer);
                     window.VSAdmin.ImportedAnswers.updateTable();
                     
+                    // Restaurar elementos DOM dos imported_items
+                    window.VSAdmin.ImportedAnswers.restoreImportedItemsToDOM($questionContainer);
+                    
                 }
             });
             
+        },
+
+        // Restaurar elementos vs-option-item baseados nos dados salvos
+        restoreImportedItemsToDOM: function($questionContainer) {
+            if (!$questionContainer || !$questionContainer.length) {
+                console.warn('Container da pergunta não encontrado para restaurar imported_items');
+                return;
+            }
+
+            const $importedAnswersField = $questionContainer.find('.vs-imported-answers');
+            const jsonData = $importedAnswersField.val();
+            
+            if (!jsonData || jsonData.trim() === '' || jsonData === '{}') {
+                return; // Não há dados para restaurar
+            }
+
+            let data;
+            try {
+                data = JSON.parse(jsonData);
+            } catch (parseError) {
+                console.error('Erro ao fazer parse do JSON para restaurar imported_items:', parseError);
+                return;
+            }
+
+            // Verificar se há imported_items para restaurar
+            if (!data.imported_items || !Array.isArray(data.imported_items) || data.imported_items.length === 0) {
+                return; // Não há imported_items para restaurar
+            }
+
+            const $optionsContainer = $questionContainer.find('.vs-options-container');
+            if (!$optionsContainer.length) {
+                console.warn('Container de opções não encontrado para restaurar imported_items');
+                return;
+            }
+
+            // Obter o índice da pergunta atual
+            const questionIndex = $questionContainer.find('[name*="[label]"]').attr('name')?.match(/\[(\d+)\]/)?.[1] || 0;
+
+            // Remover elementos vs-option-item.imported_question existentes para evitar duplicatas
+            $optionsContainer.find('.vs-option-item.imported_question').remove();
+
+            // Recriar elementos DOM para cada imported_item
+            data.imported_items.forEach((item, index) => {
+                if (!item.text || !item.vs_valor_real) {
+                    console.warn('Item imported_items inválido:', item);
+                    return;
+                }
+
+                // Obter o índice real baseado na posição DOM atual
+                const currentOptionIndex = $optionsContainer.find('.vs-option-item').length;
+                
+                // Criar nova opção (mesmo código da função addSelected)
+                const $optionItem = $('<div>', {
+                    class: 'vs-option-item imported_question',
+                    style: 'margin-bottom: 5px;',
+                    'data-vote-id': item.vote_id || '',
+                    'data-question-index': item.question_index || questionIndex,
+                    'data-answer-index': item.answer_index || index
+                });
+                
+                const $textInput = $('<input>', {
+                    type: 'text',
+                    name: `vs_questions[${questionIndex}][options][]`,
+                    value: item.text,
+                    style: 'width: 90%;',
+                    placeholder: `Opção ${currentOptionIndex + 1}`
+                });
+                
+                const $hiddenInput = $('<input>', {
+                    type: 'hidden',
+                    name: `vs_questions[${questionIndex}][valores_reais][${currentOptionIndex}]`,
+                    class: 'vs-valor-real',
+                    value: item.vs_valor_real
+                });
+                
+                const $valorRealTexto = $('<span>', {
+                    class: 'vs-valor-real-texto',
+                    css: { fontSize: '12px', color: '#666', marginLeft: '10px' },
+                    text: item.vs_valor_real
+                });
+                
+                const $removeButton = $('<button>', {
+                    type: 'button',
+                    class: 'button button-small vs-remove-option',
+                    text: 'Remover'
+                });
+                
+                // Montar estrutura
+                $optionItem.append($textInput, $hiddenInput, $valorRealTexto, $removeButton);
+                
+                // Inserir antes do botão "Adicionar Opção"
+                $optionsContainer.find('.vs-add-option').before($optionItem);
+            });
+
+            console.log(`Restaurados ${data.imported_items.length} elementos vs-option-item para a pergunta ${questionIndex}`);
         },
 
         importSingleQuestion: function(event) {
@@ -1113,7 +1299,7 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                 manual_items: [],
                 imported_items: [],
                 questions: [],
-                selected_questions: []
+                selected_questions: {}
             };
         },
 
@@ -1133,7 +1319,7 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                 manual_items: Array.isArray(data.manual_items) ? data.manual_items : [],
                 imported_items: Array.isArray(data.imported_items) ? data.imported_items : [],
                 questions: Array.isArray(data.questions) ? data.questions : [],
-                selected_questions: Array.isArray(data.selected_questions) ? data.selected_questions : []
+                selected_questions: (data.selected_questions && typeof data.selected_questions === 'object' && !Array.isArray(data.selected_questions)) ? data.selected_questions : {}
             };
         },
 
@@ -1308,61 +1494,51 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
             
             const normalizedVoteId = String(voteId);
             const activeValues = [];
-            const seenRealValues = new Set(); // Para deduplicação
+            const seenRealValues = new Set();
             
-            // Percorrer todos os elementos .vs-option-item no DOM
-            $('.vs-option-item').each(function(index) {
+            // Filtrar diretamente por metadados DOM
+            $('.vs-option-item.imported_question').each(function(index) {
                 const $optionItem = $(this);
                 
+                // FILTRO PRINCIPAL: verificar data-vote-id do elemento
+                const itemVoteId = $optionItem.attr('data-vote-id');
+                if (itemVoteId !== normalizedVoteId) {
+                    return true; // continue - este elemento não pertence ao voteId
+                }
+                
                 try {
-                    // Extrair realValue do campo oculto .vs-valor-real
                     const $realValueField = $optionItem.find('.vs-valor-real, input[name*="valores_reais"]');
                     const realValue = $realValueField.length ? $realValueField.val() : null;
                     
-                    // Extrair visualValue do campo de texto visível
-                    const $textField = $optionItem.find('input[type="text"][name*="options"]');
-                    const visualValue = $textField.length ? $textField.val() : null;
-                    
-                    // Validar se os valores essenciais existem
-                    if (!realValue || !visualValue) {
-                        console.debug(`getActiveImportedValues: valores ausentes no item ${index}:`, {
-                            realValue: realValue,
-                            visualValue: visualValue,
-                            element: $optionItem[0]
-                        });
+                    if (!realValue) {
                         return true; // continue
                     }
                     
-                    // Normalizar valores
                     const normalizedRealValue = this.normalizeValue(realValue);
+                    
+                    const $textField = $optionItem.find('input[type="text"][name*="options"]');
+                    const visualValue = $textField.length ? $textField.val() : null;
+                    
+                    if (!visualValue) {
+                        return true; // continue
+                    }
+                    
                     const normalizedVisualValue = this.normalizeValue(visualValue);
                     
-                    // Verificar se é uma opção importada (tem classe imported_question)
-                    const isImported = $optionItem.hasClass('imported_question');
+                    if (seenRealValues.has(normalizedRealValue)) {
+                        return true; // continue - duplicado
+                    }
                     
-                    // Extrair informações de contexto
+                    seenRealValues.add(normalizedRealValue);
+                    
                     const questionContainer = $optionItem.closest('.vs-pergunta, .vs-question-container');
                     const questionIndex = this._extractQuestionIndex(questionContainer);
                     const questionId = this._extractQuestionId(questionContainer);
                     
-                    // Filtrar por voteId se especificado
-                    // Nota: Como o voteId não está diretamente no DOM dos elementos de opção,
-                    // vamos incluir todos os valores e deixar a filtragem para o contexto de uso
-                    
-                    // Aplicar deduplicação baseada em realValue
-                    if (seenRealValues.has(normalizedRealValue)) {
-                        console.debug(`getActiveImportedValues: valor real duplicado ignorado: "${normalizedRealValue}"`);
-                        return true; // continue
-                    }
-                    
-                    // Adicionar à lista de valores vistos
-                    seenRealValues.add(normalizedRealValue);
-                    
-                    // Criar objeto de valor ativo
-                    const activeValue = {
+                    activeValues.push({
                         realValue: normalizedRealValue,
                         visualValue: normalizedVisualValue,
-                        isImported: isImported,
+                        isImported: true,
                         questionIndex: questionIndex,
                         questionId: questionId,
                         domElement: $optionItem[0],
@@ -1370,22 +1546,19 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                             originalRealValue: realValue,
                             originalVisualValue: visualValue,
                             elementIndex: index,
-                            hasRealValueField: $realValueField.length > 0,
-                            hasTextField: $textField.length > 0
+                            voteId: itemVoteId,
+                            questionIndex: $optionItem.attr('data-question-index'),
+                            answerIndex: $optionItem.attr('data-answer-index')
                         }
-                    };
-                    
-                    activeValues.push(activeValue);
+                    });
                     
                 } catch (error) {
                     console.error(`getActiveImportedValues: erro ao processar item ${index}:`, error);
-                    console.error('Elemento que causou erro:', $optionItem[0]);
                 }
             }.bind(this));
             
-            // Log para debug
             if (window.VS_IMPORT_MERGE_STRATEGY && window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
-                console.log(`getActiveImportedValues: encontrados ${activeValues.length} valores ativos:`, activeValues);
+                console.log(`getActiveImportedValues: encontrados ${activeValues.length} valores ativos para voteId ${normalizedVoteId}:`, activeValues);
             }
             
             return activeValues;
@@ -1469,16 +1642,36 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                 return activeValues;
             }
             
+            if (!voteId) {
+                return activeValues;
+            }
+
             const normalizedVoteId = String(voteId);
-            
-            // Como o voteId não está diretamente nos elementos DOM,
-            // esta função pode ser estendida para usar outros critérios de filtragem
-            // Por enquanto, retorna todos os valores (a filtragem será feita em nível superior)
-            
+
+            // Obter dados JSON para criar conjunto de realValues esperados para este voteId
+            const storedData = this.getCurrentJsonData();
+            if (!storedData || !storedData.questions) {
+                return []; // Se não há dados armazenados, não há valores ativos para este voteId
+            }
+
+            // Filtrar questões do voteId específico e criar conjunto de realValues esperados
+            const expectedRealValues = new Set();
+            storedData.questions
+                .filter(q => String(q.vote_id) === normalizedVoteId)
+                .forEach(question => {
+                    if (question.imported_answers && Array.isArray(question.imported_answers)) {
+                        question.imported_answers.forEach(answer => {
+                            const realValue = answer.value || answer.value_unificada;
+                            if (realValue) {
+                                expectedRealValues.add(this.normalizeValue(realValue));
+                            }
+                        });
+                    }
+                });
+
+            // Filtrar apenas os valores ativos que pertencem a este voteId
             return activeValues.filter(value => {
-                // Implementar lógica de filtragem específica se necessário
-                // Por exemplo, baseado em questionId, metadata, etc.
-                return true; // Por enquanto, incluir todos
+                return expectedRealValues.has(value.realValue);
             });
         },
 
@@ -1776,128 +1969,102 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
         },
 
         /**
-         * ORQUESTRADOR PRINCIPAL: Coordena todo o processo de decisão e merge
-         * 
-         * Fluxo:
-         * 1. Obter dados existentes através de getCurrentJsonData
-         * 2. Extrair todos os vote_ids únicos das novas perguntas
-         * 3. Para cada vote_id, decidir a estratégia usando isVotingInUse
-         * 4. Aplicar mergeVotingData com a estratégia apropriada
-         * 5. Salvar o resultado final usando setCurrentJsonData
-         * 6. Retornar os dados mesclados para uso posterior
-         * 
-         * @param {Array|Object} newQuestions - Array de questions ou objeto com estrutura completa
-         * @returns {Object} Dados mesclados finais
+         * Converte dados de entrada para estrutura padrão
+         * @param {Object|Array} inputData - Dados de entrada (pode ser array de questions ou objeto com questions/selected_questions)
+         * @returns {Object} Estrutura padronizada
          */
+        _convertToStandardStructure: function(inputData) {
+            // Se for array direto de questions (formato legacy)
+            if (Array.isArray(inputData)) {
+                return {
+                    questions: inputData,
+                    imported_items: [],
+                    selected_questions: {},
+                    manual_items: []
+                };
+            }
+            
+            // Se for objeto com questions e selected_questions (formato novo)
+            if (inputData && typeof inputData === 'object') {
+                const result = {
+                    questions: inputData.questions || [],
+                    imported_items: [],
+                    selected_questions: inputData.selected_questions || {},
+                    manual_items: []
+                };
+                
+                // Converter questions para imported_items
+                if (result.questions && Array.isArray(result.questions)) {
+                    result.questions.forEach((question, questionIndex) => {
+                        if (question.imported_answers && Array.isArray(question.imported_answers)) {
+                            question.imported_answers.forEach((answer, answerIndex) => {
+                                result.imported_items.push({
+                                    vote_id: question.vote_id,
+                                    question_index: questionIndex,
+                                    answer_index: answerIndex,
+                                    value: answer.value || answer.display || answer.visual_value || '',
+                                    value_unificada: answer.value_unificada || answer.value || answer.display || answer.visual_value || '',
+                                    text: answer.display || answer.visual_value || answer.value || ''
+                                });
+                            });
+                        }
+                    });
+                }
+                
+                return result;
+            }
+            
+            // Fallback para estrutura vazia
+            return {
+                questions: [],
+                imported_items: [],
+                selected_questions: {},
+                manual_items: []
+            };
+        },
+
         /**
-         * FUNÇÃO SEGURA COM FEATURE FLAG E FALLBACK
-         * 
-         * Esta é a função principal que deve ser usada externamente.
-         * Ela verifica o feature flag e decide se usa a nova lógica ou fallback.
-         * 
-         * @param {Array|Object} newQuestions - Novos dados para importar
+         * Função principal para atualização segura de respostas importadas
+         * Usa nova lógica simplificada baseada na tabela
+         * @param {Object|Array} newQuestions - Novos dados (array de questions ou objeto com questions/selected_questions)
          * @returns {Object} Dados mesclados ou resultado do fallback
          */
         safeUpdateImportedAnswers: function(newQuestions) {
-            const startTime = performance.now();
-            const config = window.VS_IMPORT_MERGE_STRATEGY;
-            
-            // Log de entrada se debug ativo
-            if (config.debugMode) {
-                console.group('🔄 safeUpdateImportedAnswers iniciado');
-                console.log('📥 Entrada:', newQuestions);
-                console.log('⚙️ Configuração:', config.utils.getStatus());
-            }
-            
             try {
-                // Verificar se nova lógica está habilitada
-                if (!config.enabled) {
-                    if (config.debugMode) {
-                        console.warn('⚠️ Nova lógica desabilitada, usando fallback legacy');
-                    }
-                    return this._executeLegacyFallback(newQuestions, 'disabled');
+                // 1. Validar entrada - aceitar tanto array quanto objeto
+                if (!newQuestions || 
+                    (!Array.isArray(newQuestions) && typeof newQuestions !== 'object') ||
+                    (Array.isArray(newQuestions) && newQuestions.length === 0) ||
+                    (typeof newQuestions === 'object' && !newQuestions.questions && !Array.isArray(newQuestions))) {
+                    console.warn('updateImportedAnswers: dados de entrada inválidos');
+                    return this.getCurrentJsonData();
                 }
                 
-                // Validação de entrada se strict validation ativa
-                if (config.advanced.strictValidation) {
-                    const validationResult = this._validateInput(newQuestions);
-                    if (!validationResult.isValid) {
-                        if (config.debugMode) {
-                            console.error('❌ Validação falhou:', validationResult.errors);
-                        }
-                        if (config.fallbackToLegacy) {
-                            return this._executeLegacyFallback(newQuestions, 'validation_failed');
-                        }
-                        throw new Error('Validação de entrada falhou: ' + validationResult.errors.join(', '));
-                    }
-                }
+                // 2. Converter para estrutura padrão
+                const newDataStructure = this._convertToStandardStructure(newQuestions);
                 
-                // Executar nova lógica com timeout se configurado
-                let result;
-                if (config.advanced.mergeTimeout > 0) {
-                    result = this._executeWithTimeout(
-                        () => this.updateImportedAnswers(newQuestions),
-                        config.advanced.mergeTimeout
-                    );
-                } else {
-                    result = this.updateImportedAnswers(newQuestions);
-                }
+                // 3. Usar nova lógica simplificada baseada na tabela
+                const mergedData = this.simplifiedTableBasedMerge(newDataStructure);
                 
-                // Métricas de performance se habilitadas
-                if (config.advanced.performanceMetrics) {
-                    const duration = performance.now() - startTime;
-                    console.log('📊 Performance - Nova lógica:', duration.toFixed(2) + 'ms');
-                }
+                // 4. Salvar o resultado final
+                this.setCurrentJsonData(mergedData);
                 
-                if (config.debugMode) {
-                    console.log('✅ Nova lógica executada com sucesso');
-                    console.log('📤 Resultado:', result);
-                    console.groupEnd();
-                }
+                // 5. Restaurar estado da tabela após merge
+                setTimeout(() => {
+                    this.restoreTableStateFromSavedData();
+                }, 100);
                 
                 return {
                     success: true,
                     message: 'Importação realizada com sucesso',
-                    data: result
+                    data: mergedData
                 };
                 
             } catch (error) {
-                if (config.debugMode) {
-                    console.error('💥 Erro na nova lógica:', error);
-                }
+                console.error('Erro em safeUpdateImportedAnswers:', error);
                 
-                // Decidir se usa fallback ou propaga erro
-                if (config.fallbackToLegacy) {
-                    if (config.debugMode) {
-                        console.warn('🔄 Executando fallback para comportamento legacy');
-                    }
-                    
-                    try {
-                        const fallbackResult = this._executeLegacyFallback(newQuestions, 'error');
-                        return {
-                            success: true,
-                            message: 'Importação realizada com sucesso (modo compatibilidade)',
-                            data: fallbackResult
-                        };
-                    } catch (fallbackError) {
-                        if (config.debugMode) {
-                            console.error('💥 Erro também no fallback:', fallbackError);
-                            console.groupEnd();
-                        }
-                        return {
-                            success: false,
-                            message: 'Falha tanto na nova lógica quanto no fallback: ' + error.message + ' | ' + fallbackError.message
-                        };
-                    }
-                } else {
-                    if (config.debugMode) {
-                        console.groupEnd();
-                    }
-                    return {
-                        success: false,
-                        message: error.message || 'Erro desconhecido na importação'
-                    };
-                }
+                // Fallback para modo legacy
+                return this.legacyFallbackMerge(newQuestions);
             }
         },
         
@@ -2101,10 +2268,15 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                     });
                 } else if (newQuestions && typeof newQuestions === 'object') {
                     // Entrada é objeto completo - usar como está mas garantir estrutura de objetos
-                    newDataStructure = { ...newQuestions };
+                    newDataStructure = { 
+                        questions: Array.isArray(newQuestions.questions) ? newQuestions.questions : [],
+                        imported_items: Array.isArray(newQuestions.imported_items) ? newQuestions.imported_items : [],
+                        selected_questions: newQuestions.selected_questions || {},
+                        manual_items: Array.isArray(newQuestions.manual_items) ? newQuestions.manual_items : []
+                    };
                     
                     // Converter imported_items para objetos se ainda forem índices
-                    if (newDataStructure.imported_items && Array.isArray(newDataStructure.imported_items)) {
+                    if (Array.isArray(newDataStructure.imported_items)) {
                         newDataStructure.imported_items = newDataStructure.imported_items.map(item => {
                             if (typeof item === 'object' && item !== null) {
                                 // Já é objeto, garantir propriedades necessárias
@@ -2210,7 +2382,244 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                 // Em caso de erro, retornar dados existentes para evitar perda de dados
                 return this.getCurrentJsonData();
             }
-        }
+        },
+
+        /**
+         * Analisa o estado da tabela para determinar quais dados devem ser preservados
+         * Considera que se pelo menos uma resposta de uma pergunta está checked,
+         * toda a pergunta deve ser preservada
+         * @returns {Object} Dados estruturados para preservar
+         */
+        getTableBasedDataToPreserve: function() {
+            const preserveData = {
+                questions: [],
+                imported_items: [],
+                selected_questions: {},
+                manual_items: [] // Sempre vazio aqui, será adicionado depois
+            };
+            
+            // Mapear todas as respostas checked por pergunta
+            const questionMap = new Map();
+            
+            $('.vs-imported-column .vs-select-answer:checked').each(function() {
+                const $checkbox = $(this);
+                const voteId = $checkbox.data('vote-id');
+                const questionIndex = $checkbox.data('question-index');
+                const answerIndex = $checkbox.data('answer-index');
+                const valor = $checkbox.data('valor');
+                const valorUnificado = $checkbox.data('valor-unificado');
+                const $row = $checkbox.closest('tr');
+                const sourceQuestion = $row.find('td:eq(4)').text();
+                
+                const questionKey = `${voteId}_${questionIndex}`;
+                
+                if (!questionMap.has(questionKey)) {
+                    questionMap.set(questionKey, {
+                        vote_id: voteId,
+                        question_index: questionIndex,
+                        question_label: sourceQuestion,
+                        imported_answers: []
+                    });
+                }
+                
+                // Adicionar resposta à pergunta
+                questionMap.get(questionKey).imported_answers.push({
+                    value: valor,
+                    value_unificada: valorUnificado || valor,
+                    answer_index: answerIndex
+                });
+                
+                // Adicionar ao imported_items
+                preserveData.imported_items.push({
+                    vote_id: voteId,
+                    question_index: questionIndex,
+                    answer_index: answerIndex,
+                    value: valor,
+                    value_unificada: valorUnificado || valor
+                });
+                
+                // Marcar pergunta como selecionada
+                if (!preserveData.selected_questions[voteId]) {
+                    preserveData.selected_questions[voteId] = [];
+                }
+                if (!preserveData.selected_questions[voteId].includes(questionIndex)) {
+                    preserveData.selected_questions[voteId].push(questionIndex);
+                }
+            });
+            
+            // Converter mapa de perguntas para array
+            preserveData.questions = Array.from(questionMap.values());
+            
+            return preserveData;
+        },
+        
+        /**
+         * Restaura o estado checked da tabela baseado nos dados salvos
+         * Garante persistência após salvar/reabrir o post
+         */
+        restoreTableStateFromSavedData: function() {
+            const currentData = this.getCurrentJsonData();
+            if (!currentData || !currentData.imported_items) {
+                return;
+            }
+            
+            // Desmarcar todos os checkboxes primeiro
+            $('.vs-imported-column .vs-select-answer').prop('checked', false);
+            
+            // Marcar checkboxes baseado nos dados salvos
+            currentData.imported_items.forEach(item => {
+                const selector = `.vs-imported-column .vs-select-answer` +
+                    `[data-vote-id="${item.vote_id}"]` +
+                    `[data-question-index="${item.question_index}"]` +
+                    `[data-answer-index="${item.answer_index}"]` +
+                    `[data-valor="${item.value}"]`;
+                    
+                const $checkbox = $(selector);
+                if ($checkbox.length) {
+                    $checkbox.prop('checked', true);
+                }
+            });
+            
+            // Atualizar estado dos checkboxes (disabled/enabled)
+            this.updateCheckboxStates();
+        },
+        
+        /**
+         * Nova lógica simplificada de merge baseada na tabela
+         * Substitui a complexa lógica isVotingInUse
+         * @param {Object} newData - Novos dados a serem mesclados
+         * @returns {Object} Dados mesclados
+         */
+        simplifiedTableBasedMerge: function(newData) {
+            try {
+                // 1. Obter dados a preservar da tabela
+                const preserveData = this.getTableBasedDataToPreserve();
+                
+                // 2. Obter dados manuais existentes (sempre preservar)
+                const currentData = this.getCurrentJsonData();
+                const manualItems = currentData.manual_items || [];
+                
+                // 3. Combinar dados preservados + dados manuais + novos dados
+                const mergedData = {
+                    manual_items: [...manualItems],
+                    imported_items: [],
+                    questions: [],
+                    selected_questions: {}
+                };
+                
+                // 4. Adicionar dados preservados da tabela
+                mergedData.imported_items.push(...preserveData.imported_items);
+                mergedData.questions.push(...preserveData.questions);
+                Object.assign(mergedData.selected_questions, preserveData.selected_questions);
+                
+                // 5. Adicionar novos dados (evitando duplicatas)
+                if (newData.imported_items) {
+                    newData.imported_items.forEach(newItem => {
+                        const exists = mergedData.imported_items.some(existing => 
+                            existing.vote_id === newItem.vote_id &&
+                            existing.question_index === newItem.question_index &&
+                            existing.answer_index === newItem.answer_index &&
+                            existing.value === newItem.value
+                        );
+                        
+                        if (!exists) {
+                            mergedData.imported_items.push(newItem);
+                        }
+                    });
+                }
+                
+                if (newData.questions) {
+                    newData.questions.forEach(newQuestion => {
+                        const exists = mergedData.questions.some(existing => 
+                            existing.vote_id === newQuestion.vote_id &&
+                            existing.question_index === newQuestion.question_index
+                        );
+                        
+                        if (!exists) {
+                            mergedData.questions.push(newQuestion);
+                        }
+                    });
+                }
+                
+                if (newData.selected_questions) {
+                    Object.keys(newData.selected_questions).forEach(voteId => {
+                        if (!mergedData.selected_questions[voteId]) {
+                            mergedData.selected_questions[voteId] = [];
+                        }
+                        
+                        newData.selected_questions[voteId].forEach(questionIndex => {
+                            if (!mergedData.selected_questions[voteId].includes(questionIndex)) {
+                                mergedData.selected_questions[voteId].push(questionIndex);
+                            }
+                        });
+                    });
+                }
+                
+                return mergedData;
+                
+            } catch (error) {
+                console.error('Erro em simplifiedTableBasedMerge:', error);
+                return this.getCurrentJsonData();
+            }
+        },
+
+        /**
+         * Inicializar sistema de persistência baseado na tabela
+         */
+        initTableBasedPersistence: function() {
+            const self = this;
+            
+            // Restaurar estado ao carregar a página
+            $(document).ready(function() {
+                setTimeout(() => {
+                    self.restoreTableStateFromSavedData();
+                }, 500);
+            });
+            
+            // Salvar estado quando checkboxes mudarem
+            $(document).on('change', '.vs-imported-column .vs-select-answer', function() {
+                // Debounce para evitar muitas chamadas
+                clearTimeout(self.saveStateTimeout);
+                self.saveStateTimeout = setTimeout(() => {
+                    self.saveCurrentTableState();
+                }, 1000);
+            });
+            
+            // Restaurar estado após processamento da tabela
+            $(document).on('vs:table-data-processed', function() {
+                setTimeout(() => {
+                    self.restoreTableStateFromSavedData();
+                }, 200);
+            });
+        },
+        
+        /**
+         * Salvar estado atual da tabela no vs-imported-answers
+         */
+        saveCurrentTableState: function() {
+            try {
+                const preserveData = this.getTableBasedDataToPreserve();
+                const currentData = this.getCurrentJsonData();
+                
+                // Manter dados manuais e atualizar apenas dados importados
+                const updatedData = {
+                    manual_items: currentData.manual_items || [],
+                    imported_items: preserveData.imported_items,
+                    questions: preserveData.questions,
+                    selected_questions: preserveData.selected_questions
+                };
+                
+                this.setCurrentJsonData(updatedData);
+                
+                // Debug log
+                if (window.VS_IMPORT_MERGE_STRATEGY && window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
+                    console.log('🔄 Estado da tabela salvo:', updatedData);
+                }
+                
+            } catch (error) {
+                console.error('Erro ao salvar estado da tabela:', error);
+            }
+        },
 
     };
 
