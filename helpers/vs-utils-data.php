@@ -4,7 +4,42 @@ defined( 'ABSPATH' ) || exit;
 
 function vs_get_voting_questions( $votacao_id ) {
     $questions = get_post_meta( $votacao_id, 'vs_questions', true );
-    return is_array( $questions ) ? $questions : array();
+    if (!is_array($questions)) {
+        return array();
+    }
+    
+    // Processar cada pergunta para converter vs_options em options/valores_reais
+    foreach ($questions as &$question) {
+        if ($question['tipo'] === 'imported_vote' && !empty($question['vs_options'])) {
+            $vs_options = $question['vs_options'];
+            
+            // Inicializar arrays de saída
+            $options = [];
+            $valores_reais = [];
+            
+            // Processar manual_items
+            if (!empty($vs_options['manual_items'])) {
+                foreach ($vs_options['manual_items'] as $item) {
+                    $options[] = $item['text'];
+                    $valores_reais[] = $item['vs_valor_real'];
+                }
+            }
+            
+            // Processar imported_items
+            if (!empty($vs_options['imported_items'])) {
+                foreach ($vs_options['imported_items'] as $item) {
+                    $options[] = $item['text'];
+                    $valores_reais[] = $item['vs_valor_real'];
+                }
+            }
+            
+            // Atualizar a pergunta com os dados processados
+            $question['options'] = $options;
+            $question['valores_reais'] = $valores_reais;
+        }
+    }
+    
+    return $questions;
 }
 
 function vs_format_unified_answer( $unificada_val ) {
