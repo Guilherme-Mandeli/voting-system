@@ -90,7 +90,8 @@ function vs_ajax_buscar_votacoes() {
                 'evento' => $event_info['event_title'], // Manter compatibilidade
                 'event_id' => $event_info['event_id'],
                 'event_title' => $event_info['event_title'],
-                'event_slug' => $event_info['event_slug']
+                'event_slug' => $event_info['event_slug'],
+                'has_valid_questions' => vs_has_valid_questions($post_id)
             ];
         }
     }
@@ -150,6 +151,20 @@ function vs_ajax_obter_perguntas_votacao() {
 
         if (!$questions) {
             wp_send_json_error('Perguntas não encontradas');
+            return;
+        }
+        
+        // Filtrar perguntas sem título (label vazio)
+        $questions = array_filter($questions, function($question) {
+            return !empty($question['label']) && trim($question['label']) !== '';
+        });
+        
+        // Reindexar o array para manter índices sequenciais
+        $questions = array_values($questions);
+        
+        // Se após o filtro não há perguntas válidas, retornar erro
+        if (empty($questions)) {
+            wp_send_json_error('Nenhuma pergunta válida encontrada para esta votação');
             return;
         }
     
@@ -235,3 +250,21 @@ function vs_ajax_obter_perguntas_votacao() {
     }
 }
 add_action('wp_ajax_vs_obter_perguntas_votacao', 'vs_ajax_obter_perguntas_votacao');
+
+/**
+ * Verifica se uma votação tem perguntas válidas (com título)
+ */
+function vs_has_valid_questions($votacao_id) {
+    $questions = get_post_meta($votacao_id, 'vs_questions', true);
+    
+    if (empty($questions) || !is_array($questions)) {
+        return false;
+    }
+    
+    // Filtrar perguntas sem título ou com título vazio
+    $valid_questions = array_filter($questions, function($question) {
+        return !empty($question['label']) && trim($question['label']) !== '';
+    });
+    
+    return !empty($valid_questions);
+}

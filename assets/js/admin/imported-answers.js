@@ -108,6 +108,74 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
     console.log('🚀 VS Import Merge Strategy inicializado:', window.VS_IMPORT_MERGE_STRATEGY.utils.getStatus());
 }
 
+function restoreTableAndSummaryFromSavedData($question, savedData) {
+    const firstQuestion = savedData.questions[0];
+    
+    // 1. Restaurar resumo do evento
+    if (firstQuestion.event_title && firstQuestion.vote_title) {
+        const totalRespostas = firstQuestion.imported_answers ? firstQuestion.imported_answers.length : 0;
+        const summaryHtml = `
+            <div class="vs-event-summary">
+                <strong>Evento:</strong> ${firstQuestion.event_title} | 
+                <strong>Votação:</strong> ${firstQuestion.vote_title} | 
+                <strong>Respostas:</strong> ${totalRespostas}
+            </div>
+        `;
+        
+        let $summaryContainer = $question.find('.vs-event-summary');
+        if ($summaryContainer.length) {
+            $summaryContainer.replaceWith(summaryHtml);
+        } else {
+            $question.find('.vs-imported-column').prepend(summaryHtml);
+        }
+    }
+    
+    // 2. Restaurar tabela de respostas
+    if (firstQuestion.imported_answers && firstQuestion.imported_answers.length > 0) {
+        const $tbody = $question.find('.vs-imported-column tbody');
+        $tbody.empty();
+        
+        firstQuestion.imported_answers.forEach((resposta, index) => {
+            const row = `
+                <tr>
+                    <td>
+                        <input type="checkbox" 
+                            data-vote-id="${firstQuestion.vote_id}" 
+                            data-question-index="${firstQuestion.question_index}" 
+                            data-answer-index="${index}" 
+                            value="${resposta.text || resposta.vs_valor_real}">
+                        ${resposta.text || resposta.vs_valor_real}
+                    </td>
+                    <td class="text-center">${resposta.qtd_votos || 0}</td>
+                </tr>
+            `;
+            $tbody.append(row);
+        });
+        
+        // 3. Sincronizar checkboxes com opções já importadas
+        window.VSAdmin.ImportedAnswers.syncCheckboxStates($question);
+    }
+}
+
+// Modificar a função que salva dados para garantir formato consistente
+function saveImportedAnswersData($question, eventInfo, questionsData) {
+    const dataToSave = {
+        questions: questionsData.map(q => ({
+            ...q,
+            event_id: eventInfo.event_id,
+            event_title: eventInfo.event_title,
+            vote_id: q.vote_id,
+            vote_title: q.vote_title,
+            question_index: q.question_index
+        }))
+    };
+    
+    const $importedAnswersField = $question.find('.vs-imported-answers');
+    $importedAnswersField.val(JSON.stringify(dataToSave));
+    
+    console.log('Dados salvos para persistência:', dataToSave);
+}
+
 (function($) {
     'use strict';
 
@@ -998,6 +1066,27 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                 }
             });
             
+            // Restaurar dados ao carregar página
+            this.restoreImportedDataOnPageLoad();
+        },
+
+        restoreImportedDataOnPageLoad: function() {
+            $('.vs-question-row').each(function() {
+                const $question = $(this);
+                const $importedAnswersField = $question.find('.vs-imported-answers');
+                
+                if ($importedAnswersField.length && $importedAnswersField.val()) {
+                    try {
+                        const savedData = JSON.parse($importedAnswersField.val());
+                        if (savedData && savedData.questions && savedData.questions.length > 0) {
+                            // Restaurar tabela e resumo do evento
+                            window.VSAdmin.ImportedAnswers.restoreTableAndSummaryFromSavedData($question, savedData);
+                        }
+                    } catch (e) {
+                        console.error('Erro ao restaurar dados importados:', e);
+                    }
+                }
+            });
         },
 
         // Restaurar elementos vs-option-item baseados nos dados salvos
@@ -1130,8 +1219,8 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                         const unifiedAnswers = questionData.respostas_unificadas || [];
                         
                         const importedAnswers = unifiedAnswers.map(answer => ({
-                            value: answer.value || '',
-                            value_unificada: answer.value_unificada || '',
+                            text: answer.value || '',
+                            vs_valor_real: answer.value_unificada || '',
                             qtd_votos: parseInt(answer.qtd_votos || 0)
                         }));
 
@@ -1198,8 +1287,8 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                                 const unifiedAnswers = questionData.respostas_unificadas || [];
                                 
                                 const importedAnswers = unifiedAnswers.map(answer => ({
-                                    value: answer.value || '',
-                                    value_unificada: answer.value_unificada || '',
+                                    text: answer.value || '',
+                                    vs_valor_real: answer.value_unificada || '',
                                     qtd_votos: parseInt(answer.qtd_votos || 0)
                                 }));
 
@@ -2018,9 +2107,8 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                                     vote_id: question.vote_id,
                                     question_index: questionIndex,
                                     answer_index: answerIndex,
-                                    value: answer.value || answer.display || answer.visual_value || '',
-                                    value_unificada: answer.value_unificada || answer.value || answer.display || answer.visual_value || '',
-                                    text: answer.display || answer.visual_value || answer.value || ''
+                                    text: answer.display || answer.visual_value || answer.value || '',
+                                    vs_valor_real: answer.value_unificada || answer.value || answer.display || answer.visual_value || ''
                                 });
                             });
                         }
@@ -2440,8 +2528,8 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                 
                 // Adicionar resposta à pergunta
                 questionMap.get(questionKey).imported_answers.push({
-                    value: valor,
-                    value_unificada: valorUnificado || valor,
+                    text: valor,
+                    vs_valor_real: valorUnificado || valor,
                     answer_index: answerIndex
                 });
                 
@@ -2450,8 +2538,8 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                     vote_id: voteId,
                     question_index: questionIndex,
                     answer_index: answerIndex,
-                    value: valor,
-                    value_unificada: valorUnificado || valor
+                    text: valor,
+                    vs_valor_real: valorUnificado || valor
                 });
                 
                 // Marcar pergunta como selecionada

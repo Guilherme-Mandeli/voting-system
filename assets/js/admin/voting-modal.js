@@ -173,9 +173,10 @@
                 const $linha = $('<tr>')
                     .append(`
                         <td>
-                            <button type="button" class="button vs-load-questions" data-votacao-id="${votacao.id}">
-                                Ver perguntas
-                            </button>
+                            ${votacao.has_valid_questions ? 
+                                `<button class="button vs-load-questions" data-votacao-id="${votacao.id}">Ver perguntas</button>` :
+                                `<button class="button" disabled>Sem perguntas</button>`
+                            }
                         </td>
                     `)
                     .append(`<td>${votacao.titulo}</td>`)
