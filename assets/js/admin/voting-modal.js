@@ -174,8 +174,8 @@
                     .append(`
                         <td>
                             ${votacao.has_valid_questions ? 
-                                `<button class="button vs-load-questions" data-votacao-id="${votacao.id}">Ver perguntas</button>` :
-                                `<button class="button" disabled>Sem perguntas</button>`
+                                `<button type="button" class="button vs-load-questions" data-votacao-id="${votacao.id}">Ver perguntas</button>` :
+                                `<button type="button" class="button" disabled>Sem perguntas</button>`
                             }
                         </td>
                     `)
