@@ -50,6 +50,49 @@ function vs_render_metabox_questions_view($post) {
                     'imported_items' => []
                 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             }
+            
+            // Converter vs_options salvos em options para renderização
+            if (!empty($question['vs_options']) && is_array($question['vs_options'])) {
+                $vs_options = $question['vs_options'];
+                
+                // Inicializar arrays se não existirem
+                if (!isset($question['options'])) {
+                    $question['options'] = [];
+                }
+                if (!isset($question['valores_reais'])) {
+                    $question['valores_reais'] = [];
+                }
+                
+                // Processar manual_items
+                if (!empty($vs_options['manual_items']) && is_array($vs_options['manual_items'])) {
+                    foreach ($vs_options['manual_items'] as $item) {
+                        if (isset($item['text']) && !empty(trim($item['text']))) {
+                            $index = count($question['options']);
+                            $question['options'][$index] = $item['text'];
+                            
+                            // Adicionar valor real se existir
+                            if (isset($item['vs_valor_real']) && !empty(trim($item['vs_valor_real']))) {
+                                $question['valores_reais'][$index] = $item['vs_valor_real'];
+                            }
+                        }
+                    }
+                }
+                
+                // Processar imported_items
+                if (!empty($vs_options['imported_items']) && is_array($vs_options['imported_items'])) {
+                    foreach ($vs_options['imported_items'] as $item) {
+                        if (isset($item['text']) && !empty(trim($item['text']))) {
+                            $index = count($question['options']);
+                            $question['options'][$index] = $item['text'];
+                            
+                            // Adicionar valor real se existir
+                            if (isset($item['vs_valor_real']) && !empty(trim($item['vs_valor_real']))) {
+                                $question['valores_reais'][$index] = $item['vs_valor_real'];
+                            }
+                        }
+                    }
+                }
+            }
         }
         unset($question); // Sem esta linha, problemas acontecem :D - Mandeli, depois de tropezentas horas debugando.
     }
@@ -157,6 +200,8 @@ function vs_render_metabox_questions_scripts($post) {
                     .then(res => res.text())
                     .then(html => {
                         wrapper.insertAdjacentHTML('beforeend', html);
+                        // Coletar vs-options após adicionar nova pergunta
+                        setTimeout(collectVsOptionsForPersistence, 100);
                     })
                     .catch(error => {
                         console.error('Error al cargar template de pregunta:', error);
@@ -183,6 +228,8 @@ function vs_render_metabox_questions_scripts($post) {
                     const bloque = e.target.closest('.vs-pergunta');
                     if (confirm('¿Está seguro de que desea eliminar esta pregunta?')) {
                         bloque.remove();
+                        // Coletar vs-options após remover pergunta
+                        setTimeout(collectVsOptionsForPersistence, 100);
                     }
                 }
 
@@ -204,7 +251,107 @@ function vs_render_metabox_questions_scripts($post) {
                     `;
                     
                     e.target.insertAdjacentHTML('beforebegin', newoptionHTML);
+                    // Coletar vs-options após adicionar opção
+                    setTimeout(collectVsOptionsForPersistence, 100);
                 }
+                
+                // Remover opção
+                if (e.target && e.target.classList.contains('vs-remove-option')) {
+                    if (confirm('¿Está seguro de que desea eliminar esta opción?')) {
+                        e.target.closest('.vs-option-item').remove();
+                        // Coletar vs-options após remover opção
+                        setTimeout(collectVsOptionsForPersistence, 100);
+                    }
+                }
+            });
+            
+            // Função para coletar vs-options e integrá-los na estrutura de questions
+            function collectVsOptionsForPersistence() {
+                $('.vs-pergunta').each(function() {
+                    const $question = $(this);
+                    const questionIndex = extractQuestionIndex($question);
+                    
+                    if (questionIndex === null) return;
+                    
+                    // Coletar todas as opções (manuais e importadas)
+                    const vsOptions = {
+                        manual_items: [],
+                        imported_items: []
+                    };
+                    
+                    // Buscar vs-option-item em ambos os locais:
+                    // 1. Diretamente na pergunta (vs-options-container normal)
+                    // 2. Dentro do vs-columns-container (vs-votacao-anterior-container)
+                    const $optionItems = $question.find('.vs-option-item, .vs-columns-container .vs-option-item');
+                    
+                    $optionItems.each(function(index) {
+                        const $option = $(this);
+                        const text = $option.find('input[type="text"]').val();
+                        const realValue = $option.find('.vs-valor-real').val();
+                        const isImported = $option.hasClass('imported_question');
+                        
+                        if (text && text.trim() !== '') {
+                            if (isImported) {
+                                // Opção importada - usar realValue se existir, senão usar text
+                                vsOptions.imported_items.push({
+                                    text: text,
+                                    vs_valor_real: realValue || text,
+                                    question_index: questionIndex,
+                                    vote_id: $option.data('vote-id'),
+                                    answer_index: $option.data('answer-index')
+                                });
+                            } else {
+                                // Opção manual
+                                vsOptions.manual_items.push({
+                                    text: text,
+                                    vs_valor_real: text, // Para opções manuais, valor real = texto
+                                    question_index: questionIndex,
+                                    option_index: index
+                                });
+                            }
+                        }
+                    });
+                    
+                    // Criar campo oculto para vs-options na estrutura de questions
+                    let $vsOptionsField = $question.find('input[name="vs_questions[' + questionIndex + '][vs_options]"]');
+                    if ($vsOptionsField.length === 0) {
+                        $vsOptionsField = $('<input>', {
+                            type: 'hidden',
+                            name: 'vs_questions[' + questionIndex + '][vs_options]'
+                        });
+                        $question.append($vsOptionsField);
+                    }
+                    
+                    // Salvar dados dos vs-options no campo oculto
+                    $vsOptionsField.val(JSON.stringify(vsOptions));
+                });
+            }
+            
+            // Função auxiliar para extrair índice da pergunta
+            function extractQuestionIndex($question) {
+                const labelInput = $question.find('input[name*="[label]"]').first();
+                if (labelInput.length) {
+                    const match = labelInput.attr('name').match(/vs_questions\[(\d+)\]\[label\]/);
+                    if (match) {
+                        return parseInt(match[1]);
+                    }
+                }
+                return null;
+            }
+            
+            // Executar coleta antes do salvamento do post
+            $('form#post').on('submit', function() {
+                collectVsOptionsForPersistence();
+            });
+            
+            // Executar coleta inicial ao carregar a página
+            $(document).ready(function() {
+                setTimeout(collectVsOptionsForPersistence, 500);
+            });
+            
+            // Executar coleta quando campos de texto das opções são alterados
+            $(document).on('input', '.vs-option-item input[type="text"]', function() {
+                setTimeout(collectVsOptionsForPersistence, 300);
             });
 
         })(jQuery);

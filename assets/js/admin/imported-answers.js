@@ -1027,7 +1027,15 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                 return; // Não há imported_items para restaurar
             }
 
-            const $optionsContainer = $questionContainer.find('.vs-options-container');
+            // Buscar container de opções correto
+            let $optionsContainer = $questionContainer.find('.vs-columns-container .vs-options-column .vs-options');
+            if (!$optionsContainer.length) {
+                $optionsContainer = $questionContainer.find('.vs-options-container .vs-options');
+            }
+            if (!$optionsContainer.length) {
+                $optionsContainer = $questionContainer.find('.vs-options');
+            }
+            
             if (!$optionsContainer.length) {
                 console.warn('Container de opções não encontrado para restaurar imported_items');
                 return;
@@ -1049,7 +1057,7 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
                 // Obter o índice real baseado na posição DOM atual
                 const currentOptionIndex = $optionsContainer.find('.vs-option-item').length;
                 
-                // Criar nova opção (mesmo código da função addSelected)
+                // Criar nova opção
                 const $optionItem = $('<div>', {
                     class: 'vs-option-item imported_question',
                     style: 'margin-bottom: 5px;',
@@ -1093,6 +1101,14 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
             });
 
             console.log(`Restaurados ${data.imported_items.length} elementos vs-option-item para a pergunta ${questionIndex}`);
+            
+            // SOLUÇÃO: Chamar collectVsOptionsForPersistence após restaurar elementos DOM
+            if (typeof collectVsOptionsForPersistence === 'function') {
+                setTimeout(() => {
+                    collectVsOptionsForPersistence();
+                    console.log('vs_options coletado após restaurar imported_items');
+                }, 100);
+            }
         },
 
         importSingleQuestion: function(event) {

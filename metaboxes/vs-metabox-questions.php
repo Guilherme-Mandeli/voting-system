@@ -84,6 +84,15 @@ function vs_save_metabox_questions($post_id) {
             $manual_items = [];
             $imported_items = [];
 
+            // Processar vs_options se existir
+            $vs_options = [];
+            if (isset($question_data['vs_options']) && !empty($question_data['vs_options'])) {
+                $vs_options_decoded = json_decode($question_data['vs_options'], true);
+                if ($vs_options_decoded && is_array($vs_options_decoded)) {
+                    $vs_options = $vs_options_decoded;
+                }
+            }
+
             // Decodificar imported_answers para obter manual_items e imported_items
             $imported_answers_decoded = [];
             $manual_items = [];
@@ -220,7 +229,8 @@ function vs_save_metabox_questions($post_id) {
                     'obrigatoria' => $obrigatoria,
                     'unificada' => $unificada,
                     'imported_vote_id' => $imported_vote_id,
-                    'imported_answers' => $imported_answers
+                    'imported_answers' => $imported_answers,
+                    'vs_options' => $vs_options // Adicionar vs_options à estrutura
                 ];
             }
         }
