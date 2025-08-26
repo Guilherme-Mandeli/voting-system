@@ -257,11 +257,9 @@ function vs_render_metabox_questions_scripts($post) {
                 
                 // Remover opção
                 if (e.target && e.target.classList.contains('vs-remove-option')) {
-                    if (confirm('¿Está seguro de que desea eliminar esta opción?')) {
-                        e.target.closest('.vs-option-item').remove();
-                        // Coletar vs-options após remover opção
-                        setTimeout(collectVsOptionsForPersistence, 100);
-                    }
+                    e.target.closest('.vs-option-item').remove();
+                    // Coletar vs-options após remover opção
+                    setTimeout(collectVsOptionsForPersistence, 100);
                 }
             });
             
