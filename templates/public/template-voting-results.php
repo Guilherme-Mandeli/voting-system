@@ -20,8 +20,8 @@ if (!defined('ABSPATH')) {
         <p class="vs-results-message">Você já participou desta votação. Confira suas respostas abaixo:</p>
     </div>
 
-    <div class="vs-results-table-container">
-        <table class="vs-results-table">
+    <div class="vs-results-table-container table-container">
+        <table class="vs-results-table table-auto">
             <thead>
                 <tr>
                     <th>Pergunta</th>
@@ -50,8 +50,8 @@ if (!defined('ABSPATH')) {
 
     <?php if ($permitir_edicao): ?>
     <div class="vs-edit-actions">
-        <button type="button" class="vs-btn vs-btn-edit" onclick="vs_toggle_edit_mode()">
-            <span class="vs-edit-icon">✏️</span>
+        <button type="button" class="vs-btn vs-btn-edit vs-btn-primary" onclick="vs_toggle_edit_mode()">
+            <span class="vs-edit-icon"><i class="fa-regular fa-pen-to-square"></i></span>
             Editar meu voto
         </button>
     </div>
@@ -62,7 +62,7 @@ if (!defined('ABSPATH')) {
     <div id="vs-edit-form" class="vs-edit-form" style="display: none;">
         <div class="vs-edit-header">
             <h4>Editar Suas Respostas</h4>
-            <p>Modifique suas respostas abaixo e clique em "Salvar Alterações":</p>
+            <p>Modifique suas respostas abaixo e clique em "Salvar Voto":</p>
         </div>
         
         <?php 
@@ -98,7 +98,7 @@ if (!defined('ABSPATH')) {
 }
 
 .vs-results-header h3 {
-    color: #2c3e50;
+    color: #000000;
     margin-bottom: 10px;
 }
 
@@ -122,7 +122,7 @@ if (!defined('ABSPATH')) {
 }
 
 .vs-results-table th {
-    background: #3498db;
+    background: #0034ff;
     color: white;
     padding: 15px;
     text-align: left;
@@ -158,41 +158,83 @@ if (!defined('ABSPATH')) {
 }
 
 .vs-btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50px;
+    font-family: var(--vs-font-family);
+    font-size: var(--vs-font-size-base);
     font-weight: 500;
-    transition: all 0.3s ease;
-    margin: 0 10px;
+    text-decoration: none;
+    cursor: pointer;
+    min-height: 44px;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    padding: 12px 18px 11px 18px;
+    gap: 8px;
+    text-decoration: none !important;
+    line-height: 1em;
 }
 
-.vs-btn-edit {
-    background: #27ae60;
-    color: white;
+.vs-btn:hover {
+    transform: translateY(-1px);
 }
 
-.vs-btn-edit:hover {
-    background: #229954;
-    transform: translateY(-2px);
+.vs-btn-primary {
+    background-color: #0034ff;
+    color: #ffffff;
+    border: 1px solid #0034ff;
+}
+
+.vs-btn-primary:hover {
+    background-color: #ffffff;
+    color: #0034ff;
+    border: 1px solid #0034ff;
+}
+
+.vs-btn-secondary {
+    background-color: transparent;
+    color: #0034ff;
+    border: 1px solid #0034ff;
+}
+
+.vs-btn-secondary:hover {
+    background-color: #0034ff;
+    color: #ffffff;
+    border: 1px solid #0034ff;
+}
+
+.vs-btn-link {
+    background-color: transparent;
+    color: #0034ff;
+    border: 1px solid transparent;
+}
+
+.vs-btn-link:hover {
+    background-color: #f1f5f9;
+    color: #0034ff;
+    border: 1px solid #0034ff;
+}
+
+.vs-btn:disabled {
+    background-color: #e5e7eb;
+    color: #9ca3af;
+    border: 1px solid #e5e7eb;
+    cursor: not-allowed;
 }
 
 .vs-btn-cancel {
     background: #95a5a6;
     color: white;
-}
-
-.vs-btn-cancel:hover {
-    background: #7f8c8d;
+    border: none;
 }
 
 .vs-edit-form {
     margin-top: 30px;
-    padding: 20px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border: 2px solid #3498db;
+    border-top: 1px solid #ccc;
+    padding-top: 30px;
+    margin-top: 31px;
 }
 
 .vs-edit-header {
@@ -200,12 +242,12 @@ if (!defined('ABSPATH')) {
 }
 
 .vs-edit-header h4 {
-    color: #2c3e50;
+    color: #000000;
     margin-bottom: 10px;
 }
 
 .vs-edit-icon {
-    margin-right: 8px;
+    margin-right: 4px;
 }
 
 @media (max-width: 768px) {

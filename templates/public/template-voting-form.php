@@ -116,17 +116,23 @@ if (!defined('ABSPATH')) {
 }
 
 .vs-btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-decoration: none;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    border-radius: 50px;
+    font-family: var(--vs-font-family);
+    font-size: var(--vs-font-size-base);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    min-height: 44px;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    padding: 12px 18px 11px 18px;
     gap: 8px;
+    text-decoration: none !important;
+    line-height: 1em;
 }
 
 .vs-btn-edit {

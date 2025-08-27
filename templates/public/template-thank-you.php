@@ -23,42 +23,44 @@ error_log('[DEBUG] template-thank-you.php - Votacao ID: ' . $votacao_id);
     <p class="mb-4">Suas respostas foram registradas com sucesso. Confira abaixo:</p>
 
     <!-- Inicia a tabela -->
-    <table class="table-auto w-full border-collapse border border-gray-300">
-        <thead>
-            <tr>
-                <th class="px-4 py-2 border-b bg-gray-100 text-left">Pergunta</th>
-                <th class="px-4 py-2 border-b bg-gray-100 text-left">Sua Resposta</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($questions as $index => $question): 
-                $label = isset($question['label']) ? esc_html($question['label']) : 'Pergunta #' . ($index + 1);
-                $tipo = isset($question['tipo']) ? $question['tipo'] : 'texto';
-
-                // Recupera a resposta pelo índice das respostas
-                $resposta_raw = isset($respostas['respostas'][$index]) ? $respostas['respostas'][$index] : null;
-                
-                // Debug: Log de cada resposta
-                error_log('[DEBUG] template-thank-you.php - Question ' . $index . ' (' . $tipo . '): ' . print_r($resposta_raw, true));
-                
-                // Processa a resposta baseada no tipo de campo
-                $resposta_processada = vs_process_answer_for_display($resposta_raw, $question, $index);
-                
-                // Debug: Log da resposta processada
-                error_log('[DEBUG] template-thank-you.php - Processed answer ' . $index . ': ' . $resposta_processada);
-                
-                // Se a resposta estiver vazia, mostrar uma mensagem padrão
-                if (empty($resposta_processada)) {
-                    $resposta_processada = '<em>Nenhuma resposta fornecida</em>';
-                }
-            ?>
-            <tr>
-                <td class='px-4 py-2 border-b'><?php echo esc_html($label); ?></td>
-                <td class='px-4 py-2 border-b'><?php echo wp_kses_post($resposta_processada); ?></td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
+    <div class="table-container">
+        <table class="table-auto w-full border-collapse border border-gray-300">
+            <thead>
+                <tr>
+                    <th class="px-4 py-2 border-b bg-gray-100 text-left">Pergunta</th>
+                    <th class="px-4 py-2 border-b bg-gray-100 text-left">Sua Resposta</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($questions as $index => $question): 
+                    $label = isset($question['label']) ? esc_html($question['label']) : 'Pergunta #' . ($index + 1);
+                    $tipo = isset($question['tipo']) ? $question['tipo'] : 'texto';
+    
+                    // Recupera a resposta pelo índice das respostas
+                    $resposta_raw = isset($respostas['respostas'][$index]) ? $respostas['respostas'][$index] : null;
+                    
+                    // Debug: Log de cada resposta
+                    error_log('[DEBUG] template-thank-you.php - Question ' . $index . ' (' . $tipo . '): ' . print_r($resposta_raw, true));
+                    
+                    // Processa a resposta baseada no tipo de campo
+                    $resposta_processada = vs_process_answer_for_display($resposta_raw, $question, $index);
+                    
+                    // Debug: Log da resposta processada
+                    error_log('[DEBUG] template-thank-you.php - Processed answer ' . $index . ': ' . $resposta_processada);
+                    
+                    // Se a resposta estiver vazia, mostrar uma mensagem padrão
+                    if (empty($resposta_processada)) {
+                        $resposta_processada = '<em>Nenhuma resposta fornecida</em>';
+                    }
+                ?>
+                <tr>
+                    <td class='px-4 py-2 border-b'><?php echo esc_html($label); ?></td>
+                    <td class='px-4 py-2 border-b'><?php echo wp_kses_post($resposta_processada); ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
 
     <div class="mt-6">
         <a href="<?php echo esc_url(home_url()); ?>" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">Voltar para o início</a>

@@ -446,3 +446,106 @@
         --vs-outline-variant: #4a4a4a;
     }
 }
+
+/* ===== BOTÕES ===== */
+.vs-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--vs-spacing-md) var(--vs-spacing-lg);
+    border: none;
+    border-radius: var(--vs-radius-base);
+    font-family: var(--vs-font-family);
+    font-size: var(--vs-font-size-base);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--vs-transition-fast);
+    min-height: 44px;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    border-radius: 50px;
+}
+
+.vs-button.vs-btn-primary {
+    background-color: #0034ff;
+    color: #ffffff;
+    border: 1px solid #0034ff;
+}
+
+.vs-button.vs-btn-primary:hover {
+    background-color: #ffffff;
+    color: #0034ff;
+    border: 1px solid #0034ff;
+}
+
+/* Atualizar botões existentes */
+.vs-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50px;
+    font-family: var(--vs-font-family);
+    font-size: var(--vs-font-size-base);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    min-height: 44px;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    padding: 12px 18px 11px 18px;
+    gap: 8px;
+    text-decoration: none !important;
+    line-height: 1em;
+}
+
+.vs-btn-edit {
+    background-color: #0034ff;
+    color: #ffffff;
+    border: 1px solid #0034ff;
+}
+
+.vs-btn-edit:hover {
+    background-color: #ffffff;
+    color: #0034ff;
+    border: 1px solid #0034ff;
+}
+
+.vs-btn-primary {
+    background-color: #0034ff;
+    color: #ffffff;
+    border: 1px solid #0034ff;
+}
+
+.vs-btn-primary:hover {
+    background-color: #ffffff;
+    color: #0034ff;
+    border: 1px solid #0034ff;
+}
+
+.vs-btn-secondary {
+    background-color: transparent;
+    color: #0034ff;
+    border: 1px solid #0034ff;
+}
+
+.vs-btn-secondary:hover {
+    background-color: #0034ff;
+    color: #ffffff;
+    border: 1px solid #0034ff;
+}
+
+.vs-btn-disabled {
+    background-color: #e5e7eb;
+    color: #9ca3af;
+    border: 1px solid #e5e7eb;
+    cursor: not-allowed;
+}
+
+.vs-btn-disabled:hover {
+    background-color: #e5e7eb;
+    color: #9ca3af;
+    border: 1px solid #e5e7eb;
+}

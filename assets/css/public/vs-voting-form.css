@@ -288,9 +288,9 @@
 .vs-form input[type="checkbox"]:checked::after {
     content: '';
     position: absolute;
-    top: 2px;
-    left: 6px;
-    width: 6px;
+    top: 1px;
+    left: 5px;
+    width: 4px;
     height: 10px;
     border: solid var(--vs-primary-contrast);
     border-width: 0 2px 2px 0;
@@ -349,9 +349,21 @@
     box-sizing: border-box;
     position: relative;
     overflow: hidden;
+    border-radius: 50px;
 }
 
 /* Botão primário (Salvar Voto) */
+.vs-button.vs-btn-primary {
+    background-color: #0034ff;
+    color: #ffffff;
+    border: 1px solid #0034ff;
+}
+.vs-button.vs-btn-primary:hover {
+    background-color: #ffffff;
+    color: #0034ff;
+    border: 1px solid #0034ff;
+}
+
 .vs-button.bg-blue-600,
 .vs-button.bg-blue-500 {
     background: var(--vs-primary);
@@ -550,12 +562,12 @@
 }
 
 .vs-required {
-    color: #d63384;
-    font-weight: bold;
+    color: #ff0000;
+    font-weight: 400;
 }
 
 .vs-error {
-    border: 2px solid #d63384 !important;
+    border: 2px solid #ff0000 !important;
     background-color: #f8d7da;
 }
 
@@ -565,10 +577,56 @@
     margin-top: 0.25rem;
 }
 
-/* Melhor contraste para foco */
-input:focus, select:focus, textarea:focus {
-    outline: 2px solid #0066cc;
-    outline-offset: 2px;
+/* ===== ESTILOS DE TABELA ===== */
+/* Container da tabela com border-radius */
+.table-container {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #d1d5db;
+    margin-bottom: 1rem;
+}
+
+/* Base table style */
+.table-auto {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+}
+
+/* Header */
+.table-auto thead th {
+    background-color: #0034ff;
+    text-align: left;
+    padding: 10px 16px;
+    border: 1px solid #0034ff;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+/* Table rows */
+.table-auto tbody td {
+    padding: 10px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    color: #111827;
+}
+
+/* Zebra effect */
+.table-auto tbody tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+/* Highlight row on hover */
+.table-auto tbody tr:hover {
+    background-color: #f1f5f9;
+}
+
+/* Special style for <em> (no answer) */
+.table-auto tbody td em {
+    color: #6b7280;
+    font-style: italic;
 }
 
 /* Responsividade */

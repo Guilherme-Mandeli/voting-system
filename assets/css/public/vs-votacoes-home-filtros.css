@@ -18,19 +18,19 @@
                      0px 2px 1px rgba(0, 0, 0, 0.12);
     
     /* Espaçamentos */
-    --spacing-xs: 4px;
-    --spacing-sm: 8px;
-    --spacing-md: 12px;
-    --spacing-lg: 16px;
-    --spacing-xl: 20px;
-    --spacing-xxl: 24px;
-    --spacing-xxxl: 32px;
+    --spacing-xs: 8px;
+    --spacing-sm: 12px;
+    --spacing-md: 16px;
+    --spacing-lg: 20px;
+    --spacing-xl: 24px;
+    --spacing-xxl: 32px;
+    --spacing-xxxl: 50px;
     
     /* Border radius */
-    --border-radius-sm: 6px;
-    --border-radius-md: 12px;
-    --border-radius-lg: 16px;
-    --border-radius-xl: 20px;
+    --border-radius-sm: 4px;
+    --border-radius-md: 10px;
+    --border-radius-lg: 14px;
+    --border-radius-xl: 24px;
     
     /* Transições */
     --transition-fast: 0.2s ease;
@@ -51,9 +51,9 @@
     --shadow-hover: 0px 4px 12px rgba(0, 0, 0, 0.12);
     
     /* Cores principais */
-    --primary-color: #1976d2;
+    --primary-color: #0034ff;
     --primary-light: #42a5f5;
-    --primary-dark: #1565c0;
+    --primary-dark: #061ea5;
     
     /* Tipografia */
     --font-family: "Roboto", "Helvetica", "Arial", sans-serif;
@@ -68,24 +68,22 @@
 }
 
 .vs-home-filtros {
-    background-color: var(--surface);
+    background-color: var(--mui-bg-paper);
     border-radius: var(--border-radius-md);
-    box-shadow: var(--shadow-light);
-    padding: var(--spacing-xxl);
-    border: 1px solid var(--divider);
+    padding: 24px;
 }
 
 .vs-filtros-grid {
     display: grid;
     grid-template-columns: 1fr 1fr auto;
-    gap: var(--spacing-xxl);
+    gap: 24px;
     align-items: end;
 }
 
 .vs-filtro-grupo {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xs);
 }
 
 .vs-filtro-label {
@@ -94,7 +92,6 @@
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.08333em;
-    margin-bottom: var(--spacing-xs);
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
@@ -106,8 +103,8 @@
 
 .vs-filtro-select {
     min-width: 200px;
-    height: 56px;
-    padding: var(--spacing-lg) 14px;
+    height: 46px;
+    padding: 12px 33px 12px 12px;
     border: 1px solid var(--divider);
     border-radius: var(--border-radius-sm);
     background-color: var(--surface);
@@ -117,6 +114,13 @@
     color: var(--text-primary);
     transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
     outline: none;
+
+    /* Arrow */
+    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAUCAMAAACtdX32AAAAdVBMVEUAAAD///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAhMdQaAAAAJ3RSTlMAAAECAwQGBwsOFBwkJTg5RUZ4eYCHkJefpaytrsXGy8zW3+Do8vNn0bsyAAAAYElEQVR42tXROwJDQAAA0Ymw1p9kiT+L5P5HVEi3qJn2lcPjtIuzUIJ/rhIGy762N3XaThqMN1ZPALsZPEzG1x8LrFL77DHBnEMxBewz0fJ6LyFHTPL7xhwzWYrJ9z22AqmQBV757MHfAAAAAElFTkSuQmCC);
+    background-position: 100% 13px;
+    background-repeat: no-repeat;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
 }
 
 .vs-filtro-select:hover {
@@ -125,42 +129,36 @@
 
 .vs-filtro-select:focus {
     border-color: var(--primary-color);
-    border-width: 2px;
-    padding: var(--spacing-lg) 13px;
     box-shadow: 0 0 0 1px var(--primary-color);
 }
 
 .vs-filtro-select:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 1px var(--primary-color);;
 }
 
 .vs-filtro-acoes {
     display: flex;
     gap: var(--spacing-md);
-    align-items: center;
+    align-items: end;
 }
 
 /* Botões de filtro */
 .vs-btn-filtrar {
     background-color: var(--primary-color);
     color: var(--surface);
-    min-width: 100px;
-    height: 36px;
+    height: 46px;
     text-transform: uppercase;
     letter-spacing: 0.02857em;
     font-size: 0.9rem;
     font-weight: var(--font-weight-medium);
-    padding: var(--spacing-sm) 14px;
-    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm) 24px;
+    border-radius: 50px;
     text-decoration: none !important;
     transition: background-color var(--transition-fast);
     border: none;
     cursor: pointer;
     line-height: 1.4;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-sm);
 }
 
 .vs-btn-filtrar:hover {
@@ -197,7 +195,7 @@
 }
 
 /* ===== RESPONSIVIDADE ===== */
-@media (max-width: 960px) {
+@media (max-width: 981px) {
     .vs-filtros-grid {
         grid-template-columns: 1fr;
         gap: var(--spacing-lg);
@@ -211,9 +209,13 @@
     .vs-btn-limpar {
         flex: 1;
     }
+
+    .vs-cards-grid {
+        flex-flow: column wrap;
+    }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 767px) {
     .vs-home-filtros {
         padding: var(--spacing-lg);
         margin: 0 -var(--spacing-sm);

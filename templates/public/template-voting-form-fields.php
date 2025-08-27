@@ -63,5 +63,5 @@ if (!defined('ABSPATH')) {
     </div>
 <?php endforeach; ?>
 
-    <button type="submit" class="vs-button bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">Salvar Voto</button>
+    <button type="submit" class="vs-button vs-btn-primary text-white px-4 py-2 rounded hover:bg-blue-700 transition">Salvar Voto</button>
 </form>

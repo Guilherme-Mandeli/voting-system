@@ -11,7 +11,6 @@ defined('ABSPATH') || exit;
 <div class="vs-home-cards-container">
     <?php if (empty($agrupado)): ?>
         <div class="vs-empty-state">
-            <div class="vs-empty-icon">📊</div>
             <h3>Nenhuma votação encontrada</h3>
             <p>Não há votações que correspondam aos filtros selecionados.</p>
         </div>
@@ -19,7 +18,6 @@ defined('ABSPATH') || exit;
         <?php foreach ($agrupado as $ano => $categorias): ?>
             <div class="vs-ano-section">
                 <h2 class="vs-ano-titulo">
-                    <span class="vs-ano-icon">📅</span>
                     <?php echo esc_html($ano); ?>
                 </h2>
                 
@@ -27,16 +25,23 @@ defined('ABSPATH') || exit;
                     <div class="vs-categoria-section">
                         <h3 class="vs-categoria-titulo">
                             <span class="vs-categoria-icon">
-                                <?php echo $categoria_nome === 'Sem Categoria' ? '📋' : '🏷️'; ?>
+                                <?php echo $categoria_nome === 'Sem Categoria' ? '<i class="fa-solid fa-tag"></i>' : '<i class="fa-solid fa-tag"></i>'; ?>
                             </span>
                             <?php echo esc_html($categoria_nome); ?>
-                            <span class="vs-categoria-count">(<?php echo count($votacoes); ?>)</span>
                         </h3>
                         
                         <div class="vs-cards-grid">
                             <?php foreach ($votacoes as $votacao): ?>
                                 <div class="vs-card <?php echo esc_attr('vs-status-' . $votacao['status']); ?> <?php echo $votacao['ja_votou'] ? 'vs-card-voted' : ''; ?>">
                                     <div class="vs-card-header">
+                                        <h4 class="vs-card-title">
+                                            <?php echo esc_html($votacao['title']); ?>
+                                        </h4>    
+                                    
+                                        
+                                    </div>
+                                    
+                                    <div class="vs-card-content">
                                         <div class="vs-card-badges">
                                             <span class="vs-badge vs-badge-status vs-badge-<?php echo esc_attr($votacao['status']); ?>">
                                                 <?php echo esc_html($votacao['status_display']); ?>
@@ -54,12 +59,6 @@ defined('ABSPATH') || exit;
                                                 </span>
                                             <?php endif; ?>
                                         </div>
-                                    </div>
-                                    
-                                    <div class="vs-card-content">
-                                        <h4 class="vs-card-title">
-                                            <?php echo esc_html($votacao['title']); ?>
-                                        </h4>
                                         
                                         <?php if (!empty($votacao['excerpt'])): ?>
                                             <p class="vs-card-excerpt">
@@ -92,35 +91,35 @@ defined('ABSPATH') || exit;
                                         <div class="vs-card-actions">
                                             <?php if ($votacao['status'] === 'aberta' && $votacao['publicado'] && !$votacao['is_encerrada']): ?>
                                                 <?php if ($votacao['ja_votou']): ?>
-                                                    <!-- Usuário já votou -->
-                                                    <a href="<?php echo esc_url($votacao['link']); ?>" class="vs-btn vs-btn-secondary">
-                                                        <span class="vs-btn-icon">👁️</span>
-                                                        Ver Respostas
-                                                    </a>
-                                                    
+                                                    <!-- Já votou -->
                                                     <?php if ($votacao['pode_editar']): ?>
                                                         <a href="<?php echo esc_url($votacao['link']); ?>" class="vs-btn-link vs-btn-edit">
-                                                            <span class="vs-btn-icon">✏️</span>
+                                                            <span class="vs-btn-icon"><i class="fa-regular fa-pen-to-square"></i></span>
                                                             Editar voto
                                                         </a>
                                                     <?php endif; ?>
+                                                    
+                                                    <a href="<?php echo esc_url($votacao['link']); ?>" class="vs-btn vs-btn-secondary vs-btn-see-answers">
+                                                        <span class="vs-btn-icon"><i class="fa-regular fa-eye"></i></span>
+                                                        Ver Respostas
+                                                    </a>
                                                 <?php else: ?>
-                                                    <!-- Usuário ainda não votou -->
-                                                    <a href="<?php echo esc_url($votacao['link']); ?>" class="vs-btn vs-btn-primary">
-                                                        <span class="vs-btn-icon">🗳️</span>
+                                                    <!-- Ainda não votou -->
+                                                    <a href="<?php echo esc_url($votacao['link']); ?>" class="vs-btn vs-btn-primary vs-btn-participate">
+                                                        <span class="vs-btn-icon"><i class="fa-solid fa-check-to-slot"></i></span>
                                                         Participar
                                                     </a>
                                                 <?php endif; ?>
                                             <?php elseif ($votacao['is_encerrada']): ?>
                                                 <!-- Votação encerrada -->
-                                                <a href="<?php echo esc_url($votacao['link']); ?>" class="vs-btn vs-btn-secondary">
-                                                    <span class="vs-btn-icon">📊</span>
+                                                <a href="<?php echo esc_url($votacao['link']); ?>" class="vs-btn vs-btn-secondary vs-btn-see-results">
+                                                    <span class="vs-btn-icon"><i class="fa-solid fa-square-poll-horizontal"></i></span>
                                                     Ver Resultados
                                                 </a>
                                             <?php else: ?>
                                                 <!-- Votação indisponível -->
                                                 <button class="vs-btn vs-btn-disabled" disabled>
-                                                    <span class="vs-btn-icon">🔒</span>
+                                                    <span class="vs-btn-icon"><i class="fa-solid fa-ban"></i></span>
                                                     <?php echo $votacao['status'] === 'em-pausa' ? 'Em pausa' : 'Indisponível'; ?>
                                                 </button>
                                             <?php endif; ?>

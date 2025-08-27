@@ -108,55 +108,6 @@ if (window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
     console.log('🚀 VS Import Merge Strategy inicializado:', window.VS_IMPORT_MERGE_STRATEGY.utils.getStatus());
 }
 
-function restoreTableAndSummaryFromSavedData($question, savedData) {
-    const firstQuestion = savedData.questions[0];
-    
-    // 1. Restaurar resumo do evento
-    if (firstQuestion.event_title && firstQuestion.vote_title) {
-        const totalRespostas = firstQuestion.imported_answers ? firstQuestion.imported_answers.length : 0;
-        const summaryHtml = `
-            <div class="vs-event-summary">
-                <strong>Evento:</strong> ${firstQuestion.event_title} | 
-                <strong>Votação:</strong> ${firstQuestion.vote_title} | 
-                <strong>Respostas:</strong> ${totalRespostas}
-            </div>
-        `;
-        
-        let $summaryContainer = $question.find('.vs-event-summary');
-        if ($summaryContainer.length) {
-            $summaryContainer.replaceWith(summaryHtml);
-        } else {
-            $question.find('.vs-imported-column').prepend(summaryHtml);
-        }
-    }
-    
-    // 2. Restaurar tabela de respostas
-    if (firstQuestion.imported_answers && firstQuestion.imported_answers.length > 0) {
-        const $tbody = $question.find('.vs-imported-column tbody');
-        $tbody.empty();
-        
-        firstQuestion.imported_answers.forEach((resposta, index) => {
-            const row = `
-                <tr>
-                    <td>
-                        <input type="checkbox" 
-                            data-vote-id="${firstQuestion.vote_id}" 
-                            data-question-index="${firstQuestion.question_index}" 
-                            data-answer-index="${index}" 
-                            value="${resposta.text || resposta.vs_valor_real}">
-                        ${resposta.text || resposta.vs_valor_real}
-                    </td>
-                    <td class="text-center">${resposta.qtd_votos || 0}</td>
-                </tr>
-            `;
-            $tbody.append(row);
-        });
-        
-        // 3. Sincronizar checkboxes com opções já importadas
-        window.VSAdmin.ImportedAnswers.syncCheckboxStates($question);
-    }
-}
-
 // Modificar a função que salva dados para garantir formato consistente
 function saveImportedAnswersData($question, eventInfo, questionsData) {
     const dataToSave = {
@@ -247,12 +198,6 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
             const $jsonInput = this.currentQuestion.find('.vs-imported-answers');
             if (!$jsonInput.length) {
                 console.warn('Campo .vs-imported-answers não encontrado');
-                return;
-            }
-
-            const $tbody = this.currentQuestion.find('.vs-imported-column tbody');
-            if (!$tbody.length) {
-                console.warn('Tabela .vs-imported-column tbody não encontrada');
                 return;
             }
 
@@ -599,6 +544,16 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                             const qtdVotos = parseInt(resposta.qtd_votos || 0);
                             const questionSource = pergunta.question_source || 'Fonte desconhecida';
                             
+                            // Adicionar logs para verificar os valores
+                            console.log('🔍 DEBUG - Dados da resposta:', {
+                                resposta: resposta,
+                                valorExibir: valorExibir,
+                                value: resposta.value,
+                                value_unificada: resposta.value_unificada,
+                                qtdVotos: qtdVotos,
+                                questionSource: questionSource
+                            });
+                            
                             // Criar chave única para detectar duplicatas
                             const uniqueKey = `${valorExibir}_${qtdVotos}_${questionSource}`;
                             
@@ -647,8 +602,9 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                             $checkboxCell.append($checkbox);
                             $row.append($checkboxCell);
                             
-                            // Coluna do valor (terceira coluna)
-                            $row.append($('<td>').text(valorExibir));
+                            // Coluna do valor (terceira coluna) - DEBUG: verificar se valorExibir tem valor
+                            console.log('🔍 DEBUG - Adicionando coluna Resposta:', valorExibir);
+                            $row.append($('<td>').text(valorExibir || 'VALOR VAZIO'));
                             
                             // Coluna da quantidade de votos (quarta coluna)
                             $row.append($('<td>').text(qtdVotos));
@@ -742,9 +698,8 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                 const voteId = $(this).data('vote-id');
                 const questionIndex = $(this).data('question-index');
                 const answerIndex = $(this).data('answer-index');
-                const realValue = originalValue;
+                const realValue = unifiedValue || originalValue;
                 const visualValue = unifiedValue || tableDisplayValue;
-                const sourceQuestion = $tr.find('td:eq(4)').text();
                 
                 // Verificar se já existe uma opção com este valor real E visual
                 let isDuplicate = false;
@@ -759,8 +714,16 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                     }
                 });
                 
+                // Verificar duplicata no array imported_items
+                const existsInArray = importedAnswersData.imported_items.some(item => 
+                    item.vote_id === voteId &&
+                    item.question_index === questionIndex &&
+                    item.answer_index === answerIndex &&
+                    item.vs_valor_real === realValue
+                );
+                
                 // Se for duplicata, pular esta opção
-                if (isDuplicate) {
+                if (isDuplicate  || existsInArray ) {
                     return true; // continue do loop
                 }
                 
@@ -808,6 +771,14 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                 
                 // Inserir antes do botão "Adicionar Opção"
                 $optionsContainer.find('.vs-add-option').before($optionItem);
+
+                // Sincronizar vs_options após adição manual
+                if (typeof collectVsOptionsForPersistence === 'function') {
+                    setTimeout(() => {
+                        collectVsOptionsForPersistence();
+                        console.log('✅ vs_options sincronizado após restaurar DOM');
+                    }, 100);
+                }       
                 
                 // Adicionar ao array de itens importados usando objeto com text e vs_valor_real
                 importedAnswersData.imported_items.push({
@@ -843,8 +814,11 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
             // Desmarcar o checkbox "Selecionar todos" após adicionar itens selecionados
             $container.find('.vs-select-all-answers').prop('checked', false);
 
-            // Atualizar estados dos checkboxes após adicionar itens
-            this.updateCheckboxStates();
+            // Atualizar usando função unificada
+            // this.setCurrentQuestion($container.closest('.vs-pergunta'));
+            // this.updateTableFromImportedAnswers();
+
+            $selectedAnswers.prop('checked', false);
         },
 
         // Atualizar checkboxes baseado nas opções existentes
@@ -943,10 +917,10 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
             // Remover a opção
             $optionItem.remove();
 
-            // Atualizar estado dos checkboxes após remoção
-            const self = this;
-            setTimeout(function() {
-                self.updateCheckboxStates();
+            // Atualizar usando função unificada
+            setTimeout(() => {
+                this.setCurrentQuestion($questionContainer);
+                this.updateTableFromImportedAnswers();
             }, 100);
             
             // Sincronizar com checkboxes do modal
@@ -1002,8 +976,9 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                     }
                 }
                 
-                // Sincronizar checkboxes após remoção
-                this.updateCheckboxStates();
+                // Atualizar usando função unificada
+                this.setCurrentQuestion($questionContainer);
+                this.updateTableFromImportedAnswers();
             }
         },
 
@@ -1058,10 +1033,7 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                     const $questionContainer = $(this).closest('.vs-pergunta');
                     
                     window.VSAdmin.ImportedAnswers.setCurrentQuestion($questionContainer);
-                    window.VSAdmin.ImportedAnswers.updateTable();
-                    
-                    // Restaurar elementos DOM dos imported_items
-                    window.VSAdmin.ImportedAnswers.restoreImportedItemsToDOM($questionContainer);
+                    window.VSAdmin.ImportedAnswers.updateTableFromImportedAnswers();
                     
                 }
             });
@@ -1079,8 +1051,8 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                     try {
                         const savedData = JSON.parse($importedAnswersField.val());
                         if (savedData && savedData.questions && savedData.questions.length > 0) {
-                            // Restaurar tabela e resumo do evento
-                            window.VSAdmin.ImportedAnswers.restoreTableAndSummaryFromSavedData($question, savedData);
+                            window.VSAdmin.ImportedAnswers.setCurrentQuestion($question);
+                            window.VSAdmin.ImportedAnswers.updateTableFromImportedAnswers();
                         }
                     } catch (e) {
                         console.error('Erro ao restaurar dados importados:', e);
@@ -1187,15 +1159,22 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                 
                 // Inserir antes do botão "Adicionar Opção"
                 $optionsContainer.find('.vs-add-option').before($optionItem);
+
+                if (typeof collectVsOptionsForPersistence === 'function') {
+                    setTimeout(() => {
+                        collectVsOptionsForPersistence();
+                        console.log('✅ vs_options sincronizado após atualizar tabela');
+                    }, 100);
+                }
             });
 
             console.log(`Restaurados ${data.imported_items.length} elementos vs-option-item para a pergunta ${questionIndex}`);
             
-            // SOLUÇÃO: Chamar collectVsOptionsForPersistence após restaurar elementos DOM
+            // Chamar collectVsOptionsForPersistence após restaurar elementos DOM
             if (typeof collectVsOptionsForPersistence === 'function') {
                 setTimeout(() => {
                     collectVsOptionsForPersistence();
-                    console.log('vs_options coletado após restaurar imported_items');
+                    console.log('✅ vs_options sincronizado para persistência');
                 }, 100);
             }
         },
@@ -1330,6 +1309,244 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                 }
             });
         },
+
+        /**
+         * FUNÇÃO CENTRAL: Atualiza tabela e elementos DOM baseado em vs-imported-answers
+         * Esta função substitui múltiplas funções de atualização e centraliza toda a lógica
+         * @param {jQuery} $questionContainer - Container da pergunta (opcional)
+         * @param {Object} forceData - Dados para forçar atualização (opcional)
+         */
+        updateTableFromImportedAnswers: function($questionContainer = null, forceData = null) {
+            try {
+                // Determinar container da pergunta
+                const $container = $questionContainer || this.getCurrentQuestion() || $('.vs-question-row').first();
+                if (!$container || !$container.length) {
+                    console.warn('Container da pergunta não encontrado para updateTableFromImportedAnswers');
+                    return false;
+                }
+                
+                // Obter dados de vs-imported-answers (fonte única de verdade)
+                const importedData = forceData || this.getCurrentJsonData();
+                if (!importedData) {
+                    console.warn('Dados de vs-imported-answers não encontrados');
+                    return false;
+                }
+                
+                console.log('🔄 Atualizando tabela e DOM baseado em vs-imported-answers:', importedData);
+                
+                // 1. ATUALIZAR ELEMENTOS DOM (vs-option-item)
+                this._updateDOMElementsFromData($container, importedData);
+                
+                // 2. ATUALIZAR ESTADO DA TABELA (checkboxes)
+                this._updateTableStateFromData(importedData);
+                
+                // 3. ATUALIZAR RESUMO DO EVENTO
+                this._updateEventSummaryFromData($container, importedData);
+                
+                // 4. SINCRONIZAR vs_options (será gerado automaticamente)
+                // this._syncVsOptionsFromImportedAnswers($container, importedData);
+                
+                // 5. DISPARAR EVENTO DE ATUALIZAÇÃO
+                $(document).trigger('vs:table-updated-from-imported-answers', {
+                    container: $container,
+                    data: importedData
+                });
+                
+                return true;
+                
+            } catch (error) {
+                console.error('Erro em updateTableFromImportedAnswers:', error);
+                return false;
+            }
+        },
+        
+        /**
+         * Atualiza elementos DOM (vs-option-item) baseado nos dados importados
+         * @private
+         */
+        _updateDOMElementsFromData: function($container, data) {
+            const questionIndex = this._extractQuestionIndex($container);
+            if (questionIndex === null) return;
+            
+            const $optionsContainer = $container.find('.vs-options-container, .vs-columns-container');
+            if (!$optionsContainer.length) return;
+            
+            // Remover apenas elementos importados existentes
+            $optionsContainer.find('.vs-option-item.imported_question').remove();
+            
+            // Controle de duplicatas
+            const addedItems = new Set();
+            
+            // Adicionar elementos de imported_items
+            if (data.imported_items && Array.isArray(data.imported_items)) {
+                data.imported_items.forEach((item, index) => {
+                    if (!item.text || !item.vs_valor_real) return;
+                    
+                    // Verificar duplicatas
+                    const itemKey = `${item.vote_id}_${item.question_index}_${item.answer_index}`;
+                    if (addedItems.has(itemKey)) {
+                        return; // Pular item duplicado
+                    }
+                    addedItems.add(itemKey);
+                    
+                    const currentOptionIndex = $optionsContainer.find('.vs-option-item').length;
+                    
+                    const $optionItem = $('<div>', {
+                        class: 'vs-option-item imported_question',
+                        style: 'margin-bottom: 5px;',
+                        'data-vote-id': item.vote_id,
+                        'data-question-index': item.question_index,
+                        'data-answer-index': item.answer_index
+                    });
+                    
+                    const $textInput = $('<input>', {
+                        type: 'text',
+                        name: `vs_questions[${questionIndex}][options][]`,
+                        value: item.text, // valor unificado
+                        style: 'width: 90%;',
+                        placeholder: `Opção ${currentOptionIndex + 1}`
+                    });
+                    
+                    const $hiddenInput = $('<input>', {
+                        type: 'hidden',
+                        name: `vs_questions[${questionIndex}][valores_reais][${currentOptionIndex}]`,
+                        class: 'vs-valor-real',
+                        value: item.vs_valor_real // unificado preservado
+                    });
+                    
+                    const $valorRealTexto = $('<span>', {
+                        class: 'vs-valor-real-texto',
+                        css: { fontSize: '12px', color: '#666', marginLeft: '10px' },
+                        text: item.vs_valor_real // Exibir valor unificado
+                    });
+                    
+                    const $removeButton = $('<button>', {
+                        type: 'button',
+                        class: 'button button-small vs-remove-option',
+                        text: 'Remover'
+                    });
+                    
+                    $optionItem.append($textInput, $hiddenInput, $valorRealTexto, $removeButton);
+                    $optionsContainer.find('.vs-add-option').before($optionItem);
+                });
+                
+                // Sincronizar vs_options após atualização
+                if (typeof collectVsOptionsForPersistence === 'function') {
+                    setTimeout(() => {
+                        collectVsOptionsForPersistence();
+                        console.log('✅ vs_options sincronizado após restaurar items');
+                    }, 100);
+                }
+            }
+            
+            console.log(`✅ DOM atualizado: ${data.imported_items?.length || 0} elementos importados`);
+        },
+        
+        /**
+         * Atualiza estado da tabela (checkboxes) baseado nos dados
+         * @private
+         */
+        _updateTableStateFromData: function(data) {
+            // Desmarcar todos os checkboxes primeiro
+            $('.vs-imported-column .vs-select-answer').prop('checked', false);
+            
+            // Marcar checkboxes baseado nos imported_items
+            if (data.imported_items && Array.isArray(data.imported_items)) {
+                data.imported_items.forEach(item => {
+                    const selector = `.vs-select-answer[data-vote-id="${item.vote_id}"][data-question-index="${item.question_index}"][data-answer-index="${item.answer_index}"]`;
+                    $(selector).prop('checked', true);
+                });
+            }
+            
+            console.log(`✅ Tabela atualizada: ${data.imported_items?.length || 0} checkboxes marcados`);
+        },
+        
+        /**
+         * Atualiza resumo do evento baseado nos dados
+         * @private
+         */
+        _updateEventSummaryFromData: function($container, data) {
+            if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
+                return;
+            }
+            
+            // Usar a primeira pergunta para obter informações do evento
+            const firstQuestion = data.questions[0];
+            const eventInfo = {
+                event_title: firstQuestion.event_title || 'Evento não identificado',
+                vote_title: firstQuestion.vote_title || 'Votação não identificada',
+                event_id: firstQuestion.event_id,
+                vote_id: firstQuestion.vote_id
+            };
+            
+            // Atualizar resumo na interface
+            const $eventSummary = $container.find('.vs-event-summary, .vs-imported-summary');
+            if ($eventSummary.length) {
+                $eventSummary.html(`
+                    <strong>Evento:</strong> ${eventInfo.event_title}<br>
+                    <strong>Votação:</strong> ${eventInfo.vote_title}
+                `);
+            }
+            
+            console.log('✅ Resumo do evento atualizado:', eventInfo);
+        },
+        
+        /**
+         * Sincroniza vs_options baseado em vs-imported-answers
+         * @private
+         */
+        _syncVsOptionsFromImportedAnswers: function($container, data) {
+            const questionIndex = this._extractQuestionIndex($container);
+            if (questionIndex === null) return;
+            
+            // Gerar vs_options baseado nos dados de vs-imported-answers
+            const vsOptions = {
+                manual_items: data.manual_items || [],
+                imported_items: data.imported_items || []
+            };
+            
+            // Criar/atualizar campo oculto vs_options
+            let $vsOptionsField = $container.find(`input[name="vs_questions[${questionIndex}][vs_options]"]`);
+            if ($vsOptionsField.length === 0) {
+                $vsOptionsField = $('<input>', {
+                    type: 'hidden',
+                    name: `vs_questions[${questionIndex}][vs_options]`
+                });
+                $container.append($vsOptionsField);
+            }
+            
+            $vsOptionsField.val(JSON.stringify(vsOptions));
+            
+            console.log('✅ vs_options sincronizado:', vsOptions);
+        },
+        
+        /**
+         * Extrai índice da pergunta do container
+         * @private
+         */
+        _extractQuestionIndex: function($container) {
+            // Tentar múltiplas estratégias para extrair o índice
+            const labelInput = $container.find('input[name*="[label]"]').first();
+            if (labelInput.length) {
+                const match = labelInput.attr('name').match(/vs_questions\[(\d+)\]\[label\]/);
+                if (match) {
+                    return parseInt(match[1]);
+                }
+            }
+            
+            // Fallback: usar data-question-index
+            const dataIndex = $container.data('question-index');
+            if (dataIndex !== undefined) {
+                return parseInt(dataIndex);
+            }
+            
+            console.warn('Não foi possível extrair índice da pergunta');
+            return null;
+        },
+        
+        /**
+         * Salvar estado atual da tabela no vs-imported-answers
+         */
 
         // === HELPERS BÁSICOS PARA MANIPULAÇÃO DE JSON ===
         
@@ -2504,6 +2721,7 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
             
             // Mapear todas as respostas checked por pergunta
             const questionMap = new Map();
+            const addedItems = new Set(); // Controle de duplicatas
             
             $('.vs-imported-column .vs-select-answer:checked').each(function() {
                 const $checkbox = $(this);
@@ -2514,6 +2732,13 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                 const valorUnificado = $checkbox.data('valor-unificado');
                 const $row = $checkbox.closest('tr');
                 const sourceQuestion = $row.find('td:eq(4)').text();
+                
+                // Verificar duplicatas
+                const itemKey = `${voteId}_${questionIndex}_${answerIndex}`;
+                if (addedItems.has(itemKey)) {
+                    return; // Pular item duplicado
+                }
+                addedItems.add(itemKey);
                 
                 const questionKey = `${voteId}_${questionIndex}`;
                 
@@ -2526,10 +2751,14 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                     });
                 }
                 
+                // Priorizar valor unificado
+                const displayText = valorUnificado || valor;
+                const realValue = valorUnificado || valor;
+                
                 // Adicionar resposta à pergunta
                 questionMap.get(questionKey).imported_answers.push({
-                    text: valor,
-                    vs_valor_real: valorUnificado || valor,
+                    text: displayText, // usar valor unificado
+                    vs_valor_real: realValue,
                     answer_index: answerIndex
                 });
                 
@@ -2538,8 +2767,8 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                     vote_id: voteId,
                     question_index: questionIndex,
                     answer_index: answerIndex,
-                    text: valor,
-                    vs_valor_real: valorUnificado || valor
+                    text: displayText, // usar valor unificado
+                    vs_valor_real: realValue
                 });
                 
                 // Marcar pergunta como selecionada
@@ -2562,30 +2791,37 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
          * Garante persistência após salvar/reabrir o post
          */
         restoreTableStateFromSavedData: function() {
-            const currentData = this.getCurrentJsonData();
-            if (!currentData || !currentData.imported_items) {
-                return;
+            // Debounce para evitar chamadas múltiplas
+            if (this.restoreTimeout) {
+                clearTimeout(this.restoreTimeout);
             }
             
-            // Desmarcar todos os checkboxes primeiro
-            $('.vs-imported-column .vs-select-answer').prop('checked', false);
-            
-            // Marcar checkboxes baseado nos dados salvos
-            currentData.imported_items.forEach(item => {
-                const selector = `.vs-imported-column .vs-select-answer` +
-                    `[data-vote-id="${item.vote_id}"]` +
-                    `[data-question-index="${item.question_index}"]` +
-                    `[data-answer-index="${item.answer_index}"]` +
-                    `[data-valor="${item.value}"]`;
-                    
-                const $checkbox = $(selector);
-                if ($checkbox.length) {
-                    $checkbox.prop('checked', true);
+            this.restoreTimeout = setTimeout(() => {
+                const currentData = this.getCurrentJsonData();
+                if (!currentData || !currentData.imported_items) {
+                    return;
                 }
-            });
-            
-            // Atualizar estado dos checkboxes (disabled/enabled)
-            this.updateCheckboxStates();
+                
+                // Desmarcar todos os checkboxes primeiro
+                $('.vs-imported-column .vs-select-answer').prop('checked', false);
+                
+                // Marcar checkboxes baseado nos dados salvos
+                currentData.imported_items.forEach(item => {
+                    const selector = `.vs-imported-column .vs-select-answer` +
+                        `[data-vote-id="${item.vote_id}"]` +
+                        `[data-question-index="${item.question_index}"]` +
+                        `[data-answer-index="${item.answer_index}"]` +
+                        `[data-valor="${item.value}"]`;
+                        
+                    const $checkbox = $(selector);
+                    if ($checkbox.length) {
+                        $checkbox.prop('checked', true);
+                    }
+                });
+                
+                // Atualizar estado dos checkboxes (disabled/enabled)
+                this.updateCheckboxStates();
+            }, 100); // Debounce de 100ms
         },
         
         /**
@@ -2726,5 +2962,16 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
         },
 
     };
+
+    // Event handler para sincronização automática após adições manuais
+    $(document).on('click', '.vs-add-option', function() {
+        // Aguardar o DOM ser atualizado
+        setTimeout(() => {
+            if (typeof collectVsOptionsForPersistence === 'function') {
+                collectVsOptionsForPersistence();
+                console.log('✅ vs_options sincronizado após adição manual via event handler');
+            }
+        }, 150); // Timeout maior para garantir que o DOM foi atualizado
+    });
 
 })(jQuery);

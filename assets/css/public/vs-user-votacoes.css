@@ -250,80 +250,121 @@
 }
 
 /* ===== BOTÕES ===== */
-.vs-btn-primary {
-    background: var(--vs-primary);
-    color: var(--vs-primary-contrast);
+.vs-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: var(--vs-spacing-md) var(--vs-spacing-lg);
     border: none;
     border-radius: var(--vs-radius-base);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: var(--vs-font-size-sm);
     font-family: var(--vs-font-family);
+    font-size: var(--vs-font-size-base);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
     transition: all var(--vs-transition-fast);
+    min-height: 44px;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    border-radius: 50px;
+}
+
+.vs-button.vs-btn-primary {
+    background-color: #0034ff;
+    color: #ffffff;
+    border: 1px solid #0034ff;
+}
+
+.vs-button.vs-btn-primary:hover {
+    background-color: #ffffff;
+    color: #0034ff;
+    border: 1px solid #0034ff;
+}
+
+/* Atualizar botões existentes */
+.vs-btn-primary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    text-align: center;
+    padding: var(--vs-spacing-md) var(--vs-spacing-lg);
+    border: none;
+    border-radius: 50px;
+    font-family: var(--vs-font-family);
+    font-size: var(--vs-font-size-base);
+    font-weight: 500;
+    text-decoration: none;
     cursor: pointer;
+    transition: all var(--vs-transition-fast);
+    min-height: 44px;
+    box-sizing: border-box;
     position: relative;
     overflow: hidden;
+    background-color: #0034ff;
+    color: #ffffff;
+    border: 1px solid #0034ff;
 }
 
 .vs-btn-primary:hover {
-    background: var(--vs-primary-dark);
-    color: var(--vs-primary-contrast);
-    box-shadow: var(--vs-shadow-1);
-    transform: translateY(-1px);
-}
-
-.vs-btn-primary:active {
-    transform: translateY(0);
-}
-
-.vs-btn-primary:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+    background-color: #ffffff;
+    color: #0034ff;
+    border: 1px solid #0034ff;
 }
 
 .vs-btn-secondary {
-    background: var(--vs-surface-variant);
-    color: var(--vs-on-surface);
-    padding: var(--vs-spacing-md) var(--vs-spacing-lg);
-    border: 1px solid var(--vs-outline-variant);
-    border-radius: var(--vs-radius-base);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: var(--vs-font-size-sm);
-    font-family: var(--vs-font-family);
-    transition: all var(--vs-transition-fast);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    text-align: center;
+    padding: var(--vs-spacing-md) var(--vs-spacing-lg);
+    border: none;
+    border-radius: 50px;
+    font-family: var(--vs-font-family);
+    font-size: var(--vs-font-size-base);
+    font-weight: 500;
+    text-decoration: none;
     cursor: pointer;
+    transition: all var(--vs-transition-fast);
+    min-height: 44px;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    background-color: #ffffff;
+    color: #0034ff;
+    border: 1px solid #0034ff;
 }
 
 .vs-btn-secondary:hover {
-    background: var(--vs-surface-container-high);
-    color: var(--vs-on-surface);
-    border-color: var(--vs-outline);
-    box-shadow: var(--vs-shadow-1);
+    background-color: #0034ff;
+    color: #ffffff;
+    border: 1px solid #0034ff;
 }
 
 .vs-btn-link {
-    color: var(--vs-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--vs-spacing-md) var(--vs-spacing-lg);
+    border: none;
+    border-radius: 50px;
+    font-family: var(--vs-font-family);
+    font-size: var(--vs-font-size-base);
+    font-weight: 500;
     text-decoration: none;
-    font-size: var(--vs-font-size-sm);
-    font-weight: 600;
-    transition: color var(--vs-transition-fast);
-    text-align: center;
-    padding: var(--vs-spacing-sm);
+    cursor: pointer;
+    transition: all var(--vs-transition-fast);
+    min-height: 44px;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    background-color: transparent;
+    color: #0034ff;
+    border: 1px solid transparent;
 }
 
 .vs-btn-link:hover {
-    color: var(--vs-primary-dark);
-    text-decoration: underline;
+    background-color: #f1f5f9;
+    color: #0034ff;
+    border: 1px solid #0034ff;
 }
 
 /* ===== RESPONSIVO ===== */
@@ -378,16 +419,54 @@
     }
 }
 
-/* ===== MODO ESCURO (OPCIONAL) ===== */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --vs-surface: #121212;
-        --vs-surface-variant: #1e1e1e;
-        --vs-surface-container: #1a1a1a;
-        --vs-surface-container-high: #2a2a2a;
-        --vs-on-surface: #e0e0e0;
-        --vs-on-surface-variant: #b0b0b0;
-        --vs-outline: #8a8a8a;
-        --vs-outline-variant: #4a4a4a;
-    }
+/* ===== ESTILOS DE TABELA ===== */
+/* Container da tabela com border-radius */
+.table-container {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #d1d5db;
+    margin-bottom: 1rem;
+}
+
+/* Base table style */
+.table-auto {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+}
+
+/* Header */
+.table-auto thead th {
+    background-color: #0034ff;
+    text-align: left;
+    padding: 10px 16px;
+    border: 1px solid #0034ff;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+/* Table rows */
+.table-auto tbody td {
+    padding: 10px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    color: #111827;
+}
+
+/* Zebra effect */
+.table-auto tbody tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+/* Highlight row on hover */
+.table-auto tbody tr:hover {
+    background-color: #f1f5f9;
+}
+
+/* Special style for <em> (no answer) */
+.table-auto tbody td em {
+    color: #6b7280;
+    font-style: italic;
 }
