@@ -65,12 +65,12 @@
                 colunaOptions.append(
                     $('<label>').text('Opções:'),
                     $('<br>'),
-                    optionsContent.detach() // detach() move o elemento
+                    optionsContent.clone(true, true)
                 );
             }
             
             // Remover completamente o container original
-            existingOptionsContainer.remove();
+            existingOptionsContainer.hide();
         } else {
             // Fallback: criar estrutura básica se não existir
             const optionsContainer = $('<div>', { class: 'vs-options' });
@@ -94,11 +94,11 @@
 
     function initFieldTypeHandler() {
         // Event handler principal para mudança de tipo de campo
-        $(document).on('change', '.vs-tipo-campo', function() {
+        $(document).on('change', '.vs-tipo-campo', function(e) {
             const $questionContainer = $(this).closest('.vs-pergunta');
             const container = $questionContainer.find('.vs-votacao-anterior-container');
             const optionsContainer = $questionContainer.find('.vs-options-container');
-
+            
             if ($(this).val() === 'imported_vote') {
                 container.show();
                 optionsContainer.show();
@@ -120,7 +120,7 @@
                     window.VSAdmin.ImportedAnswers.updateTable();
                 }
             } else {
-                // NOVA LIMPEZA: Limpar dados importados quando muda para outro tipo
+                // Limpar dados importados quando muda para outro tipo
                 if (window.VSAdmin.ImportedAnswers && window.VSAdmin.ImportedAnswers.currentQuestion) {
                     console.log('🧹 Limpando dados importados devido à mudança de tipo de campo');
                     
@@ -146,8 +146,10 @@
                 }
                 
                 container.hide();
-                if (!$(this).val().match(/^(select|radio|checkbox)$/)) {
+                if ( ! $(this).val().match(/^(select|radio|checkbox)$/) ) {
                     optionsContainer.hide();
+                } else {
+                    optionsContainer.show();
                 }
             }
         });
