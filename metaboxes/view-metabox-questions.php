@@ -482,16 +482,30 @@ function vs_render_metabox_questions_styles() {
         }
         
         .vs-remove-option {
-            background: #f56565;
-            border-color: #f56565;
-            color: white;
+            min-height: 26px;
+            line-height: 2.18181818;
+            padding: 0 8px;
             font-size: 11px;
-            padding: 2px 8px;
+            color: #2271b1;
+            border-color: #2271b1;
+            background: #f6f7f7;
+            vertical-align: top;
+            display: inline-block;
+            text-decoration: none;
+            margin: 0;
+            cursor: pointer;
+            border-width: 1px;
+            border-style: solid;
+            -webkit-appearance: none;
+            border-radius: 3px;
+            white-space: nowrap;
+            box-sizing: border-box;
         }
         
         .vs-remove-option:hover {
-            background: #e53e3e;
-            border-color: #e53e3e;
+            background: #f0f0f1;
+            border-color: #0a4b78;
+            color: #0a4b78;
         }
         
         #vs-add-pergunta {
