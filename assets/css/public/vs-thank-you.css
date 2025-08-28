@@ -224,19 +224,6 @@
     }
 }
 
-/* ===== ACESSIBILIDADE ===== */
-@media (prefers-reduced-motion: reduce) {
-    .vs-thank-you-container,
-    .vs-thank-you-button,
-    .vs-thank-you-button::before {
-        transition: none;
-    }
-    
-    .vs-thank-you-button:hover {
-        transform: none;
-    }
-}
-
 /* ===== ESTILOS DE TABELA ===== */
 /* Container da tabela com border-radius */
 .table-container {

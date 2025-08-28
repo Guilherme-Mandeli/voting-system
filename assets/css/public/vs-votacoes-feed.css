@@ -343,32 +343,3 @@
         padding: var(--vs-spacing-md);
     }
 }
-
-/* ===== ACESSIBILIDADE ===== */
-@media (prefers-reduced-motion: reduce) {
-    .vs-feed-votacoes li,
-    .vs-card,
-    .vs-card-button {
-        transition: none;
-    }
-    
-    .vs-feed-votacoes li:hover,
-    .vs-card:hover,
-    .vs-card-button:hover {
-        transform: none;
-    }
-}
-
-/* ===== MODO ESCURO (OPCIONAL) ===== */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --vs-surface: #121212;
-        --vs-surface-variant: #1e1e1e;
-        --vs-surface-container: #1a1a1a;
-        --vs-surface-container-high: #2a2a2a;
-        --vs-on-surface: #e0e0e0;
-        --vs-on-surface-variant: #b0b0b0;
-        --vs-outline: #8a8a8a;
-        --vs-outline-variant: #4a4a4a;
-    }
-}

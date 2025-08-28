@@ -139,6 +139,7 @@
 
 .vs-filtro-acoes {
     display: flex;
+    flex-flow: row wrap;
     gap: var(--spacing-md);
     align-items: end;
 }
@@ -152,13 +153,14 @@
     letter-spacing: 0.02857em;
     font-size: 0.9rem;
     font-weight: var(--font-weight-medium);
-    padding: var(--spacing-sm) 24px;
+    padding: 14px 24px;
     border-radius: 50px;
     text-decoration: none !important;
     transition: background-color var(--transition-fast);
     border: none;
     cursor: pointer;
     line-height: 1.4;
+    text-align: center;
 }
 
 .vs-btn-filtrar:hover {
@@ -168,29 +170,27 @@
 }
 
 .vs-btn-limpar {
-    background-color: transparent;
-    color: var(--primary-color);
-    border: 1px solid var(--primary-color);
-    min-width: 80px;
-    height: 36px;
+    background-color: #ffffff;
+    color: #0034ff;
+    height: 46px;
     text-transform: uppercase;
     letter-spacing: 0.02857em;
     font-size: 0.9rem;
     font-weight: var(--font-weight-medium);
-    padding: var(--spacing-sm) 14px;
-    border-radius: var(--border-radius-sm);
+    padding: 14px 24px;
+    border-radius: 50px;
     text-decoration: none !important;
     transition: background-color var(--transition-fast);
+    border: 1px solid #0034ff;
     cursor: pointer;
     line-height: 1.4;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-sm);
+    text-align: center;
 }
 
 .vs-btn-limpar:hover {
-    background-color: rgba(25, 118, 210, 0.04);
-    color: var(--primary-color);
+    background-color: #0034ff;
+    color: #ffffff;
+    border: 1px solid #0034ff;
     text-decoration: none !important;
 }
 
@@ -213,6 +213,9 @@
     .vs-cards-grid {
         flex-flow: column wrap;
     }
+    .vs-cards-grid .vs-cards {
+        width: 100%;
+    } 
 }
 
 @media (max-width: 767px) {
@@ -245,13 +248,4 @@
 .vs-btn-limpar:focus-visible {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
-}
-
-/* ===== ACESSIBILIDADE ===== */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
 }

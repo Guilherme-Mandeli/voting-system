@@ -494,18 +494,6 @@
     }
 }
 
-/* ===== ACESSIBILIDADE ===== */
-@media (prefers-reduced-motion: reduce) {
-    .vs-votacao-container,
-    .vs-form input,
-    .vs-form select,
-    .vs-button,
-    #vs-read-mode,
-    #vs-edit-mode {
-        transition: none;
-    }
-}
-
 /* Focus visível para navegação por teclado */
 .vs-form input:focus-visible,
 .vs-form select:focus-visible,
