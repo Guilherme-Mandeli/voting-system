@@ -669,36 +669,60 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
             
             if (!questionGroupId) {
                 console.warn('Adicionando opção sem isolamento de grupo');
+                return; // ✅ CORREÇÃO: Parar execução se não há questionGroupId
             }
             
-            const questionIndex = $questionContainer.find('[name*="[label]"]').attr('name').match(/\[(\d+)\]/)[1];
+            // ✅ CORREÇÃO: Usar data-question-index em vez de regex
+            let questionIndex = $questionContainer.attr('data-question-index');
             
-            // Usar escopo de grupo para isolar o container de opções
+            // Fallback: se data-question-index não existir, usar posição DOM
+            if (!questionIndex || questionIndex === '') {
+                questionIndex = $('.vs-pergunta').index($questionContainer);
+                console.warn('🚨 data-question-index não encontrado, usando índice DOM:', questionIndex);
+            }
+            
+            // Validar questionIndex
+            if (questionIndex === undefined || questionIndex === '' || questionIndex < 0) {
+                console.error('🚨 questionIndex inválido:', questionIndex);
+                return;
+            }
+            
+            // ✅ CORREÇÃO: Seletores mais específicos e validação de unicidade
             let $optionsContainer;
-            if (questionGroupId) {
-                // Usar :first para garantir apenas um container
-                $optionsContainer = $questionContainer.find('.vs-options-column .vs-options').first();
-                if (!$optionsContainer.length) {
-                    $optionsContainer = $questionContainer.find('.vs-options-container .vs-options').first();
-                }
-                if (!$optionsContainer.length) {
-                    $optionsContainer = $questionContainer.find('.vs-options').first();
-                }
-                
-                // DEBUG: Log do container selecionado
-                console.log('🔍 DEBUG addSelected - Container selecionado:', {
+            
+            // Buscar container de opções dentro do questionContainer específico
+            $optionsContainer = $questionContainer.find('.vs-options-column .vs-options').first();
+            if (!$optionsContainer.length) {
+                $optionsContainer = $questionContainer.find('.vs-options-container .vs-options').first();
+            }
+            if (!$optionsContainer.length) {
+                $optionsContainer = $questionContainer.find('.vs-options').first();
+            }
+            
+            // Validação rigorosa do container
+            if (!$optionsContainer.length) {
+                console.error('🚨 Container de opções não encontrado para questionGroupId:', questionGroupId);
+                return;
+            }
+            
+            // Verificar se há múltiplos containers (problema de duplicação)
+            const allContainersInQuestion = $questionContainer.find('.vs-options');
+            if (allContainersInQuestion.length > 1) {
+                console.warn('🚨 MÚLTIPLOS CONTAINERS na mesma pergunta:', {
                     questionGroupId: questionGroupId,
                     questionIndex: questionIndex,
-                    optionsContainerLength: $optionsContainer.length,
-                    containerHTML: $optionsContainer.length > 0 ? $optionsContainer[0].outerHTML.substring(0, 200) + '...' : 'NENHUM'
-                });
-            } else {
-                // Fallback para compatibilidade
-                $optionsContainer = $container.find('.vs-options-column .vs-options').first();
-                console.log('🔍 DEBUG addSelected - Fallback container:', {
-                    optionsContainerLength: $optionsContainer.length
+                    count: allContainersInQuestion.length,
+                    usingFirst: true
                 });
             }
+            
+            // DEBUG: Log do container selecionado
+            console.log('🔍 DEBUG addSelected - Container validado:', {
+                questionGroupId: questionGroupId,
+                questionIndex: questionIndex,
+                optionsContainerLength: $optionsContainer.length,
+                containerHTML: $optionsContainer.length > 0 ? $optionsContainer[0].outerHTML.substring(0, 200) + '...' : 'NENHUM'
+            });
             
             const $importedAnswersField = $questionContainer.find('.vs-imported-answers');
             
@@ -737,6 +761,19 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
             if (!importedAnswersData.imported_items) importedAnswersData.imported_items = [];
             if (!importedAnswersData.questions) importedAnswersData.questions = [];
             
+            // Limpar dados antigos desta pergunta antes de adicionar novos
+            importedAnswersData.imported_items = importedAnswersData.imported_items.filter(item => {
+                const shouldKeep = item.question_index !== questionIndex;
+                if (!shouldKeep) {
+                    console.log('🧹 Removendo item antigo da pergunta atual:', {
+                        questionIndex: questionIndex,
+                        itemQuestionIndex: item.question_index,
+                        text: item.text
+                    });
+                }
+                return shouldKeep;
+            });
+            
             // Obter respostas selecionadas da tabela
             const $selectedAnswers = $container.find('.vs-select-answer:checked:not(:disabled)');
             
@@ -745,98 +782,107 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                 const tableDisplayValue = $tr.find('td:eq(2)').text().trim();
                 const originalValue = $(this).data('valor');
                 const unifiedValue = $(this).data('valor-unificado');
+                const tableQuestionIndex = $(this).data('question-index'); // RENOMEAR para evitar confusão
                 const voteId = $(this).data('vote-id');
-                const questionIndex = $(this).data('question-index');
-                const answerIndex = $(this).data('answer-index');
+                const answerIndex = $(this).data('answer-index') || 0;
+                
+                // Usar o questionIndex da pergunta atual, NÃO da tabela
                 const realValue = unifiedValue || originalValue;
                 const visualValue = unifiedValue || tableDisplayValue;
                 
-                // Verificar se já existe uma opção com este valor real E visual
-                let isDuplicate = false;
+                console.log('🔍 DEBUG - Processando item:', {
+                    questionIndex: questionIndex, // DA PERGUNTA ATUAL
+                    tableQuestionIndex: tableQuestionIndex, // DA TABELA (para auditoria)
+                    realValue: realValue,
+                    visualValue: visualValue,
+                    voteId: voteId
+                });
+                
+                // Verificar duplicatas no DOM
+                let isDuplicateInDOM = false;
                 $optionsContainer.find('.vs-option-item').each(function() {
-                    const existingRealValue = $(this).find('.vs-valor-real').val();
-                    const existingVisualValue = $(this).find('input[type="text"]').val();
-                    
-                    // Considerar duplicata apenas se AMBOS os valores forem iguais
-                    if (existingRealValue === realValue && existingVisualValue === visualValue) {
-                        isDuplicate = true;
-                        return false; // break
+                    const existingReal = $(this).find('.vs-valor-real').val();
+                    const existingVisual = $(this).find('input[type="text"]').val();
+                    if (existingReal === realValue && existingVisual === visualValue) {
+                        isDuplicateInDOM = true;
+                        return false;
                     }
                 });
                 
-                // Verificar duplicata no array imported_items
-                const existsInArray = importedAnswersData.imported_items.some(item => 
-                    item.vote_id === voteId &&
-                    item.question_index === questionIndex &&
-                    item.answer_index === answerIndex &&
-                    item.vs_valor_real === realValue
-                );
+                // Verificar duplicatas no array imported_items (INCLUINDO question_index)
+                const isDuplicateInArray = importedAnswersData.imported_items.some(item => {
+                    return item.vote_id === voteId && 
+                           item.question_index === questionIndex && // USAR questionIndex da pergunta atual
+                           item.vs_valor_real === realValue;
+                });
                 
-                // Se for duplicata, pular esta opção
-                if (isDuplicate  || existsInArray ) {
-                    return true; // continue do loop
+                if (isDuplicateInDOM || isDuplicateInArray) {
+                    console.log('🚫 Item duplicado ignorado:', {
+                        realValue: realValue,
+                        visualValue: visualValue,
+                        questionIndex: questionIndex,
+                        isDuplicateInDOM: isDuplicateInDOM,
+                        isDuplicateInArray: isDuplicateInArray
+                    });
+                    return; // Pular este item
                 }
                 
-                // Obter o índice real baseado na posição DOM atual
-                const currentOptionIndex = $optionsContainer.find('.vs-option-item').length;
-                
-                // Criar nova opção
-                const $optionItem = $('<div>', {
-                    class: 'vs-option-item imported_question',
-                    style: 'margin-bottom: 5px;',
-                    'data-vote-id': voteId,
-                    'data-question-index': questionIndex,
-                    'data-answer-index': answerIndex
-                });
-                
-                const $textInput = $('<input>', {
+                // Criar elementos HTML para a nova opção
+                const textInput = $('<input>').attr({
                     type: 'text',
-                    name: `vs_questions[${questionIndex}][options][]`,
+                    name: `vs_options[${questionIndex}][]`,
                     value: visualValue,
-                    style: 'width: 90%;',
-                    placeholder: `Opção ${currentOptionIndex + 1}`
+                    class: 'vs-option-text'
                 });
                 
-                const $hiddenInput = $('<input>', {
+                const hiddenInput = $('<input>').attr({
                     type: 'hidden',
-                    name: `vs_questions[${questionIndex}][valores_reais][${currentOptionIndex}]`,
-                    class: 'vs-valor-real',
-                    value: realValue
+                    name: `vs_valor_real[${questionIndex}][]`,
+                    value: realValue,
+                    class: 'vs-valor-real'
                 });
                 
-                const $valorRealTexto = $('<span>', {
-                    class: 'vs-valor-real-texto',
-                    css: { fontSize: '12px', color: '#666', marginLeft: '10px' },
-                    text: realValue
-                });
+                const valorRealTexto = $('<span>').text(`(${realValue})`).addClass('vs-valor-real-texto');
                 
-                const $removeButton = $('<button>', {
+                const removeButton = $('<button>').attr({
                     type: 'button',
-                    class: 'button button-small vs-remove-option',
-                    text: 'Remover'
-                });
+                    class: 'button vs-remove-option'
+                }).text('Remover');
                 
-                // Montar estrutura unificada
-                $optionItem.append($textInput, $hiddenInput, $valorRealTexto, $removeButton);
+                const optionItem = $('<div>').addClass('vs-option-item').css('margin-bottom', '5px')
+                    .append(textInput)
+                    .append(' ')
+                    .append(valorRealTexto)
+                    .append(' ')
+                    .append(removeButton)
+                    .append(hiddenInput);
                 
                 // Inserir antes do botão "Adicionar Opção"
-                $optionsContainer.find('.vs-add-option').before($optionItem);
-
-                // Sincronizar vs_options após adição manual
-                if (typeof collectVsOptionsForPersistence === 'function') {
-                    setTimeout(() => {
-                        collectVsOptionsForPersistence();
-                        console.log('✅ vs_options sincronizado após restaurar DOM');
-                    }, 100);
-                }       
+                const $addButton = $optionsContainer.find('.vs-add-option');
+                if ($addButton.length) {
+                    $addButton.before(optionItem);
+                } else {
+                    $optionsContainer.append(optionItem);
+                }
                 
-                // Adicionar ao array de itens importados usando objeto com text e vs_valor_real
+                // Sincronizar com vs_options
+                this.collectVsOptionsForPersistence($questionContainer);
+                
+                // Adicionar ao array de itens importados usando questionIndex da pergunta atual
                 importedAnswersData.imported_items.push({
                     text: visualValue,
                     vs_valor_real: realValue,
                     vote_id: voteId,
-                    question_index: questionIndex,
-                    answer_index: answerIndex
+                    question_index: questionIndex, // USAR questionIndex da pergunta atual
+                    answer_index: answerIndex,
+                    original_question_index: tableQuestionIndex // Preservar para auditoria
+                });
+                
+                console.log('✅ Item adicionado com sucesso:', {
+                    questionIndex: questionIndex,
+                    text: visualValue,
+                    vs_valor_real: realValue,
+                    original_question_index: tableQuestionIndex
                 });
             });
             
@@ -1015,6 +1061,17 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
             // Atualizar o campo imported_answers
             $importedAnswersField.val(JSON.stringify(importedAnswersData));
             
+            console.log('📊 FINAL - imported_items após limpeza e adição:', {
+                questionIndex: questionIndex,
+                totalItems: importedAnswersData.imported_items.length,
+                itemsThisQuestion: importedAnswersData.imported_items.filter(item => item.question_index === questionIndex).length,
+                allItems: importedAnswersData.imported_items.map(item => ({
+                    question_index: item.question_index,
+                    text: item.text,
+                    vs_valor_real: item.vs_valor_real
+                }))
+            });
+
             // Remover a opção
             $optionItem.remove();
 
@@ -1169,6 +1226,14 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                 return;
             }
 
+            // Extrair questionGroupId do container
+            const questionGroupId = $questionContainer.attr('data-question-group-id');
+            
+            if (!questionGroupId) {
+                console.warn('🚨 questionGroupId não encontrado no container');
+                return;
+            }
+
             const $importedAnswersField = $questionContainer.find('.vs-imported-answers');
             const jsonData = $importedAnswersField.val();
             
@@ -1204,7 +1269,7 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                 return;
             }
 
-            // Verificar se há múltiplos containers (problema de duplicação)
+            // Verificar se há múltiplos containers
             const allContainers = $(`[data-question-group-id="${questionGroupId}"] .vs-options`);
             if (allContainers.length > 1) {
                 console.warn('🚨 MÚLTIPLOS CONTAINERS ENCONTRADOS:', {
@@ -1219,19 +1284,44 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                 return;
             }
 
-            // Obter o índice da pergunta atual
-            let questionIndex = $questionContainer.data('question-index');
+            // Obter questionIndex do container atual
+            let questionIndex = $questionContainer.attr('data-question-index');
             if (questionIndex === undefined || questionIndex === '') {
                 // Fallback: usar índice baseado na posição do container
                 questionIndex = $('.vs-pergunta').index($questionContainer);
                 console.warn('🚨 questionIndex vazio, usando índice do loop:', questionIndex);
             }
 
+            const filteredItems = data.imported_items.filter(item => {
+                // Converter para string para comparação consistente
+                const itemQuestionIndex = String(item.question_index || '');
+                const currentQuestionIndex = String(questionIndex);
+                
+                const matches = itemQuestionIndex === currentQuestionIndex;
+                
+                if (!matches) {
+                    console.log('🔍 Item filtrado (não pertence a esta pergunta):', {
+                        itemQuestionIndex: itemQuestionIndex,
+                        currentQuestionIndex: currentQuestionIndex,
+                        itemText: item.text
+                    });
+                }
+                
+                return matches;
+            });
+            
+            console.log('🔍 Filtro de imported_items:', {
+                questionIndex: questionIndex,
+                totalItems: data.imported_items.length,
+                filteredItems: filteredItems.length,
+                questionGroupId: questionGroupId
+            });
+
             // Remover elementos vs-option-item.imported_question existentes para evitar duplicatas
             $optionsContainer.find('.vs-option-item.imported_question').remove();
 
             // Recriar elementos DOM para cada imported_item
-            data.imported_items.forEach((item, index) => {
+            filteredItems.forEach((item, index) => {
                 if (!item.text || !item.vs_valor_real) {
                     console.warn('Item imported_items inválido:', item);
                     return;
@@ -1290,7 +1380,7 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                 }
             });
 
-            console.log(`Restaurados ${data.imported_items.length} elementos vs-option-item para a pergunta ${questionIndex}`);
+            console.log(`✅ Restaurados ${filteredItems.length} elementos vs-option-item para a pergunta ${questionIndex} (de ${data.imported_items.length} totais)`);
             
             // Chamar collectVsOptionsForPersistence após restaurar elementos DOM
             if (typeof collectVsOptionsForPersistence === 'function') {
