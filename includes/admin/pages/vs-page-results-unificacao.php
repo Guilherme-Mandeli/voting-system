@@ -277,7 +277,7 @@ function vs_render_unificacao_page($votacao_id) {
         <div class="unificacao-container">
             <!-- Coluna 1: Todos os slots de resposta -->
             <div class="unificacao-coluna" id="respostas-coluna">
-                <h2 class="unificacao-title">Respostas Votação #<?php echo esc_html($votacao_id); ?></h2>
+                <h2 class="unificacao-title">Respostas Votação: <?php echo esc_html(get_the_title($votacao_id)); ?></h2>
 
                 <!-- Campo de busca e controles superiores - SEMPRE VISÍVEL -->
                 <div class="unificacao-search-controls" style="margin-bottom: 15px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">

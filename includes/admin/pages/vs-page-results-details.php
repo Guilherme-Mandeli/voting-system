@@ -127,6 +127,8 @@ function vs_render_todos_resultados_page($votacao_id) {
 
         <?php vs_render_subpage_navigation($votacao_id, 'todos'); ?>
 
+        <h2 class="unificacao-title">Respostas Votação: <?php echo esc_html(get_the_title($votacao_id)); ?></h2>
+
         <div class="results-container">
             <div class="row">
                 <div class="column">
