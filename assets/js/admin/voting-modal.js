@@ -344,8 +344,16 @@
 
         // Verificar se uma pergunta específica tem respostas importadas
         hasImportedAnswersForQuestion: function(votingId, questionIndex) {
-            // Obter dados salvos do campo vs-imported-answers
-            const savedDataField = $('.vs-imported-answers');
+            // Obter currentQuestion do módulo ImportedAnswers
+            const currentQuestion = window.VSAdmin.ImportedAnswers ?
+                window.VSAdmin.ImportedAnswers.getCurrentQuestion() : null;
+                
+            if (!currentQuestion || !currentQuestion.length) {
+                return false;
+            }
+            
+            // Usar seletor com escopo de pergunta específica
+            const savedDataField = currentQuestion.find('.vs-imported-answers');
             if (!savedDataField.length || !savedDataField.val()) {
                 return false;
             }
@@ -396,7 +404,15 @@
 
         // Limpar metadados de perguntas que não têm mais respostas importadas
         cleanupInvalidSelections: function(votingId) {
-            const savedDataField = $('.vs-imported-answers');
+            // Obter currentQuestion do módulo ImportedAnswers
+            const currentQuestion = window.VSAdmin.ImportedAnswers ?
+                window.VSAdmin.ImportedAnswers.getCurrentQuestion() : null;
+                
+            if (!currentQuestion || !currentQuestion.length) {
+                return;
+            }
+            
+            const savedDataField = currentQuestion.find('.vs-imported-answers');
             if (!savedDataField.length || !savedDataField.val()) {
                 return;
             }
@@ -436,8 +452,16 @@
                 // Primeiro, limpar seleções inválidas
                 this.cleanupInvalidSelections(votingId);
                 
-                // Obter dados salvos do campo vs-imported-answers
-                const savedDataField = $('.vs-imported-answers');
+                // Obter currentQuestion do módulo ImportedAnswers
+                const currentQuestion = window.VSAdmin.ImportedAnswers ?
+                    window.VSAdmin.ImportedAnswers.getCurrentQuestion() : null;
+                    
+                if (!currentQuestion || !currentQuestion.length) {
+                    return;
+                }
+                
+                // Usar seletor com escopo de pergunta específica
+                const savedDataField = currentQuestion.find('.vs-imported-answers');
                 if (!savedDataField.length || !savedDataField.val()) {
                     return;
                 }
@@ -544,7 +568,7 @@
             const votingId = $selectedQuestions.first().data('votacao-id');
             
             // Obter currentQuestion do módulo ImportedAnswers
-            const currentQuestion = window.VSAdmin.ImportedAnswers ? 
+            const currentQuestion = window.VSAdmin.ImportedAnswers ?
                 window.VSAdmin.ImportedAnswers.getCurrentQuestion() : null;
                 
             if (!currentQuestion || !currentQuestion.length) {
@@ -585,7 +609,7 @@
                 success: function(response) {
                     if (response.success && response.data) {
                         // Obter currentQuestion do módulo ImportedAnswers
-                        const currentQuestion = window.VSAdmin.ImportedAnswers ? 
+                        const currentQuestion = window.VSAdmin.ImportedAnswers ?
                             window.VSAdmin.ImportedAnswers.getCurrentQuestion() : null;
                             
                         if (currentQuestion && currentQuestion.length) {
@@ -663,7 +687,7 @@
 
         createImportStructure: function() {
             // Obter currentQuestion do módulo ImportedAnswers
-            const currentQuestion = window.VSAdmin.ImportedAnswers ? 
+            const currentQuestion = window.VSAdmin.ImportedAnswers ?
                 window.VSAdmin.ImportedAnswers.getCurrentQuestion() : null;
                 
             if (!currentQuestion || !currentQuestion.length) return;
@@ -732,7 +756,7 @@
         selectVoting: function(votingId, $modal) {
             if (!$modal) {
                 // Obter currentQuestion do módulo ImportedAnswers
-                const currentQuestion = window.VSAdmin.ImportedAnswers ? 
+                const currentQuestion = window.VSAdmin.ImportedAnswers ?
                     window.VSAdmin.ImportedAnswers.getCurrentQuestion() : null;
                     
                 if (!currentQuestion || !currentQuestion.length) return;

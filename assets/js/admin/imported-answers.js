@@ -185,13 +185,9 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
             window.currentQuestion = $question;
         },
 
-        getCurrentQuestion: function() {
-            return this.currentQuestion;
-        },
-
         updateTable: function() {            
-            if (!this.currentQuestion || !this.currentQuestion.length) {
-                console.warn('currentQuestion não está definido ou é inválido');
+            if (!this.currentQuestion || this.currentQuestion.length === 0) {
+                console.warn('ImportedAnswers: currentQuestion não está definido ou é inválido');
                 return;
             }
 
@@ -328,6 +324,10 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
         },
 
         _executeUpdateTable: function() {
+            if (!this.currentQuestion || this.currentQuestion.length === 0) {
+                console.warn('ImportedAnswers: currentQuestion não está definido ou é inválido');
+                return;
+            }
             this.isUpdating = true;
             
             try {                
@@ -396,10 +396,18 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
         },
 
         updateCheckboxStates: function() {
-            const $container = $('.vs-imported-column');
-            if (!$container.length) return;
+            if (!this.currentQuestion || this.currentQuestion.length === 0) {
+                console.warn('ImportedAnswers: currentQuestion não está definido ou é inválido');
+                return;
+            }
             
-            // Obter metadados completos das opções existentes
+            // Usar escopo da pergunta atual ao invés de seletor global
+            const $importedColumn = this.currentQuestion.find('.vs-imported-column');
+            if ($importedColumn.length === 0) {
+                console.warn('ImportedAnswers: .vs-imported-column não encontrado na pergunta atual');
+                return;
+            }
+            
             const existingItems = [];
             this.currentQuestion.find('.vs-option-item.imported_question').each(function() {
                 const $item = $(this);
@@ -418,7 +426,7 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                 }
             });
             
-            $container.find('.vs-select-answer').each(function() {
+            $importedColumn.find('.vs-select-answer').each(function() {
                 const $checkbox = $(this);
                 const valor = $checkbox.data('valor');
                 const voteId = $checkbox.data('vote-id');
@@ -650,8 +658,48 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
         addSelected: function(event) {
             const $container = $(event.target).closest('.vs-columns-container');
             const $questionContainer = $container.closest('.vs-pergunta');
+            const questionGroupId = $questionContainer.attr('data-question-group-id');
+            
+            // DEBUG: Log inicial
+            console.log('🔍 DEBUG addSelected - Início:', {
+                questionGroupId: questionGroupId,
+                containerLength: $container.length,
+                questionContainerLength: $questionContainer.length
+            });
+            
+            if (!questionGroupId) {
+                console.warn('Adicionando opção sem isolamento de grupo');
+            }
+            
             const questionIndex = $questionContainer.find('[name*="[label]"]').attr('name').match(/\[(\d+)\]/)[1];
-            const $optionsContainer = $container.find('.vs-options-column .vs-options');
+            
+            // Usar escopo de grupo para isolar o container de opções
+            let $optionsContainer;
+            if (questionGroupId) {
+                // Usar :first para garantir apenas um container
+                $optionsContainer = $questionContainer.find('.vs-options-column .vs-options').first();
+                if (!$optionsContainer.length) {
+                    $optionsContainer = $questionContainer.find('.vs-options-container .vs-options').first();
+                }
+                if (!$optionsContainer.length) {
+                    $optionsContainer = $questionContainer.find('.vs-options').first();
+                }
+                
+                // DEBUG: Log do container selecionado
+                console.log('🔍 DEBUG addSelected - Container selecionado:', {
+                    questionGroupId: questionGroupId,
+                    questionIndex: questionIndex,
+                    optionsContainerLength: $optionsContainer.length,
+                    containerHTML: $optionsContainer.length > 0 ? $optionsContainer[0].outerHTML.substring(0, 200) + '...' : 'NENHUM'
+                });
+            } else {
+                // Fallback para compatibilidade
+                $optionsContainer = $container.find('.vs-options-column .vs-options').first();
+                console.log('🔍 DEBUG addSelected - Fallback container:', {
+                    optionsContainerLength: $optionsContainer.length
+                });
+            }
+            
             const $importedAnswersField = $questionContainer.find('.vs-imported-answers');
             
             // Obter dados atuais do imported_answers
@@ -826,7 +874,7 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
         // Atualizar checkboxes baseado nas opções existentes
         updateCheckboxesBasedOnExistingOptions: function($container) {
             const $questionContainer = $container.closest('.vs-pergunta');
-            
+
             // Obter todos os valores reais das opções existentes
             const existingValues = [];
             $questionContainer.find('.vs-valor-real').each(function() {
@@ -849,9 +897,60 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
             });
         },
 
+        setCurrentQuestion: function($question) {
+            // Validar se a pergunta tem data-question-group-id
+            const questionGroupId = $question.attr('data-question-group-id');
+            if (!questionGroupId) {
+                console.warn('Pergunta sem data-question-group-id detectada:', $question);
+            }
+            
+            this.currentQuestion = $question;
+            this.currentQuestionGroupId = questionGroupId;
+            // Atualizar variável global para compatibilidade
+            window.currentQuestion = $question;
+        },
+
+        getCurrentQuestion: function() {
+            return this.currentQuestion;
+        },
+
+        getCurrentQuestionGroupId: function() {
+            return this.currentQuestionGroupId;
+        },
+
+        // Função para buscar opções apenas da pergunta atual (isolamento)
+        getQuestionScopedOptions: function($questionContainer) {
+            const questionGroupId = $questionContainer.attr('data-question-group-id');
+            if (!questionGroupId) {
+                console.warn('Pergunta sem group-id, usando seletor legacy');
+                return $questionContainer.find('.vs-option-item');
+            }
+            
+            // Usar escopo de grupo para isolar opções
+            return $(`[data-question-group-id="${questionGroupId}"] .vs-option-item`);
+        },
+
+        // Função para buscar container de opções apenas da pergunta atual
+        getQuestionScopedOptionsContainer: function($questionContainer) {
+            const questionGroupId = $questionContainer.attr('data-question-group-id');
+            if (!questionGroupId) {
+                console.warn('Pergunta sem group-id, usando seletor legacy');
+                return $questionContainer.find('.vs-options-container, .vs-columns-container');
+            }
+            
+            // Usar escopo de grupo para isolar container
+            return $(`[data-question-group-id="${questionGroupId}"] .vs-options-container, [data-question-group-id="${questionGroupId}"] .vs-columns-container`);
+        },
+
         removeOption: function(event) {
             const $optionItem = $(event.target).closest('.vs-option-item');
             const $questionContainer = $optionItem.closest('.vs-pergunta');
+            const questionGroupId = $questionContainer.attr('data-question-group-id');
+            
+            if (!questionGroupId) {
+                console.warn('Removendo opção sem isolamento de grupo');
+            }
+            
             const $container = $questionContainer.find('.vs-columns-container');
             const $importedAnswersField = $questionContainer.find('.vs-imported-answers');
             
@@ -1098,6 +1197,22 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
             if (!$optionsContainer.length) {
                 $optionsContainer = $questionContainer.find('.vs-options');
             }
+
+            // Validar se encontrou um container válido
+            if (!$optionsContainer.length) {
+                console.error('🚨 Container de opções não encontrado para questionGroupId:', questionGroupId);
+                return;
+            }
+
+            // Verificar se há múltiplos containers (problema de duplicação)
+            const allContainers = $(`[data-question-group-id="${questionGroupId}"] .vs-options`);
+            if (allContainers.length > 1) {
+                console.warn('🚨 MÚLTIPLOS CONTAINERS ENCONTRADOS:', {
+                    questionGroupId: questionGroupId,
+                    count: allContainers.length,
+                    usingFirst: true
+                });
+            }
             
             if (!$optionsContainer.length) {
                 console.warn('Container de opções não encontrado para restaurar imported_items');
@@ -1105,7 +1220,12 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
             }
 
             // Obter o índice da pergunta atual
-            const questionIndex = $questionContainer.find('[name*="[label]"]').attr('name')?.match(/\[(\d+)\]/)?.[1] || 0;
+            let questionIndex = $questionContainer.data('question-index');
+            if (questionIndex === undefined || questionIndex === '') {
+                // Fallback: usar índice baseado na posição do container
+                questionIndex = $('.vs-pergunta').index($questionContainer);
+                console.warn('🚨 questionIndex vazio, usando índice do loop:', questionIndex);
+            }
 
             // Remover elementos vs-option-item.imported_question existentes para evitar duplicatas
             $optionsContainer.find('.vs-option-item.imported_question').remove();
@@ -1449,18 +1569,32 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
          * @private
          */
         _updateTableStateFromData: function(data) {
-            // Desmarcar todos os checkboxes primeiro
-            $('.vs-imported-column .vs-select-answer').prop('checked', false);
-            
-            // Marcar checkboxes baseado nos imported_items
-            if (data.imported_items && Array.isArray(data.imported_items)) {
-                data.imported_items.forEach(item => {
-                    const selector = `.vs-select-answer[data-vote-id="${item.vote_id}"][data-question-index="${item.question_index}"][data-answer-index="${item.answer_index}"]`;
-                    $(selector).prop('checked', true);
-                });
+            if (!this.currentQuestion || this.currentQuestion.length === 0) {
+                console.warn('ImportedAnswers: currentQuestion não está definido ou é inválido');
+                return;
             }
             
-            console.log(`✅ Tabela atualizada: ${data.imported_items?.length || 0} checkboxes marcados`);
+            // Usar escopo da pergunta atual
+            const $importedColumn = this.currentQuestion.find('.vs-imported-column');
+            if ($importedColumn.length === 0) {
+                console.warn('ImportedAnswers: .vs-imported-column não encontrado na pergunta atual');
+                return;
+            }
+            
+            // Desmarcar todos os checkboxes no escopo da pergunta atual
+            $importedColumn.find('.vs-select-answer').prop('checked', false);
+            
+            if (!data || !data.imported_items || !Array.isArray(data.imported_items)) {
+                return;
+            }
+            
+            // Marcar checkboxes específicos usando escopo
+            data.imported_items.forEach(item => {
+                const selector = `[data-vote-id="${item.vote_id}"][data-question-index="${item.question_index}"][data-answer-index="${item.answer_index}"]`;
+                $importedColumn.find(selector).prop('checked', true);
+            });
+            
+            console.log(`✅ Tabela atualizada: ${data.imported_items.length || 0} checkboxes marcados`);
         },
         
         /**
@@ -1558,24 +1692,23 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
          * @returns {Object} Dados parseados ou estrutura vazia padrão
          */
         getCurrentJsonData: function() {
-            const $field = this.currentQuestion ? this.currentQuestion.find('.vs-imported-answers') : $('.vs-imported-answers');
+            if (!this.currentQuestion || this.currentQuestion.length === 0) {
+                console.warn('ImportedAnswers: currentQuestion não está definido ou é inválido');
+                return null;
+            }
             
-            if (!$field.length) {
-                console.warn('Campo .vs-imported-answers não encontrado');
-                return this._getEmptyStructure();
+            const $field = this.currentQuestion.find('.vs-imported-answers');
+            if ($field.length === 0) {
+                console.warn('ImportedAnswers: .vs-imported-answers não encontrado na pergunta atual');
+                return null;
             }
             
             try {
-                const jsonStr = $field.val() || '{}';
-                const data = JSON.parse(jsonStr);
-                
-                // Garantir estrutura válida com todos os campos obrigatórios
-                return this._validateAndNormalizeStructure(data);
-                
+                const jsonData = $field.val();
+                return jsonData ? JSON.parse(jsonData) : null;
             } catch (e) {
-                console.warn('JSON malformado no campo vs-imported-answers:', e.message);
-                console.warn('Valor encontrado:', $field.val());
-                return this._getEmptyStructure();
+                console.error('ImportedAnswers: Erro ao parsear JSON:', e);
+                return null;
             }
         },
 
@@ -1585,30 +1718,22 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
          * @param {Object} data - Dados a serem salvos
          */
         setCurrentJsonData: function(data) {
-            const $field = this.currentQuestion ? this.currentQuestion.find('.vs-imported-answers') : $('.vs-imported-answers');
+            if (!this.currentQuestion || this.currentQuestion.length === 0) {
+                console.warn('ImportedAnswers: currentQuestion não está definido ou é inválido');
+                return false;
+            }
             
-            if (!$field.length) {
-                console.error('Campo .vs-imported-answers não encontrado para salvar dados');
+            const $field = this.currentQuestion.find('.vs-imported-answers');
+            if ($field.length === 0) {
+                console.warn('ImportedAnswers: .vs-imported-answers não encontrado na pergunta atual');
                 return false;
             }
             
             try {
-                // Validar e normalizar estrutura antes de salvar
-                const normalizedData = this._validateAndNormalizeStructure(data);
-                const jsonStr = JSON.stringify(normalizedData);
-                
-                $field.val(jsonStr);
-                
-                // Log para debug (apenas se modo debug estiver ativo)
-                if (window.VS_IMPORT_MERGE_STRATEGY && window.VS_IMPORT_MERGE_STRATEGY.debugMode) {
-                    console.log('Dados JSON salvos:', normalizedData);
-                }
-                
+                $field.val(JSON.stringify(data));
                 return true;
-                
             } catch (e) {
-                console.error('Erro ao serializar dados JSON:', e.message);
-                console.error('Dados que causaram erro:', data);
+                console.error('ImportedAnswers: Erro ao serializar JSON:', e);
                 return false;
             }
         },
@@ -1811,6 +1936,11 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
          * @returns {Array} Array de objetos com realValue, visualValue e metadata
          */
         getActiveImportedValues: function(voteId) {
+            if (!this.currentQuestion) {
+                console.warn('ImportedAnswers: currentQuestion não definido em getActiveImportedValues');
+                return [];
+            }
+            
             if (!voteId) {
                 console.warn('getActiveImportedValues: voteId é obrigatório');
                 return [];
@@ -1820,8 +1950,8 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
             const activeValues = [];
             const seenRealValues = new Set();
             
-            // Filtrar diretamente por metadados DOM
-            $('.vs-option-item.imported_question').each(function(index) {
+            // Filtrar diretamente por metadados DOM usando escopo da pergunta atual
+            this.currentQuestion.find('.vs-option-item.imported_question').each(function(index) {
                 const $optionItem = $(this);
                 
                 // FILTRO PRINCIPAL: verificar data-vote-id do elemento
@@ -2724,8 +2854,14 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
             // Mapear todas as respostas checked por pergunta
             const questionMap = new Map();
             const addedItems = new Set(); // Controle de duplicatas
-            
-            $('.vs-imported-column .vs-select-answer:checked').each(function() {
+
+            // Verificar se currentQuestion está definida
+            if (!this.currentQuestion || !this.currentQuestion.length) {
+                console.warn('currentQuestion não definida para _getSelectedAnswersByQuestion');
+                return questionMap;
+            }
+
+            this.currentQuestion.find('.vs-imported-column .vs-select-answer:checked').each(function() {
                 const $checkbox = $(this);
                 const voteId = $checkbox.data('vote-id');
                 const questionIndex = $checkbox.data('question-index');
@@ -2804,8 +2940,14 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                     return;
                 }
                 
-                // Desmarcar todos os checkboxes primeiro
-                $('.vs-imported-column .vs-select-answer').prop('checked', false);
+                // Verificar se currentQuestion está definida
+                if (!this.currentQuestion || !this.currentQuestion.length) {
+                    console.warn('currentQuestion não definida para _restoreTableStateFromData');
+                    return;
+                }
+
+                // Desmarcar todos os checkboxes primeiro (com escopo)
+                this.currentQuestion.find('.vs-imported-column .vs-select-answer').prop('checked', false);
                 
                 // Marcar checkboxes baseado nos dados salvos
                 currentData.imported_items.forEach(item => {
@@ -2815,7 +2957,7 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                         `[data-answer-index="${item.answer_index}"]` +
                         `[data-valor="${item.value}"]`;
                         
-                    const $checkbox = $(selector);
+                    const $checkbox = this.currentQuestion.find(selector);
                     if ($checkbox.length) {
                         $checkbox.prop('checked', true);
                     }
@@ -2962,6 +3104,79 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                 console.error('Erro ao salvar estado da tabela:', error);
             }
         },
+
+        _getSelectedAnswersByQuestion: function() {
+            if (!this.currentQuestion || this.currentQuestion.length === 0) {
+                console.warn('ImportedAnswers: currentQuestion não está definido ou é inválido');
+                return {};
+            }
+            
+            const answersByQuestion = {};
+            const processedAnswers = new Set();
+            
+            // Usar escopo da pergunta atual
+            const $checkedAnswers = this.currentQuestion.find('.vs-imported-column .vs-select-answer:checked');
+            
+            $checkedAnswers.each(function() {
+                const $checkbox = $(this);
+                const voteId = $checkbox.data('vote-id');
+                const questionIndex = $checkbox.data('question-index');
+                const answerIndex = $checkbox.data('answer-index');
+                
+                const uniqueKey = `${voteId}-${questionIndex}-${answerIndex}`;
+                if (processedAnswers.has(uniqueKey)) {
+                    return;
+                }
+                processedAnswers.add(uniqueKey);
+                
+                const $row = $checkbox.closest('tr');
+                const valor = $row.find('.vs-valor').text().trim();
+                const valorUnificado = $row.find('.vs-valor-unificado').text().trim();
+                const sourceQuestion = $row.find('.vs-source-question').text().trim();
+                
+                if (!answersByQuestion[questionIndex]) {
+                    answersByQuestion[questionIndex] = [];
+                }
+                
+                answersByQuestion[questionIndex].push({
+                    voteId: voteId,
+                    questionIndex: questionIndex,
+                    answerIndex: answerIndex,
+                    valor: valor,
+                    valorUnificado: valorUnificado,
+                    sourceQuestion: sourceQuestion
+                });
+            });
+            
+            return answersByQuestion;
+        },
+
+        _restoreTableStateFromData: function(data) {
+            if (!this.currentQuestion || this.currentQuestion.length === 0) {
+                console.warn('ImportedAnswers: currentQuestion não está definido ou é inválido');
+                return;
+            }
+            
+            // Usar escopo da pergunta atual
+            const $importedColumn = this.currentQuestion.find('.vs-imported-column');
+            if ($importedColumn.length === 0) {
+                console.warn('ImportedAnswers: .vs-imported-column não encontrado na pergunta atual');
+                return;
+            }
+            
+            // Desmarcar todos os checkboxes no escopo da pergunta atual
+            $importedColumn.find('.vs-select-answer').prop('checked', false);
+            
+            if (!data || !data.selectedAnswers) {
+                return;
+            }
+            
+            // Marcar checkboxes específicos usando escopo
+            data.selectedAnswers.forEach(function(answer) {
+                const selector = `[data-vote-id="${answer.voteId}"][data-question-index="${answer.questionIndex}"]`;
+                $importedColumn.find(selector).prop('checked', true);
+            });
+        }
 
     };
 

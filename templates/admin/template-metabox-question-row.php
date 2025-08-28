@@ -4,7 +4,7 @@
  * 
  * Variables disponibles:
  * - $index: Índice de la pregunta
- * - $question: Array con datos de la pregunta
+ * - $question: Array con dados de la pregunta
  * 
  * @package VotingSystem\Templates\Admin
  */
@@ -12,7 +12,7 @@
 defined( 'ABSPATH' ) || exit;
 ?>
 
-<div class="vs-pergunta">
+<div class="vs-pergunta" data-question-group-id="question-group-<?php echo esc_attr(time() . '-' . $index); ?>">
     <div class="vs-question-index" style="float: right;">
         <span>#<?php echo esc_html($index + 1); ?></span>
     </div>

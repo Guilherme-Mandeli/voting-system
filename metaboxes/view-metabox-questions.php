@@ -263,15 +263,104 @@ function vs_render_metabox_questions_scripts($post) {
                 }
             });
             
+            // Função de fallback para coletar do DOM (compatibilidade)
+            function collectFromDOMFallback($question, questionIndex) {
+                const questionGroupId = $question.attr('data-question-group-id');
+                const vsOptions = {
+                    manual_items: [],
+                    imported_items: []
+                };
+                
+                // Log para debug
+                console.log(`🔍 [collectFromDOMFallback] Pergunta ${questionIndex}:`, {
+                    questionGroupId: questionGroupId,
+                    questionIndex: questionIndex
+                });
+                
+                // Verificar se vs-imported-answers existe
+                const $importedAnswersField = $question.find('.vs-imported-answers');
+                const hasImportedAnswers = $importedAnswersField.length && $importedAnswersField.val();
+                
+                // Seletor mais específico para evitar vazamento
+                const $optionItems = $question.find('> .vs-options .vs-option-item, > .vs-columns-container .vs-option-item');
+                
+                console.log(`🔍 [collectFromDOMFallback] Opções encontradas:`, {
+                    questionIndex: questionIndex,
+                    optionsCount: $optionItems.length,
+                    hasImportedAnswers: hasImportedAnswers
+                });
+                
+                $optionItems.each(function(index) {
+                    const $option = $(this);
+                    const text = $option.find('input[type="text"]').val();
+                    const realValue = $option.find('.vs-valor-real').val();
+                    const isImported = $option.hasClass('imported_question');
+                    
+                    if (text && text.trim() !== '') {
+                        if (isImported) {
+                            // Só coletar imported_items do DOM se vs-imported-answers NÃO existir
+                            if (!hasImportedAnswers) {
+                                vsOptions.imported_items.push({
+                                    text: text,
+                                    vs_valor_real: realValue || text,
+                                    question_index: questionIndex,
+                                    vote_id: $option.data('vote-id'),
+                                    answer_index: $option.data('answer-index')
+                                });
+                            }
+                        } else {
+                            // Manual items sempre coletados do DOM
+                            vsOptions.manual_items.push({
+                                text: text,
+                                vs_valor_real: text,
+                                question_index: questionIndex,
+                                option_index: index
+                            });
+                        }
+                    }
+                });
+                
+                console.log(`✅ [collectFromDOMFallback] Dados coletados:`, {
+                    questionIndex: questionIndex,
+                    vsOptions: vsOptions
+                });
+                
+                return vsOptions; // ✅ CORREÇÃO: Retornar os dados!
+            }
+
             // Função para coletar vs-options e integrá-los na estrutura de questions
             function collectVsOptionsForPersistence() {
-                $('.vs-pergunta').each(function() {
+                console.log('🔍 DEBUG collectVsOptionsForPersistence - Início');
+                
+                $('.vs-pergunta').each(function(index) {
                     const $question = $(this);
-                    const questionIndex = extractQuestionIndex($question);
                     
-                    if (questionIndex === null) return;
+                    // Usar $question consistentemente
+                    const questionGroupId = $question.attr('data-question-group-id');
+                    let questionIndex = $question.find('.vs-question-index').val();
                     
-                    // Ler de vs-imported-answers ao invés do DOM
+                    // Se questionIndex estiver vazio, usar o índice do loop
+                    if (!questionIndex || questionIndex.trim() === '') {
+                        questionIndex = index;
+                        console.warn(`⚠️ questionIndex vazio para pergunta ${index}, usando índice do loop:`, questionIndex);
+                    }
+                    
+                    const questionType = $question.find('.vs-question-type').val();
+                    
+                    // Capturar retorno da função
+                    const fallbackData = collectFromDOMFallback($question, questionIndex);
+                    
+                    console.log('🔍 DEBUG collectVsOptionsForPersistence - Processando pergunta:', {
+                        index: index,
+                        questionGroupId: questionGroupId,
+                        questionIndex: questionIndex, // Agora não será vazio
+                        optionsCount: $question.find('.vs-option-item').length,
+                        fallbackData: fallbackData // Dados coletados
+                    });
+                    
+                    if (questionIndex === null || !questionGroupId) return;
+                    
+                    // Usar escopo de grupo para isolar opções
                     const $importedAnswersField = $question.find('.vs-imported-answers');
                     let vsOptions = {
                         manual_items: [],
@@ -314,7 +403,8 @@ function vs_render_metabox_questions_scripts($post) {
                     if ($vsOptionsField.length === 0) {
                         $vsOptionsField = $('<input>', {
                             type: 'hidden',
-                            name: 'vs_questions[' + questionIndex + '][vs_options]'
+                            name: 'vs_questions[' + questionIndex + '][vs_options]',
+                            'data-question-group-id': questionGroupId
                         });
                         $question.append($vsOptionsField);
                     }
@@ -322,52 +412,6 @@ function vs_render_metabox_questions_scripts($post) {
                     // Salvar dados dos vs-options no campo oculto
                     $vsOptionsField.val(JSON.stringify(vsOptions));
                 });
-            }
-            
-            // Função de fallback para coletar do DOM (compatibilidade)
-            function collectFromDOMFallback($question, questionIndex) {
-                const vsOptions = {
-                    manual_items: [],
-                    imported_items: []
-                };
-                
-                // Verificar se vs-imported-answers existe
-                const $importedAnswersField = $question.find('.vs-imported-answers');
-                const hasImportedAnswers = $importedAnswersField.length && $importedAnswersField.val();
-                
-                const $optionItems = $question.find('.vs-option-item, .vs-columns-container .vs-option-item');
-                
-                $optionItems.each(function(index) {
-                    const $option = $(this);
-                    const text = $option.find('input[type="text"]').val();
-                    const realValue = $option.find('.vs-valor-real').val();
-                    const isImported = $option.hasClass('imported_question');
-                    
-                    if (text && text.trim() !== '') {
-                        if (isImported) {
-                            // Só coletar imported_items do DOM se vs-imported-answers NÃO existir
-                            if (!hasImportedAnswers) {
-                                vsOptions.imported_items.push({
-                                    text: text,
-                                    vs_valor_real: realValue || text,
-                                    question_index: questionIndex,
-                                    vote_id: $option.data('vote-id'),
-                                    answer_index: $option.data('answer-index')
-                                });
-                            }
-                        } else {
-                            // Manual items sempre coletados do DOM
-                            vsOptions.manual_items.push({
-                                text: text,
-                                vs_valor_real: text,
-                                question_index: questionIndex,
-                                option_index: index
-                            });
-                        }
-                    }
-                });
-                
-                return vsOptions;
             }
             
             // Função auxiliar para extrair índice da pergunta
