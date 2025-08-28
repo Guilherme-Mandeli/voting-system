@@ -27,6 +27,10 @@ function vs_render_unificacao_page($votacao_id) {
     $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
     $per_page = isset($_GET['per_page']) && in_array(intval($_GET['per_page']), $options_por_pagina) ? intval($_GET['per_page']) : 50;
     
+    // Parâmetros de ordenação - NOVO
+    $orderby = isset($_GET['orderby']) ? sanitize_text_field($_GET['orderby']) : 'user_id';
+    $order = isset($_GET['order']) && in_array(sanitize_text_field($_GET['order']), ['asc', 'desc']) ? sanitize_text_field($_GET['order']) : 'asc';
+    
     // Parâmetro de busca
     $search_term = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
 
@@ -283,7 +287,7 @@ function vs_render_unificacao_page($votacao_id) {
                 <div class="unificacao-search-controls" style="margin-bottom: 15px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
                     <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
                         <!-- Campo de busca -->
-                        <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 3px;">
                             <label for="search_unificacao">Buscar:</label>
                             <input type="search" 
                                    id="search_unificacao" 
@@ -295,7 +299,7 @@ function vs_render_unificacao_page($votacao_id) {
                                     class="button" 
                                     onclick="performSearch()"
                                     style="padding: 6px 12px;">
-                                🔍 Buscar
+                                Buscar
                             </button>
                             <?php if (!empty($search_term)) : ?>
                                 <a href="<?php echo esc_url($base_url); ?>" 
@@ -400,16 +404,56 @@ function vs_render_unificacao_page($votacao_id) {
                             <thead>
                                 <tr>
                                     <th class="unificacao-checkbox-column"><input type="checkbox" id="select-all" /></th>
-                                    <th class="unificacao-usuario-column">Usuário</th>
-                                    <th class="unificacao-pergunta-column">Pergunta</th>
-                                    <th class="unificacao-resposta-column">Resposta</th>
-                                    <th class="unificacao-resposta-unificada-column">Resposta Unificada</th>
+                                    <th class="unificacao-usuario-column">
+                                        <a href="<?php echo vs_build_sort_url($base_url, 'user_id', $order); ?>">
+                                            Usuário
+                                            <?php if ($orderby == 'user_id') : ?>
+                                                <span class="dashicons dashicons-arrow-<?php echo ($order == 'asc') ? 'up' : 'down'; ?>"></span>
+                                            <?php else : ?>
+                                                <span class="dashicons dashicons-leftright"></span>
+                                            <?php endif; ?>
+                                        </a>
+                                    </th>
+                                    <th class="unificacao-pergunta-column">
+                                        <a href="<?php echo vs_build_sort_url($base_url, 'question_index', $order); ?>">
+                                            Pergunta
+                                            <?php if ($orderby == 'question_index') : ?>
+                                                <span class="dashicons dashicons-arrow-<?php echo ($order == 'asc') ? 'up' : 'down'; ?>"></span>
+                                            <?php else : ?>
+                                                <span class="dashicons dashicons-leftright"></span>
+                                            <?php endif; ?>
+                                        </a>
+                                    </th>
+                                    <th class="unificacao-resposta-column">
+                                        <a href="<?php echo vs_build_sort_url($base_url, 'response_text', $order); ?>">
+                                            Resposta
+                                            <?php if ($orderby == 'response_text') : ?>
+                                                <span class="dashicons dashicons-arrow-<?php echo ($order == 'asc') ? 'up' : 'down'; ?>"></span>
+                                            <?php else : ?>
+                                                <span class="dashicons dashicons-leftright"></span>
+                                            <?php endif; ?>
+                                        </a>
+                                    </th>
+                                    <th class="unificacao-resposta-unificada-column">
+                                        <a href="<?php echo vs_build_sort_url($base_url, 'unified_response', $order); ?>">
+                                            Resposta Unificada
+                                            <?php if ($orderby == 'unified_response') : ?>
+                                                <span class="dashicons dashicons-arrow-<?php echo ($order == 'asc') ? 'up' : 'down'; ?>"></span>
+                                            <?php else : ?>
+                                                <span class="dashicons dashicons-leftright"></span>
+                                            <?php endif; ?>
+                                        </a>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php
                                 // Conta total de linhas para informação
                                 $total_rows = 0;
+                                
+                                // Coleta todos os dados para ordenação
+                                $table_data = array();
+                                
                                 while ($query_paged->have_posts()) :
                                     $query_paged->the_post();
                                     $post_id = get_the_ID();
@@ -445,7 +489,6 @@ function vs_render_unificacao_page($votacao_id) {
                                     }
 
                                     foreach ($respostas_detalhadas as $idx => $resposta_individual) {
-
                                         // Label da pergunta da configuração da votação
                                         $question_label = isset($questions[$idx]['label'])
                                             ? $questions[$idx]['label']
@@ -462,60 +505,107 @@ function vs_render_unificacao_page($votacao_id) {
                                         $unificada_texto = isset($unifications[$idx]) && '' !== trim($unifications[$idx])
                                             ? $unifications[$idx]
                                             : '—';
-                                        ?>
-                                        <tr class="unificacao-tr"
-                                            data-post-id="<?php echo esc_attr($post_id); ?>"
-                                            data-question-index="<?php echo esc_attr($idx); ?>"
-                                        >
-                                            <td style="text-align:center;">
-                                                <input type="checkbox" name="respostas_ids[]" value="<?php echo esc_attr($post_id); ?>" />
-                                            </td>
-                                            <td>
-                                                <?php if ($link_edicao) : ?>
-                                                    <a href="<?php echo esc_url($link_edicao); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($usuario_texto); ?></a>
-                                                <?php else : ?>
-                                                    <?php echo esc_html($usuario_texto); ?>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <div class="tooltip" title="<?php echo esc_attr($question_label); ?>">
-                                                    <?php echo esc_html($question_label); ?>
-                                                    <span class="tooltip-text"><?php echo esc_html($question_label); ?></span>
-                                                </div>
-                                            </td>
-                                            <td class="unificacao-resposta-column">
-                                                <div class="tooltip" title="<?php echo esc_attr($resposta_texto); ?>">
-                                                    <?php echo esc_html($resposta_texto); ?>
-                                                    <span class="tooltip-text"><?php echo esc_html($resposta_texto); ?></span>
-                                                </div>
-                                            </td>
-                                            <td class="unificacao-resposta-unificada-column">
-                                                <div class="tooltip" title="<?php echo esc_attr($unificada_texto); ?>">
-                                                    <?php echo esc_html($unificada_texto); ?>
-                                                    <span class="tooltip-text"><?php echo esc_html($unificada_texto); ?></span>
-                                                </div>
-                                                <?php if ($unificada_texto !== '—') : ?>
-                                                    <button type="button" class="vs-edit-unified-btn" 
-                                                            title="Editar resposta unificada" 
-                                                            data-post-id="<?php echo esc_attr($post_id); ?>"
-                                                            data-question-index="<?php echo esc_attr($idx); ?>"
-                                                            data-votacao-id="<?php echo esc_attr($votacao_id); ?>">
-                                                        <span class="dashicons dashicons-edit"></span>
-                                                    </button>
-                                                    <button type="button" class="vs-clear-unified-btn" 
-                                                            title="Limpar resposta unificada" 
-                                                            data-post-id="<?php echo esc_attr($post_id); ?>"
-                                                            data-question-index="<?php echo esc_attr($idx); ?>"
-                                                            data-votacao-id="<?php echo esc_attr($votacao_id); ?>">
-                                                        <span class="dashicons dashicons-dismiss"></span>
-                                                    </button>
-                                                <?php endif; ?>
-                                            </td>
-                                        </tr>
-                                        <?php
+                                        
+                                        // Adiciona os dados ao array para ordenação
+                                        $table_data[] = array(
+                                            'post_id' => $post_id,
+                                            'question_index' => $idx,
+                                            'user_id' => $user_id,
+                                            'user_email' => $user ? $user->user_email : '',
+                                            'usuario_texto' => $usuario_texto,
+                                            'question_label' => $question_label,
+                                            'resposta_texto' => $resposta_texto,
+                                            'unificada_texto' => $unificada_texto,
+                                            'link_edicao' => $link_edicao
+                                        );
                                     }
                                 endwhile;
                                 wp_reset_postdata();
+                                
+                                // Aplica ordenação aos dados coletados
+                                if (!empty($table_data)) {
+                                    usort($table_data, function($a, $b) use ($orderby, $order) {
+                                        $result = 0;
+                                        
+                                        switch ($orderby) {
+                                            case 'user_id':
+                                                $result = $a['user_id'] - $b['user_id'];
+                                                break;
+                                            case 'user_email':
+                                                $result = strcasecmp($a['user_email'], $b['user_email']);
+                                                break;
+                                            case 'question_index':
+                                                $result = $a['question_index'] - $b['question_index'];
+                                                break;
+                                            case 'response_text':
+                                                $result = strcasecmp($a['resposta_texto'], $b['resposta_texto']);
+                                                break;
+                                            case 'unified_response':
+                                                $result = strcasecmp($a['unificada_texto'], $b['unificada_texto']);
+                                                break;
+                                            default:
+                                                $result = $a['user_id'] - $b['user_id'];
+                                        }
+                                        
+                                        return ($order === 'desc') ? -$result : $result;
+                                    });
+                                }
+                                
+                                // Exibe os dados ordenados
+                                foreach ($table_data as $row) :
+                                    $total_rows++;
+                                    ?>
+                                    <tr class="unificacao-tr"
+                                        data-post-id="<?php echo esc_attr($row['post_id']); ?>"
+                                        data-question-index="<?php echo esc_attr($row['question_index']); ?>"
+                                    >
+                                        <td class="col-checkbox" style="text-align:center;">
+                                            <input type="checkbox" name="respostas_ids[]" value="<?php echo esc_attr($row['post_id']); ?>" />
+                                        </td>
+                                        <td class="col-user">
+                                            <?php if ($row['link_edicao']) : ?>
+                                                <a href="<?php echo esc_url($row['link_edicao']); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($row['usuario_texto']); ?></a>
+                                            <?php else : ?>
+                                                <?php echo esc_html($row['usuario_texto']); ?>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="col-question">
+                                            <div class="tooltip" title="<?php echo esc_attr($row['question_label']); ?>">
+                                                <?php echo esc_html($row['question_label']); ?>
+                                                <span class="tooltip-text"><?php echo esc_html($row['question_label']); ?></span>
+                                            </div>
+                                        </td>
+                                        <td class="col-answers unificacao-resposta-column">
+                                            <div class="tooltip" title="<?php echo esc_attr($row['resposta_texto']); ?>">
+                                                <?php echo esc_html($row['resposta_texto']); ?>
+                                                <span class="tooltip-text"><?php echo esc_html($row['resposta_texto']); ?></span>
+                                            </div>
+                                        </td>
+                                        <td class="col-unified-answer unificacao-resposta-unificada-column">
+                                            <div class="tooltip" title="<?php echo esc_attr($row['unificada_texto']); ?>">
+                                                <?php echo esc_html($row['unificada_texto']); ?>
+                                                <span class="tooltip-text"><?php echo esc_html($row['unificada_texto']); ?></span>
+                                            </div>
+                                            <?php if ($row['unificada_texto'] !== '—') : ?>
+                                                <button type="button" class="vs-edit-unified-btn" 
+                                                        title="Editar resposta unificada" 
+                                                        data-post-id="<?php echo esc_attr($row['post_id']); ?>"
+                                                        data-question-index="<?php echo esc_attr($row['question_index']); ?>"
+                                                        data-votacao-id="<?php echo esc_attr($votacao_id); ?>">
+                                                    <span class="dashicons dashicons-edit"></span>
+                                                </button>
+                                                <button type="button" class="vs-clear-unified-btn" 
+                                                        title="Limpar resposta unificada" 
+                                                        data-post-id="<?php echo esc_attr($row['post_id']); ?>"
+                                                        data-question-index="<?php echo esc_attr($row['question_index']); ?>"
+                                                        data-votacao-id="<?php echo esc_attr($votacao_id); ?>">
+                                                    <span class="dashicons dashicons-trash"></span>
+                                                </button>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                    <?php
+                                endforeach;
                                 ?>
                             </tbody>
                         </table>
@@ -911,6 +1001,10 @@ function vs_render_unificacao_page($votacao_id) {
         font-size: 13px;
         line-height: 1.4;
     }
+
+    #per_page_unificacao {
+        min-width: 55px;
+    }
     
     /* Responsividade para controles de busca */
     @media (max-width: 768px) {
@@ -998,6 +1092,19 @@ function vs_render_unificacao_page($votacao_id) {
             justify-content: center;
             flex-wrap: wrap;
         }
+    }
+
+    #form-unificacao thead a {
+        color: #000000;
+        text-decoration: none;
+        font-weight: 400;
+    }
+
+    #unificacao-table .unificacao-checkbox-column,
+    #unificacao-table .col-checkbox {
+        max-width: 36px;
+        width: 0%;
+        min-width: 1px;
     }
     </style>
 
