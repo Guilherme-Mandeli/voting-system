@@ -540,7 +540,7 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                     if (pergunta.imported_answers && Array.isArray(pergunta.imported_answers) && pergunta.imported_answers.length > 0) {
                         
                         pergunta.imported_answers.forEach((resposta, respostaIndex) => {
-                            const valorExibir = resposta.value_unificada || resposta.value;
+                            const valorExibir = resposta.vs_valor_real || resposta.text || resposta.value_unificada || resposta.value;
                             const qtdVotos = parseInt(resposta.qtd_votos || 0);
                             const questionSource = pergunta.question_source || 'Fonte desconhecida';
                             
@@ -548,6 +548,8 @@ function saveImportedAnswersData($question, eventInfo, questionsData) {
                             console.log('🔍 DEBUG - Dados da resposta:', {
                                 resposta: resposta,
                                 valorExibir: valorExibir,
+                                text: resposta.text,
+                                vs_valor_real: resposta.vs_valor_real,
                                 value: resposta.value,
                                 value_unificada: resposta.value_unificada,
                                 qtdVotos: qtdVotos,

@@ -384,7 +384,7 @@
 
                 // Verificar se pelo menos uma resposta da pergunta ainda existe
                 return questionData.imported_answers.some(answer => {
-                    const answerValue = answer.value || answer.value_unificada;
+                    const answerValue = answer.value_unificada || answer.value;
                     return answerValue && existingImportedValues.includes(answerValue.trim());
                 });
 
